@@ -107,6 +107,7 @@ const STICKY = [
   "thumbnail-time", "thumbnail-count", "thumbnail-width",
   "compress-crf", "compress-bitrate", "compress-width", "compress-height",
   "compress-vcodec", "compress-preset",
+  "gif-fps", "gif-width",
 ];
 
 async function loadSettings() {
@@ -304,6 +305,19 @@ $("#run-thumbnail").addEventListener("click", () => {
     time: val("thumbnail-time") || "00:00:01",
     count: numOrNull("thumbnail-count") || 1,
     width: numOrNull("thumbnail-width"),
+    overwrite: true,
+  });
+});
+
+$("#run-gif").addEventListener("click", () => {
+  if (!requireFields("gif-input", "gif-output")) return;
+  run("Making GIF", "gif", {
+    input: val("gif-input"),
+    output: val("gif-output"),
+    fps: numOrNull("gif-fps") || 12,
+    width: numOrNull("gif-width") || 480,
+    start: strOrNull("gif-start"),
+    duration: strOrNull("gif-duration"),
     overwrite: true,
   });
 });

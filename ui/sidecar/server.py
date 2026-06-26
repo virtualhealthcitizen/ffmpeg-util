@@ -162,6 +162,29 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class GifReq(BaseModel):
+    input: str
+    output: str
+    fps: int = 12
+    width: int = 480
+    start: str | None = None
+    duration: str | None = None
+    overwrite: bool = True
+
+
+@app.post("/gif")
+def gif(req: GifReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.make_gif(
+            runner, req.input, req.output,
+            fps=req.fps, width=req.width, start=req.start, duration=req.duration,
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class ContactSheetReq(BaseModel):
     input: str
     output: str
@@ -239,6 +262,8 @@ class RunReq(BaseModel):
     # contact-sheet
     cols: int = 4
     rows: int = 4
+    # gif
+    fps: int = 12
     # compress
     crf: int | None = None
     bitrate: str | None = None
@@ -308,6 +333,13 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 commands.compress_to_size(
                     runner, req.input, req.output, req.target_size,
                     duration_s=total, vcodec=req.vcodec or "libx264", preset=req.preset,
+                )
+                yield _sse({"type": "done", "output": req.output})
+                return
+            if req.op == "gif":
+                commands.make_gif(
+                    runner, req.input, req.output,
+                    fps=req.fps, width=req.width or 480, start=req.start, duration=req.duration,
                 )
                 yield _sse({"type": "done", "output": req.output})
                 return

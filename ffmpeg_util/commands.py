@@ -255,6 +255,47 @@ def compress_to_size(
     return vkbps
 
 
+def gif_filter(fps: int, width: int) -> str:
+    """Shared filter chain for GIF passes: resample fps + high-quality scale."""
+    return f"fps={fps},scale={width}:-1:flags=lanczos"
+
+
+def make_gif(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    *,
+    fps: int = 12,
+    width: int = 480,
+    start: str | None = None,
+    duration: str | None = None,
+) -> None:
+    """Export an animated GIF using a two-pass palette (palettegen/paletteuse)
+    for far better quality than a naive single pass. Optional trim via
+    ``start``/``duration``."""
+    if fps < 1:
+        raise ValueError("fps must be >= 1")
+    if width < 1:
+        raise ValueError("width must be >= 1")
+    seek = ["-ss", start] if start is not None else []
+    dur = ["-t", duration] if duration is not None else []
+    filt = gif_filter(fps, width)
+
+    fd, palette = tempfile.mkstemp(suffix=".png", prefix="ffgifpal_")
+    os.close(fd)
+    try:
+        runner.run_ffmpeg([*seek, "-i", input_path, *dur, "-vf", f"{filt},palettegen", "-y", palette])
+        runner.run_ffmpeg([
+            *seek, "-i", input_path, *dur, "-i", palette,
+            "-lavfi", f"{filt} [x];[x][1:v] paletteuse", "-y", output_path,
+        ])
+    finally:
+        try:
+            os.remove(palette)
+        except OSError:
+            pass
+
+
 def build_contact_sheet_args(
     input_path: str,
     output_path: str,

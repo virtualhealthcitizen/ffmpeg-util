@@ -136,6 +136,47 @@ def test_compress(client, media, auth):
     assert out.exists()
 
 
+def test_gif_export(client, media, auth):
+    import json as _json
+    import subprocess
+    from conftest import FFPROBE
+
+    d, src = media
+    out = d / "clip.gif"
+    r = client.post(
+        "/gif",
+        json={"input": str(src), "output": str(out), "fps": 10, "width": 240,
+              "duration": "1", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+    # Confirm it's actually a GIF, 240 wide.
+    probe = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=codec_name,width", "-of", "json", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    s = _json.loads(probe.stdout)["streams"][0]
+    assert s["codec_name"] == "gif"
+    assert s["width"] == 240
+
+
+def test_run_stream_gif(client, media, auth):
+    d, src = media
+    out = d / "stream.gif"
+    r = client.post(
+        "/run/stream",
+        json={"op": "gif", "input": str(src), "output": str(out),
+              "fps": 10, "width": 200, "duration": "1", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert events[-1]["type"] == "done"
+    assert out.exists() and out.stat().st_size > 0
+
+
 def test_contact_sheet_dimensions(client, media, auth):
     import json as _json
     import subprocess
