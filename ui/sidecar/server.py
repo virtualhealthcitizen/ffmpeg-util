@@ -162,6 +162,23 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class TransformReq(BaseModel):
+    input: str
+    output: str
+    op: str
+    overwrite: bool = True
+
+
+@app.post("/transform")
+def transform(req: TransformReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_transform_args(req.input, req.output, req.op))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class SpeedReq(BaseModel):
     input: str
     output: str
@@ -283,6 +300,8 @@ class RunReq(BaseModel):
     fps: int = 12
     # speed
     factor: float = 1.0
+    # transform
+    transform: str | None = None
     # compress
     crf: int | None = None
     bitrate: str | None = None
@@ -294,6 +313,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "transform":
+        return commands.build_transform_args(req.input, req.output, req.transform or ""), None
     if op == "contact_sheet":
         if not total:
             raise ValueError("could not determine input duration for the contact sheet")

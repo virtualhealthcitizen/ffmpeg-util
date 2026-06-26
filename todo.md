@@ -85,7 +85,9 @@ Packaging / tests:
 - [x] Animated GIF export (palette two-pass: palettegen + paletteuse), fps/width/trim —
       core `make_gif`, CLI `gif`, sidecar (`/gif` + `/run/stream`), GIF tab (auto-previews).
       Verified E2E: CLI/sidecar produce a valid gif (codec=gif, width matches).
-- [ ] Transforms: crop, rotate, flip/hflip/vflip
+- [x] Transforms: rotate (cw/ccw/180) + flip (h/v) — core `build_transform_args`,
+      CLI `transform --op`, sidecar (`/transform` + `/run/stream`), Transform tab.
+      Verified E2E: rotate-cw swaps 320x240 -> 240x320. (Crop still pending.)
 - [ ] Playback speed: speed up / slow down (setpts + atempo)
 - [ ] Loudness normalization (EBU R128 two-pass `loudnorm`); volume gain
 - [ ] Audio: replace/mux an audio track; mix or strip tracks

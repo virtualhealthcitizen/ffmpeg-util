@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-transform").addEventListener("click", () => {
+  if (!requireFields("transform-input", "transform-output")) return;
+  run("Transforming", "transform", {
+    input: val("transform-input"),
+    output: val("transform-output"),
+    transform: $("#transform-op").value,
+    overwrite: true,
+  });
+});
+
 $("#run-speed").addEventListener("click", () => {
   if (!requireFields("speed-input", "speed-output", "speed-factor")) return;
   run("Changing speed", "speed", {

@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed**.
+contact-sheet, compress (incl. target-size), gif, speed, transform**.
 
 ---
 
@@ -119,6 +119,14 @@ ffmpeg-util speed in.mp4 fast.mp4 --factor 2      # 2x
 ffmpeg-util speed in.mp4 slow.mp4 --factor 0.5    # half speed
 ```
 
+### transform — rotate / flip
+`--op` is one of `rotate-cw`, `rotate-ccw`, `rotate-180`, `hflip`, `vflip`.
+90° rotations swap width and height.
+```bash
+ffmpeg-util transform in.mp4 rotated.mp4 --op rotate-cw
+ffmpeg-util transform in.mp4 mirrored.mp4 --op hflip
+```
+
 ---
 
 ## 5. Using as a library
@@ -142,7 +150,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

@@ -68,6 +68,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # transform
+    p = sub.add_parser("transform", help="Rotate or flip a video.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--op", required=True,
+                   choices=["rotate-cw", "rotate-ccw", "rotate-180", "hflip", "vflip"],
+                   help="Transform to apply.")
+    _add_global_flags(p)
+
     # speed
     p = sub.add_parser("speed", help="Change playback speed (>1 faster, <1 slower).")
     p.add_argument("input")
@@ -156,6 +165,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "transform":
+        runner.run_ffmpeg(commands.build_transform_args(args.input, args.output, args.op))
         return 0
 
     if args.command == "speed":
