@@ -171,6 +171,21 @@ def _audio_stream_count(path):
     return len([ln for ln in out.stdout.splitlines() if ln.strip()])
 
 
+def test_frames_extracts_expected_count(client, media, auth):
+    # media is testsrc duration=3 @30fps -> 90 frames; every 30 -> frames 0,30,60 -> 3 files.
+    d, src = media
+    outdir = d / "frames"
+    outdir.mkdir()
+    r = client.post(
+        "/frames",
+        json={"input": str(src), "output": str(outdir / "f_%04d.png"), "every": 30, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    pngs = list(outdir.glob("f_*.png"))
+    assert len(pngs) == 3, [p.name for p in pngs]
+
+
 def test_loop_multiplies_duration(client, media, auth):
     d, src = media  # ~3s clip
     out = d / "looped.mp4"

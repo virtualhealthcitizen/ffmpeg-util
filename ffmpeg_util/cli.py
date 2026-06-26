@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # frames
+    p = sub.add_parser("frames", help="Extract frames as an image sequence.")
+    p.add_argument("input")
+    p.add_argument("output", help="Output pattern, e.g. frame_%%04d.png")
+    p.add_argument("--every", type=int, default=1, help="Keep every Nth frame (default 1).")
+    _add_global_flags(p)
+
     # loop
     p = sub.add_parser("loop", help="Repeat the input N times (stream-copy).")
     p.add_argument("input")
@@ -196,6 +203,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "frames":
+        runner.run_ffmpeg(commands.build_extract_frames_args(args.input, args.output, args.every))
         return 0
 
     if args.command == "loop":

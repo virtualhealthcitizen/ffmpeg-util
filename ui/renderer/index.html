@@ -25,6 +25,7 @@
       <button data-tab="mute">Mute</button>
       <button data-tab="pad">Pad</button>
       <button data-tab="loop">Loop</button>
+      <button data-tab="frames">Frames</button>
     </nav>
 
     <!-- Convert -->
@@ -286,6 +287,27 @@
       </div>
       <p class="hint">Repeats the clip Count times (stream-copied, no re-encode).</p>
       <div class="row"><button class="primary" id="run-loop">Loop</button></div>
+    </section>
+
+    <!-- Frames -->
+    <section class="card panel" id="panel-frames">
+      <label>Input file</label>
+      <div class="row">
+        <input id="frames-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="frames-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="frames-input">Probe</button>
+      </div>
+      <label>Output pattern</label>
+      <div class="row">
+        <input id="frames-output" type="text" placeholder="C:\\out\\frame_%04d.png" />
+        <button class="pick-save" data-target="frames-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Every <input id="frames-every" type="number" min="1" placeholder="1" /></label>
+      </div>
+      <p class="hint">Writes an image sequence; keep every Nth frame. Output must contain a
+      printf token like <code>%04d</code>.</p>
+      <div class="row"><button class="primary" id="run-frames">Extract frames</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>

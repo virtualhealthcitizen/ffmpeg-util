@@ -368,6 +368,15 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_extract_frames_args(input_path: str, output_pattern: str, every: int = 1) -> list[str]:
+    """Build args to extract frames as an image sequence, keeping every ``every``th
+    frame. ``output_pattern`` should contain a printf token, e.g. ``frame_%04d.png``."""
+    if every < 1:
+        raise ValueError("every must be >= 1")
+    # The comma inside mod() must be escaped so it isn't read as a filter separator.
+    return ["-i", input_path, "-vf", f"select=not(mod(n\\,{every}))", "-fps_mode", "vfr", output_pattern]
+
+
 def build_loop_args(input_path: str, output_path: str, count: int) -> list[str]:
     """Build args to repeat the input ``count`` times (total plays).
 
