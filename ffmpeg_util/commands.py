@@ -368,6 +368,17 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_loop_args(input_path: str, output_path: str, count: int) -> list[str]:
+    """Build args to repeat the input ``count`` times (total plays).
+
+    ffmpeg's ``-stream_loop`` is the number of *extra* loops, so we pass
+    ``count - 1``. Stream-copies, so it's fast.
+    """
+    if count < 1:
+        raise ValueError("count must be >= 1")
+    return ["-stream_loop", str(count - 1), "-i", input_path, "-c", "copy", output_path]
+
+
 def build_pad_args(input_path: str, output_path: str, width: int, height: int) -> list[str]:
     """Build args to letterbox into a ``width``x``height`` frame: scale to fit
     (preserving aspect), then pad with black bars, centered."""

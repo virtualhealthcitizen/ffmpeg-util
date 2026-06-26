@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-loop").addEventListener("click", () => {
+  if (!requireFields("loop-input", "loop-output", "loop-count")) return;
+  run("Looping", "loop", {
+    input: val("loop-input"),
+    output: val("loop-output"),
+    count: numOrNull("loop-count"),
+    overwrite: true,
+  });
+});
+
 $("#run-pad").addEventListener("click", () => {
   if (!requireFields("pad-input", "pad-output", "pad-width", "pad-height")) return;
   run("Padding", "pad", {

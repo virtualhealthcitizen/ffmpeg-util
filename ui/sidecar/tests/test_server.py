@@ -171,6 +171,20 @@ def _audio_stream_count(path):
     return len([ln for ln in out.stdout.splitlines() if ln.strip()])
 
 
+def test_loop_multiplies_duration(client, media, auth):
+    d, src = media  # ~3s clip
+    out = d / "looped.mp4"
+    r = client.post(
+        "/loop",
+        json={"input": str(src), "output": str(out), "count": 3, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    ratio = _duration(out) / _duration(src)
+    assert 2.6 <= ratio <= 3.4, f"ratio={ratio:.2f}"  # ~3x, generous tolerance
+
+
 def test_pad_produces_target_frame(client, media, auth):
     d, src = media  # 320x240
     out = d / "padded.mp4"
