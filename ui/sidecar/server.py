@@ -162,6 +162,28 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class CropReq(BaseModel):
+    input: str
+    output: str
+    width: int
+    height: int
+    x: int = 0
+    y: int = 0
+    overwrite: bool = True
+
+
+@app.post("/crop")
+def crop(req: CropReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(
+            commands.build_crop_args(req.input, req.output, req.width, req.height, req.x, req.y)
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class TransformReq(BaseModel):
     input: str
     output: str
@@ -302,6 +324,9 @@ class RunReq(BaseModel):
     factor: float = 1.0
     # transform
     transform: str | None = None
+    # crop (uses width/height above for the rectangle size)
+    x: int = 0
+    y: int = 0
     # compress
     crf: int | None = None
     bitrate: str | None = None
@@ -313,6 +338,12 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "crop":
+        if not req.width or not req.height:
+            raise ValueError("crop requires width and height")
+        return commands.build_crop_args(
+            req.input, req.output, req.width, req.height, req.x, req.y
+        ), None
     if op == "transform":
         return commands.build_transform_args(req.input, req.output, req.transform or ""), None
     if op == "contact_sheet":

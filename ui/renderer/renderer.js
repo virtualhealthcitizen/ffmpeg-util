@@ -309,6 +309,19 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-crop").addEventListener("click", () => {
+  if (!requireFields("crop-input", "crop-output", "crop-width", "crop-height")) return;
+  run("Cropping", "crop", {
+    input: val("crop-input"),
+    output: val("crop-output"),
+    width: numOrNull("crop-width"),
+    height: numOrNull("crop-height"),
+    x: numOrNull("crop-x") || 0,
+    y: numOrNull("crop-y") || 0,
+    overwrite: true,
+  });
+});
+
 $("#run-transform").addEventListener("click", () => {
   if (!requireFields("transform-input", "transform-output")) return;
   run("Transforming", "transform", {

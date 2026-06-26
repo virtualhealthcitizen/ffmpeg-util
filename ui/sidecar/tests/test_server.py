@@ -160,6 +160,29 @@ def _dims(path):
     return s["width"], s["height"]
 
 
+def test_crop_produces_requested_dimensions(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "cropped.mp4"
+    r = client.post(
+        "/crop",
+        json={"input": str(src), "output": str(out), "width": 160, "height": 120,
+              "x": 10, "y": 20, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (160, 120)
+
+
+def test_crop_bad_values_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/crop",
+        json={"input": str(src), "output": str(d / "x.mp4"), "width": 0, "height": 120},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def test_transform_rotate_swaps_dimensions(client, media, auth):
     d, src = media  # 320x240
     out = d / "rot.mp4"

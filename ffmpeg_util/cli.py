@@ -68,6 +68,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # crop
+    p = sub.add_parser("crop", help="Crop a rectangle from the video.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--width", type=int, required=True, help="Crop width.")
+    p.add_argument("--height", type=int, required=True, help="Crop height.")
+    p.add_argument("--x", type=int, default=0, help="Left offset (default 0).")
+    p.add_argument("--y", type=int, default=0, help="Top offset (default 0).")
+    _add_global_flags(p)
+
     # transform
     p = sub.add_parser("transform", help="Rotate or flip a video.")
     p.add_argument("input")
@@ -165,6 +175,11 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "crop":
+        runner.run_ffmpeg(commands.build_crop_args(
+            args.input, args.output, args.width, args.height, args.x, args.y))
         return 0
 
     if args.command == "transform":
