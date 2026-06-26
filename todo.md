@@ -134,7 +134,8 @@ Packaging / tests:
 ### More ideas (round 3)
 - [x] Crop (manual x/y/w/h rectangle) — core `build_crop_args`, CLI `crop`,
       sidecar (`/crop` + `/run/stream`), Crop tab. Verified E2E: 320x240 -> 160x120.
-- [ ] Mute / strip audio track
+- [x] Mute / strip audio track — core `build_mute_args`, CLI `mute`, sidecar
+      (`/mute` + `/run/stream`), Mute tab. Verified E2E: output has 0 audio streams.
 - [ ] Reverse a clip (video + audio)
 - [ ] Fade in/out (video fade + audio afade)
 - [ ] Extract every Nth frame as images

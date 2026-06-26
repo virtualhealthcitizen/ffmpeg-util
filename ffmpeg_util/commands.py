@@ -368,6 +368,11 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_mute_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to strip the audio track (stream-copies video, drops audio)."""
+    return ["-i", input_path, "-c", "copy", "-an", output_path]
+
+
 def build_crop_args(
     input_path: str, output_path: str, width: int, height: int, x: int = 0, y: int = 0
 ) -> list[str]:

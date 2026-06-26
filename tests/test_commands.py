@@ -119,6 +119,13 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_mute_args_strip_audio():
+    args = c.build_mute_args("in.mp4", "out.mp4")
+    assert "-an" in args
+    assert args[args.index("-c") + 1] == "copy"
+    assert args[-1] == "out.mp4"
+
+
 def test_crop_args_build_filter():
     args = c.build_crop_args("in.mp4", "o.mp4", 160, 120, 10, 20)
     assert args[args.index("-vf") + 1] == "crop=160:120:10:20"

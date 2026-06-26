@@ -160,6 +160,30 @@ def _dims(path):
     return s["width"], s["height"]
 
 
+def _audio_stream_count(path):
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "a",
+         "-show_entries", "stream=index", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    return len([ln for ln in out.stdout.splitlines() if ln.strip()])
+
+
+def test_mute_removes_audio(client, media, auth):
+    d, src = media  # has an audio track
+    assert _audio_stream_count(src) >= 1
+    out = d / "muted.mp4"
+    r = client.post(
+        "/mute",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _audio_stream_count(out) == 0
+
+
 def test_crop_produces_requested_dimensions(client, media, auth):
     d, src = media  # 320x240
     out = d / "cropped.mp4"
