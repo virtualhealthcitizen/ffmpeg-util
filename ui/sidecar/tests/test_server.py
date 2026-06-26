@@ -171,6 +171,18 @@ def _audio_stream_count(path):
     return len([ln for ln in out.stdout.splitlines() if ln.strip()])
 
 
+def test_pad_produces_target_frame(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "padded.mp4"
+    r = client.post(
+        "/pad",
+        json={"input": str(src), "output": str(out), "width": 640, "height": 640, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (640, 640)  # exact target frame, with bars
+
+
 def test_mute_removes_audio(client, media, auth):
     d, src = media  # has an audio track
     assert _audio_stream_count(src) >= 1

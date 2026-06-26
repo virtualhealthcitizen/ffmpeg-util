@@ -309,6 +309,17 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-pad").addEventListener("click", () => {
+  if (!requireFields("pad-input", "pad-output", "pad-width", "pad-height")) return;
+  run("Padding", "pad", {
+    input: val("pad-input"),
+    output: val("pad-output"),
+    width: numOrNull("pad-width"),
+    height: numOrNull("pad-height"),
+    overwrite: true,
+  });
+});
+
 $("#run-mute").addEventListener("click", () => {
   if (!requireFields("mute-input", "mute-output")) return;
   run("Stripping audio", "mute", {
