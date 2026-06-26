@@ -119,6 +119,24 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_contact_sheet_args_builds_tile_filter():
+    # 6 tiles over a 5s clip -> fps = 6/5 = 1.2
+    args = c.build_contact_sheet_args("in.mp4", "sheet.png", duration_s=5, cols=3, rows=2, width=160)
+    vf = args[args.index("-vf") + 1]
+    assert "fps=1.200000" in vf
+    assert "scale=160:-1" in vf
+    assert "tile=3x2" in vf
+    assert args[-1] == "sheet.png"
+    assert args[args.index("-frames:v") + 1] == "1"
+
+
+def test_contact_sheet_args_rejects_bad_inputs():
+    with pytest.raises(ValueError):
+        c.build_contact_sheet_args("in.mp4", "s.png", duration_s=5, cols=0, rows=2)
+    with pytest.raises(ValueError):
+        c.build_contact_sheet_args("in.mp4", "s.png", duration_s=0, cols=2, rows=2)
+
+
 def test_target_video_bitrate_math():
     # 0.5 MB over 5s with 128 kbps audio -> 800 - 128 = 672 kbps video
     assert c.target_video_bitrate_kbps(0.5, 5, 128) == 672

@@ -136,6 +136,32 @@ def test_compress(client, media, auth):
     assert out.exists()
 
 
+def test_contact_sheet_dimensions(client, media, auth):
+    import json as _json
+    import subprocess
+    from conftest import FFPROBE
+
+    d, src = media
+    out = d / "sheet.png"
+    cols, rows, tile_w = 3, 2, 160  # source is 320x240 -> tile 160x120 -> sheet 480x240
+    r = client.post(
+        "/contact-sheet",
+        json={"input": str(src), "output": str(out), "cols": cols, "rows": rows,
+              "width": tile_w, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    probe = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "json", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    dims = _json.loads(probe.stdout)["streams"][0]
+    assert dims["width"] == cols * tile_w   # 480
+    assert dims["height"] == rows * 120     # 240
+
+
 def test_compress_target_size_hits_budget(client, media, auth):
     d, src = media
     out = d / "sized.mp4"
