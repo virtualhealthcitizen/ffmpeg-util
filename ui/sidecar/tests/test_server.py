@@ -171,6 +171,21 @@ def _audio_stream_count(path):
     return len([ln for ln in out.stdout.splitlines() if ln.strip()])
 
 
+def test_reverse_preserves_duration(client, media, auth):
+    d, src = media
+    out = d / "reversed.mp4"
+    r = client.post(
+        "/reverse",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    # Integrity check: a reversed clip has the same length (content reversal isn't
+    # asserted here — that's covered by the filter-string unit tests).
+    assert abs(_duration(out) - _duration(src)) < 0.3
+
+
 def test_frames_extracts_expected_count(client, media, auth):
     # media is testsrc duration=3 @30fps -> 90 frames; every 30 -> frames 0,30,60 -> 3 files.
     d, src = media

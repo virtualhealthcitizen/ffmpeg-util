@@ -119,6 +119,19 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_reverse_args_with_audio():
+    args = c.build_reverse_args("in.mp4", "out.mp4", audio=True)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "reverse" in fc and "areverse" in fc
+    assert args.count("-map") == 2
+
+
+def test_reverse_args_without_audio():
+    args = c.build_reverse_args("in.mp4", "out.mp4", audio=False)
+    assert args[args.index("-vf") + 1] == "reverse"
+    assert "-an" in args and "-filter_complex" not in args
+
+
 def test_extract_frames_args_build_select():
     args = c.build_extract_frames_args("in.mp4", "f_%04d.png", every=30)
     vf = args[args.index("-vf") + 1]

@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse**.
 
 ---
 
@@ -158,6 +158,12 @@ a printf token (e.g. `%04d`).
 ffmpeg-util frames in.mp4 frames/f_%04d.png --every 30
 ```
 
+### reverse — play a clip backwards
+Reverses video and audio. Buffers the whole clip in memory — best for short clips.
+```bash
+ffmpeg-util reverse in.mp4 backwards.mp4
+```
+
 ---
 
 ## 5. Using as a library
@@ -181,7 +187,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

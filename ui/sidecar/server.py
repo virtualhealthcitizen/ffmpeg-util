@@ -162,6 +162,22 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ReverseReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/reverse")
+def reverse(req: ReverseReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.reverse_media(runner, req.input, req.output)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FramesReq(BaseModel):
     input: str
     output: str
@@ -494,11 +510,14 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 )
                 yield _sse({"type": "done", "output": req.output})
                 return
-            if req.op == "speed":
+            if req.op in ("speed", "reverse"):
+                # Both need audio detection and don't fit the pure _build_op_args path.
                 audio = commands.has_audio(runner, req.input)
-                args, cleanup = commands.build_speed_args(
-                    req.input, req.output, req.factor, audio=audio
-                ), None
+                if req.op == "speed":
+                    args = commands.build_speed_args(req.input, req.output, req.factor, audio=audio)
+                else:
+                    args = commands.build_reverse_args(req.input, req.output, audio=audio)
+                cleanup = None
             else:
                 args, cleanup = _build_op_args(req, total)
             for fields in runner.iter_ffmpeg_progress(args):
