@@ -296,6 +296,67 @@ def make_gif(
             pass
 
 
+def atempo_chain(factor: float) -> str:
+    """Build an `atempo` filter chain for ``factor`` speed.
+
+    ffmpeg's atempo only accepts 0.5–2.0, so larger/smaller factors are split
+    into a product of in-range steps (e.g. 4x -> atempo=2.0,atempo=2.0).
+    """
+    if factor <= 0:
+        raise ValueError("factor must be > 0")
+    steps: list[float] = []
+    f = factor
+    while f > 2.0:
+        steps.append(2.0)
+        f /= 2.0
+    while f < 0.5:
+        steps.append(0.5)
+        f /= 0.5
+    steps.append(f)
+    return ",".join(f"atempo={s:.6f}" for s in steps)
+
+
+def build_speed_args(input_path: str, output_path: str, factor: float, *, audio: bool = True) -> list[str]:
+    """Build args to change playback speed by ``factor`` (>1 faster, <1 slower).
+
+    Video PTS is scaled by 1/factor; audio (if present) is retimed with atempo.
+    """
+    if factor <= 0:
+        raise ValueError("factor must be > 0")
+    setpts = f"setpts={1 / factor:.6f}*PTS"
+    if audio:
+        fc = f"[0:v]{setpts}[v];[0:a]{atempo_chain(factor)}[a]"
+        return ["-i", input_path, "-filter_complex", fc, "-map", "[v]", "-map", "[a]", output_path]
+    return ["-i", input_path, "-vf", setpts, "-an", output_path]
+
+
+def has_audio(runner: FfmpegRunner, path: str) -> bool:
+    """True if ``path`` has at least one audio stream (assumes True in dry-run)."""
+    proc = runner.run_ffprobe(
+        ["-loglevel", "error", "-select_streams", "a",
+         "-show_entries", "stream=index", "-of", "csv=p=0", path]
+    )
+    if proc is None:
+        return True
+    return bool((proc.stdout or "").strip())
+
+
+def change_speed(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    factor: float,
+    *,
+    audio: bool | None = None,
+) -> None:
+    """Re-time ``input_path`` by ``factor``, retiming audio when present."""
+    if factor <= 0:
+        raise ValueError("factor must be > 0")
+    if audio is None:
+        audio = has_audio(runner, input_path)
+    runner.run_ffmpeg(build_speed_args(input_path, output_path, factor, audio=audio))
+
+
 def build_contact_sheet_args(
     input_path: str,
     output_path: str,

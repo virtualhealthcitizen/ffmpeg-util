@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-speed").addEventListener("click", () => {
+  if (!requireFields("speed-input", "speed-output", "speed-factor")) return;
+  run("Changing speed", "speed", {
+    input: val("speed-input"),
+    output: val("speed-output"),
+    factor: numOrNull("speed-factor"),
+    overwrite: true,
+  });
+});
+
 $("#run-gif").addEventListener("click", () => {
   if (!requireFields("gif-input", "gif-output")) return;
   run("Making GIF", "gif", {

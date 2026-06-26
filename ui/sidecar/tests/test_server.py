@@ -136,6 +136,45 @@ def test_compress(client, media, auth):
     assert out.exists()
 
 
+def _duration(path):
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=nw=1:nk=1", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    return float(out.stdout.strip())
+
+
+def test_speed_2x_halves_duration(client, media, auth):
+    d, src = media  # ~3s clip
+    out = d / "fast.mp4"
+    r = client.post(
+        "/speed",
+        json={"input": str(src), "output": str(out), "factor": 2.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    src_dur, out_dur = _duration(src), _duration(out)
+    assert abs(out_dur - src_dur / 2) < 0.3, f"src={src_dur:.2f} out={out_dur:.2f}"
+
+
+def test_run_stream_speed(client, media, auth):
+    d, src = media
+    out = d / "slow.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "speed", "input": str(src), "output": str(out),
+              "factor": 0.5, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _sse_events(r.text)[-1]["type"] == "done"
+    assert _duration(out) > _duration(src)  # slower -> longer
+
+
 def test_gif_export(client, media, auth):
     import json as _json
     import subprocess
