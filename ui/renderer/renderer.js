@@ -309,6 +309,15 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-reverse").addEventListener("click", () => {
+  if (!requireFields("reverse-input", "reverse-output")) return;
+  run("Reversing", "reverse", {
+    input: val("reverse-input"),
+    output: val("reverse-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-frames").addEventListener("click", () => {
   if (!requireFields("frames-input", "frames-output")) return;
   run("Extracting frames", "frames", {

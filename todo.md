@@ -136,7 +136,8 @@ Packaging / tests:
       sidecar (`/crop` + `/run/stream`), Crop tab. Verified E2E: 320x240 -> 160x120.
 - [x] Mute / strip audio track — core `build_mute_args`, CLI `mute`, sidecar
       (`/mute` + `/run/stream`), Mute tab. Verified E2E: output has 0 audio streams.
-- [ ] Reverse a clip (video + audio)
+- [x] Reverse a clip (video + audio) — core `reverse_media`/`build_reverse_args`, CLI `reverse`,
+      sidecar (`/reverse` + `/run/stream`), Reverse tab. Verified E2E: output duration preserved.
 - [ ] Fade in/out (video fade + audio afade)
 - [x] Extract every Nth frame as images — core `build_extract_frames_args`, CLI `frames`,
       sidecar (`/frames` + `/run/stream`), Frames tab. Verified E2E: 90 frames, every 30 -> 3 files.

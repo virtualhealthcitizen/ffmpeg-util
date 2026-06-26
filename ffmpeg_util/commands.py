@@ -368,6 +368,27 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_reverse_args(input_path: str, output_path: str, *, audio: bool = True) -> list[str]:
+    """Build args to play a clip backwards (``reverse`` video, ``areverse`` audio).
+
+    Note: the reverse filters buffer the whole stream in memory — fine for short
+    clips, heavy for long ones.
+    """
+    if audio:
+        fc = "[0:v]reverse[v];[0:a]areverse[a]"
+        return ["-i", input_path, "-filter_complex", fc, "-map", "[v]", "-map", "[a]", output_path]
+    return ["-i", input_path, "-vf", "reverse", "-an", output_path]
+
+
+def reverse_media(
+    runner: FfmpegRunner, input_path: str, output_path: str, *, audio: bool | None = None
+) -> None:
+    """Reverse ``input_path``, retiming audio when present."""
+    if audio is None:
+        audio = has_audio(runner, input_path)
+    runner.run_ffmpeg(build_reverse_args(input_path, output_path, audio=audio))
+
+
 def build_extract_frames_args(input_path: str, output_pattern: str, every: int = 1) -> list[str]:
     """Build args to extract frames as an image sequence, keeping every ``every``th
     frame. ``output_pattern`` should contain a printf token, e.g. ``frame_%04d.png``."""
