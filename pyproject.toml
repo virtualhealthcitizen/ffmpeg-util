@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ffmpeg-util"
+version = "0.1.0"
+description = "Scriptable CLI helpers around ffmpeg for common media chores."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "james" }]
+keywords = ["ffmpeg", "video", "audio", "cli", "transcode"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Video :: Conversion",
+]
+dependencies = []
+
+[project.scripts]
+ffmpeg-util = "ffmpeg_util.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+include = ["ffmpeg_util*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

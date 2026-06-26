@@ -1,0 +1,312 @@
+"""Local HTTP sidecar exposing the ffmpeg_util library to the Electron renderer.
+
+Binds to 127.0.0.1 on a port chosen by the Electron main process (SIDECAR_PORT)
+and requires a per-launch bearer token (SIDECAR_TOKEN) on every endpoint except
+/health. This is the bridge that keeps the UI on the library API rather than
+re-implementing ffmpeg logic in Node.
+"""
+
+import json
+import os
+import tempfile
+
+import uvicorn
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
+
+from ffmpeg_util import commands
+from ffmpeg_util.errors import FfmpegError
+from ffmpeg_util.runner import FfmpegRunner
+
+TOKEN = os.environ.get("SIDECAR_TOKEN", "")
+
+app = FastAPI(title="ffmpeg-util sidecar", version="0.1.0")
+
+# Renderer pages load from file:// (Electron), so allow cross-origin; access is
+# already restricted to loopback + bearer token.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def require_token(authorization: str = Header(default="")) -> None:
+    if not TOKEN or authorization != f"Bearer {TOKEN}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
+@app.get("/file")
+def get_file(path: str, _: None = Depends(require_token)) -> FileResponse:
+    """Serve a local output file (e.g. a generated thumbnail) for in-UI preview.
+
+    Token-protected and loopback-only; the renderer fetches the path it just
+    produced so it can show the result inline.
+    """
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path)
+
+
+class ProbeReq(BaseModel):
+    input: str
+    as_json: bool = False
+
+
+@app.post("/probe")
+def probe(req: ProbeReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner()
+    try:
+        return {"result": commands.probe(runner, req.input, as_json=req.as_json)}
+    except FfmpegError as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+
+
+class ConvertReq(BaseModel):
+    input: str
+    output: str
+    vcodec: str | None = None
+    acodec: str | None = None
+    extract_audio: bool = False
+    overwrite: bool = True
+
+
+@app.post("/convert")
+def convert(req: ConvertReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    args = commands.build_convert_args(
+        req.input,
+        req.output,
+        vcodec=req.vcodec,
+        acodec=req.acodec,
+        extract_audio=req.extract_audio,
+    )
+    try:
+        runner.run_ffmpeg(args)
+    except FfmpegError as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class TrimReq(BaseModel):
+    input: str
+    output: str
+    start: str | None = None
+    end: str | None = None
+    duration: str | None = None
+    reencode: bool = False
+    overwrite: bool = True
+
+
+@app.post("/trim")
+def trim(req: TrimReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        args = commands.build_trim_args(
+            req.input,
+            req.output,
+            start=req.start,
+            end=req.end,
+            duration=req.duration,
+            reencode=req.reencode,
+        )
+        runner.run_ffmpeg(args)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class ConcatReq(BaseModel):
+    inputs: list[str]
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/concat")
+def concat(req: ConcatReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.concat(runner, req.inputs, req.output)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class ThumbnailReq(BaseModel):
+    input: str
+    output: str
+    time: str = "00:00:01"
+    count: int = 1
+    width: int | None = None
+    overwrite: bool = True
+
+
+@app.post("/thumbnail")
+def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        args = commands.build_thumbnail_args(
+            req.input, req.output, time=req.time, count=req.count, width=req.width
+        )
+        runner.run_ffmpeg(args)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class CompressReq(BaseModel):
+    input: str
+    output: str
+    crf: int | None = None
+    bitrate: str | None = None
+    width: int | None = None
+    height: int | None = None
+    vcodec: str = "libx264"
+    preset: str = "medium"
+    overwrite: bool = True
+
+
+@app.post("/compress")
+def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        args = commands.build_compress_args(
+            req.input,
+            req.output,
+            crf=req.crf,
+            bitrate=req.bitrate,
+            width=req.width,
+            height=req.height,
+            vcodec=req.vcodec,
+            preset=req.preset,
+        )
+        runner.run_ffmpeg(args)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class RunReq(BaseModel):
+    op: str
+    output: str
+    overwrite: bool = True
+    input: str | None = None
+    inputs: list[str] | None = None
+    # convert
+    vcodec: str | None = None
+    acodec: str | None = None
+    extract_audio: bool = False
+    # trim
+    start: str | None = None
+    end: str | None = None
+    duration: str | None = None
+    reencode: bool = False
+    # thumbnail
+    time: str = "00:00:01"
+    count: int = 1
+    width: int | None = None
+    # compress
+    crf: int | None = None
+    bitrate: str | None = None
+    height: int | None = None
+    preset: str = "medium"
+
+
+def _build_op_args(req: RunReq) -> tuple[list, str | None]:
+    """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
+    op = req.op
+    if op == "convert":
+        return commands.build_convert_args(
+            req.input, req.output, vcodec=req.vcodec, acodec=req.acodec,
+            extract_audio=req.extract_audio,
+        ), None
+    if op == "trim":
+        return commands.build_trim_args(
+            req.input, req.output, start=req.start, end=req.end,
+            duration=req.duration, reencode=req.reencode,
+        ), None
+    if op == "thumbnail":
+        return commands.build_thumbnail_args(
+            req.input, req.output, time=req.time, count=req.count, width=req.width,
+        ), None
+    if op == "compress":
+        kwargs = dict(crf=req.crf, bitrate=req.bitrate, width=req.width,
+                      height=req.height, preset=req.preset)
+        if req.vcodec:
+            kwargs["vcodec"] = req.vcodec
+        return commands.build_compress_args(req.input, req.output, **kwargs), None
+    if op == "concat":
+        fd, list_file = tempfile.mkstemp(suffix=".txt", prefix="ffconcat_")
+        os.close(fd)
+        commands.write_concat_list(req.inputs or [], list_file)
+        return commands.build_concat_args(req.inputs or [], req.output, list_file), list_file
+    raise ValueError(f"Unknown op: {op!r}")
+
+
+def _sse(obj: dict) -> str:
+    return f"data: {json.dumps(obj)}\n\n"
+
+
+@app.post("/run/stream")
+def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingResponse:
+    """Run an operation and stream Server-Sent progress events.
+
+    Emits `{type:"progress", percent, speed}` blocks, then a final
+    `{type:"done", output}` or `{type:"error", detail}`.
+    """
+    def gen():
+        runner = FfmpegRunner(overwrite=req.overwrite)
+        cleanup = None
+        try:
+            probe_target = req.input or (req.inputs[0] if req.inputs else None)
+            total = commands.probe_duration(runner, probe_target) if probe_target else None
+            args, cleanup = _build_op_args(req)
+            for fields in runner.iter_ffmpeg_progress(args):
+                # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
+                out_us = fields.get("out_time_us") or fields.get("out_time_ms")
+                percent = None
+                if total and out_us:
+                    try:
+                        secs = int(out_us) / 1_000_000
+                        percent = max(0.0, min(100.0, round(secs / total * 100, 1)))
+                    except ValueError:
+                        percent = None
+                yield _sse({
+                    "type": "progress",
+                    "percent": percent,
+                    "speed": fields.get("speed"),
+                    "phase": fields.get("progress"),
+                })
+            yield _sse({"type": "done", "output": req.output})
+        except (FfmpegError, ValueError) as exc:
+            yield _sse({"type": "error", "detail": _msg(exc)})
+        finally:
+            if cleanup:
+                try:
+                    os.remove(cleanup)
+                except OSError:
+                    pass
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+def _msg(exc: Exception) -> str:
+    stderr = getattr(exc, "stderr", "")
+    return f"{exc}\n{stderr}".strip() if stderr else str(exc)
+
+
+def main() -> None:
+    port = int(os.environ.get("SIDECAR_PORT", "8765"))
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+
+
+if __name__ == "__main__":
+    main()

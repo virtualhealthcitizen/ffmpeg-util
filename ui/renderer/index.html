@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; connect-src http://127.0.0.1:*; style-src 'self'; img-src 'self' blob:;" />
+    <title>ffmpeg-util</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h1>ffmpeg-util</h1>
+    <p class="sub">Convert &amp; inspect media — Electron UI over the Python sidecar.</p>
+
+    <nav class="tabs">
+      <button data-tab="convert" class="active">Convert</button>
+      <button data-tab="trim">Trim</button>
+      <button data-tab="concat">Concat</button>
+      <button data-tab="thumbnail">Thumbnail</button>
+      <button data-tab="compress">Compress</button>
+    </nav>
+
+    <!-- Convert -->
+    <section class="card panel active" id="panel-convert">
+      <label>Input file</label>
+      <div class="row">
+        <input id="convert-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="convert-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="convert-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="convert-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="convert-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Video codec <input id="convert-vcodec" type="text" placeholder="copy" /></label>
+        <label class="inline">Audio codec <input id="convert-acodec" type="text" placeholder="copy" /></label>
+        <label class="check"><input id="convert-extract" type="checkbox" /> Extract audio only</label>
+      </div>
+      <div class="row"><button class="primary" id="run-convert">Convert</button></div>
+    </section>
+
+    <!-- Trim -->
+    <section class="card panel" id="panel-trim">
+      <label>Input file</label>
+      <div class="row">
+        <input id="trim-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="trim-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="trim-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="trim-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="trim-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Start <input id="trim-start" type="text" placeholder="00:00:00 or secs" /></label>
+        <label class="inline">End <input id="trim-end" type="text" placeholder="(optional)" /></label>
+        <label class="inline">Duration <input id="trim-duration" type="text" placeholder="(optional)" /></label>
+        <label class="check"><input id="trim-reencode" type="checkbox" /> Re-encode (frame-accurate)</label>
+      </div>
+      <p class="hint">Use End <em>or</em> Duration, not both. Stream-copy is keyframe-aligned; re-encode for exact cuts.</p>
+      <div class="row"><button class="primary" id="run-trim">Trim</button></div>
+    </section>
+
+    <!-- Concat -->
+    <section class="card panel" id="panel-concat">
+      <label>Input files (one path per line, in order)</label>
+      <textarea id="concat-inputs" rows="4" placeholder="C:\clip1.mp4&#10;C:\clip2.mp4"></textarea>
+      <div class="row"><button class="pick-file" data-append="concat-inputs">Add file…</button></div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="concat-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="concat-output">Save as…</button>
+      </div>
+      <p class="hint">Inputs must share codec/params. For exact joins, trim with re-encode first.</p>
+      <div class="row"><button class="primary" id="run-concat">Concat</button></div>
+    </section>
+
+    <!-- Thumbnail -->
+    <section class="card panel" id="panel-thumbnail">
+      <label>Input file</label>
+      <div class="row">
+        <input id="thumbnail-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="thumbnail-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="thumbnail-input">Probe</button>
+      </div>
+      <label>Output image</label>
+      <div class="row">
+        <input id="thumbnail-output" type="text" placeholder="thumb.png  (use %d when count > 1)" />
+        <button class="pick-save" data-target="thumbnail-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Time <input id="thumbnail-time" type="text" placeholder="00:00:01" /></label>
+        <label class="inline">Count <input id="thumbnail-count" type="number" min="1" value="1" /></label>
+        <label class="inline">Width <input id="thumbnail-width" type="number" placeholder="(optional)" /></label>
+      </div>
+      <p class="hint">Count &gt; 1 picks representative frames — include <code>%d</code> in the output name.</p>
+      <div class="row"><button class="primary" id="run-thumbnail">Thumbnail</button></div>
+    </section>
+
+    <!-- Compress -->
+    <section class="card panel" id="panel-compress">
+      <label>Input file</label>
+      <div class="row">
+        <input id="compress-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="compress-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="compress-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="compress-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="compress-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">CRF <input id="compress-crf" type="number" placeholder="23" /></label>
+        <label class="inline">Bitrate <input id="compress-bitrate" type="text" placeholder="e.g. 2M" /></label>
+        <label class="inline">Width <input id="compress-width" type="number" placeholder="(optional)" /></label>
+        <label class="inline">Height <input id="compress-height" type="number" placeholder="(optional)" /></label>
+        <label class="inline">Codec <input id="compress-vcodec" type="text" placeholder="libx264" /></label>
+        <label class="inline">Preset <input id="compress-preset" type="text" placeholder="medium" /></label>
+      </div>
+      <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23).</p>
+      <div class="row"><button class="primary" id="run-compress">Compress</button></div>
+    </section>
+
+    <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>
+    <div id="status" class="status"></div>
+
+    <section class="card preview hidden" id="preview">
+      <label>Output preview</label>
+      <img id="preview-img" alt="output preview" />
+    </section>
+
+    <section class="card">
+      <label>Probe output</label>
+      <pre id="probe-out" class="probe"></pre>
+    </section>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
