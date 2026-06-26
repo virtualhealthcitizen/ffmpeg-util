@@ -136,7 +136,8 @@ button.secondary { background: transparent; }
 .status.err { color: var(--err); white-space: pre-wrap; }
 
 .preview.hidden { display: none; }
-#preview-img {
+#preview-img,
+#preview-video {
   max-width: 100%;
   max-height: 360px;
   border: 1px solid var(--border);
@@ -144,6 +145,8 @@ button.secondary { background: transparent; }
   background: #1b1c1f;
   display: block;
 }
+#preview-img.hidden,
+#preview-video.hidden { display: none; }
 
 .probe {
   background: #1b1c1f;
