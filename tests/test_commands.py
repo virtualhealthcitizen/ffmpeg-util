@@ -117,3 +117,25 @@ def test_compress_rejects_crf_and_bitrate():
 def test_compress_scale_filter():
     args = c.build_compress_args("in.mp4", "out.mp4", width=1280)
     assert "scale=1280:-1" in args
+
+
+def test_target_video_bitrate_math():
+    # 0.5 MB over 5s with 128 kbps audio -> 800 - 128 = 672 kbps video
+    assert c.target_video_bitrate_kbps(0.5, 5, 128) == 672
+    assert c.target_video_bitrate_kbps(10, 60, 0) == int(10 * 8000 / 60)
+
+
+def test_target_video_bitrate_rejects_bad_inputs():
+    with pytest.raises(ValueError):
+        c.target_video_bitrate_kbps(1, 0)  # zero duration
+    with pytest.raises(ValueError):
+        c.target_video_bitrate_kbps(0.01, 100, 128)  # target too small
+
+
+def test_compress_to_size_runs_two_passes_dry_run(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    vkbps = c.compress_to_size(runner, "in.mp4", "out.mp4", 0.5, duration_s=5)
+    assert vkbps == 672
+    out = capsys.readouterr().out
+    assert "-pass 1" in out and "-pass 2" in out
+    assert "out.mp4" in out

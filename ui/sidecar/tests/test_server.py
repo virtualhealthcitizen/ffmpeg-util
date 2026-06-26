@@ -136,6 +136,32 @@ def test_compress(client, media, auth):
     assert out.exists()
 
 
+def test_compress_target_size_hits_budget(client, media, auth):
+    d, src = media
+    out = d / "sized.mp4"
+    target_mb = 0.4
+    r = client.post(
+        "/compress",
+        json={"input": str(src), "output": str(out), "target_size": target_mb, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    size_mb = out.stat().st_size / 1_000_000
+    # Two-pass should land in the ballpark of the target (generous tolerance for a short clip).
+    assert 0.4 * target_mb <= size_mb <= 1.8 * target_mb, f"got {size_mb:.3f} MB"
+
+
+def test_compress_target_size_conflict_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/compress",
+        json={"input": str(src), "output": str(d / "x.mp4"), "target_size": 0.5, "crf": 23},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def test_run_stream_emits_progress_and_done(client, media, auth):
     d, src = media
     out = d / "stream.mp4"
@@ -152,6 +178,23 @@ def test_run_stream_emits_progress_and_done(client, media, auth):
     assert types[-1] == "done"
     assert events[-1]["output"] == str(out)
     assert out.exists()
+
+
+def test_run_stream_target_size_two_pass(client, media, auth):
+    d, src = media
+    out = d / "stream_sized.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "compress", "input": str(src), "output": str(out),
+              "target_size": 0.4, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert events[-1]["type"] == "done"
+    assert out.exists()
+    size_mb = out.stat().st_size / 1_000_000
+    assert 0.4 * 0.4 <= size_mb <= 1.8 * 0.4, f"got {size_mb:.3f} MB"
 
 
 def test_run_stream_error_event(client, media, auth):

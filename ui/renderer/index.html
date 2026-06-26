@@ -116,12 +116,13 @@
       <div class="row wrap">
         <label class="inline">CRF <input id="compress-crf" type="number" placeholder="23" /></label>
         <label class="inline">Bitrate <input id="compress-bitrate" type="text" placeholder="e.g. 2M" /></label>
+        <label class="inline">Target MB <input id="compress-target" type="number" step="0.1" placeholder="two-pass" /></label>
         <label class="inline">Width <input id="compress-width" type="number" placeholder="(optional)" /></label>
         <label class="inline">Height <input id="compress-height" type="number" placeholder="(optional)" /></label>
         <label class="inline">Codec <input id="compress-vcodec" type="text" placeholder="libx264" /></label>
         <label class="inline">Preset <input id="compress-preset" type="text" placeholder="medium" /></label>
       </div>
-      <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23).</p>
+      <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23). Target MB uses two-pass and overrides both.</p>
       <div class="row"><button class="primary" id="run-compress">Compress</button></div>
     </section>
 

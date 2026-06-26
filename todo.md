@@ -69,7 +69,9 @@ Packaging / tests:
       8 tests via Node's built-in `node:test` (zero new deps). `npm test`.
 
 ### Possible v2
-- [ ] `--target-size` (two-pass bitrate calc) for `compress`
+- [x] `--target-size` (two-pass bitrate calc) for `compress` — core (`compress_to_size`,
+      `target_video_bitrate_kbps`), CLI `--target-size MB`, sidecar (`/compress` +
+      `/run/stream`), and a UI "Target MB" field. Verified E2E: 0.4 MB target → ~0.33 MB output.
 - [ ] Contact-sheet (`tile` filter) montage output for `thumbnail`
 - [x] Progress reporting via ffmpeg `-progress` (core `iter_ffmpeg_progress`; used by the UI sidecar)
 - [ ] GitHub Actions CI running pytest on push
