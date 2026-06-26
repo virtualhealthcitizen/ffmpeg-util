@@ -12,6 +12,11 @@ const fs = require("fs");
 const { resolvePython } = require("./python");
 const settingsStore = require("./settings");
 
+// Use software rendering so offscreen capture paints reliably (on-screen
+// capturePage() returns blank frames when the window isn't composited/focused,
+// e.g. on a locked or unattended desktop).
+app.disableHardwareAcceleration();
+
 // Match the real app's identity so getPath("userData") resolves to the same dir
 // as `electron .` (otherwise it would default to "Electron").
 app.setName("ffmpeg-util-ui");
@@ -65,16 +70,25 @@ async function run() {
   });
   await waitForHealth(port);
 
+  // Offscreen rendering: paints to a bitmap without needing a visible window,
+  // which is what makes the capture reliable. We keep the latest painted frame.
+  let lastImage = null;
   const win = new BrowserWindow({
     width: 920,
     height: 760,
-    show: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      offscreen: true,
       additionalArguments: [`--sidecar-port=${port}`, `--sidecar-token=${TOKEN}`],
     },
+  });
+  win.webContents.setFrameRate(30);
+  win.webContents.on("paint", (event, _dirty, image) => {
+    const img = image || (event && event.image);
+    if (img && !img.isEmpty()) lastImage = img;
   });
 
   await win.loadFile(path.join(__dirname, "renderer", "index.html"));
@@ -164,9 +178,18 @@ async function run() {
     await new Promise((r) => setTimeout(r, WAIT));
   }
 
-  const image = await win.webContents.capturePage();
-  fs.writeFileSync(OUT, image.toPNG());
-  console.log("saved " + OUT);
+  // Ensure at least one frame has painted, then prefer it; fall back to capturePage().
+  for (let i = 0; i < 50 && (!lastImage || lastImage.isEmpty()); i++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  let image = lastImage;
+  if (!image || image.isEmpty()) {
+    image = await win.webContents.capturePage();
+  }
+  const png = image.toPNG();
+  fs.writeFileSync(OUT, png);
+  const sz = image.getSize();
+  console.log(`saved ${OUT} (${sz.width}x${sz.height}, ${png.length} bytes)`);
 
   if (sidecar && !sidecar.killed) sidecar.kill();
   app.quit();
