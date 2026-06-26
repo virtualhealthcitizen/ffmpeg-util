@@ -202,6 +202,59 @@ def build_thumbnail_args(
     return args
 
 
+def target_video_bitrate_kbps(target_mb: float, duration_s: float, audio_kbps: int = 128) -> int:
+    """Video bitrate (kbps) to hit ``target_mb`` over ``duration_s``.
+
+    Uses decimal units (1 MB = 1,000,000 bytes; 1 kbps = 1000 bits/s) so it lines
+    up with how ffmpeg interprets ``-b:v``. Subtracts the audio budget.
+    """
+    if duration_s <= 0:
+        raise ValueError("duration must be > 0 to compute a target bitrate")
+    kbps = target_mb * 8000.0 / duration_s - audio_kbps
+    if kbps < 1:
+        raise ValueError("target size too small for this duration and audio bitrate")
+    return int(kbps)
+
+
+def compress_to_size(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    target_mb: float,
+    *,
+    duration_s: float | None = None,
+    vcodec: str = "libx264",
+    preset: str = "medium",
+    audio_kbps: int = 128,
+) -> int:
+    """Two-pass encode ``input_path`` to roughly ``target_mb`` megabytes.
+
+    Returns the chosen video bitrate (kbps). Handles the passlog file lifecycle.
+    """
+    if duration_s is None:
+        duration_s = probe_duration(runner, input_path)
+    if not duration_s:
+        raise ValueError("could not determine input duration for target-size encoding")
+    vkbps = target_video_bitrate_kbps(target_mb, duration_s, audio_kbps)
+
+    fd, log = tempfile.mkstemp(prefix="ff2pass_")
+    os.close(fd)
+    common = ["-c:v", vcodec, "-preset", preset, "-b:v", f"{vkbps}k", "-passlogfile", log]
+    try:
+        # Pass 1: analysis only, no audio, discard output.
+        runner.run_ffmpeg(["-y", "-i", input_path, *common, "-pass", "1", "-an", "-f", "null", os.devnull])
+        # Pass 2: real encode with audio.
+        runner.run_ffmpeg(["-y", "-i", input_path, *common, "-pass", "2",
+                           "-c:a", "aac", "-b:a", f"{audio_kbps}k", output_path])
+    finally:
+        for suffix in ("", "-0.log", "-0.log.mbtree", ".log", ".log.mbtree"):
+            try:
+                os.remove(log + suffix)
+            except OSError:
+                pass
+    return vkbps
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

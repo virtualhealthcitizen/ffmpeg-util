@@ -167,6 +167,7 @@ class CompressReq(BaseModel):
     output: str
     crf: int | None = None
     bitrate: str | None = None
+    target_size: float | None = None
     width: int | None = None
     height: int | None = None
     vcodec: str = "libx264"
@@ -178,17 +179,18 @@ class CompressReq(BaseModel):
 def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
-        args = commands.build_compress_args(
-            req.input,
-            req.output,
-            crf=req.crf,
-            bitrate=req.bitrate,
-            width=req.width,
-            height=req.height,
-            vcodec=req.vcodec,
-            preset=req.preset,
-        )
-        runner.run_ffmpeg(args)
+        if req.target_size is not None:
+            if req.crf is not None or req.bitrate is not None:
+                raise ValueError("Pass only one of target_size / crf / bitrate.")
+            commands.compress_to_size(
+                runner, req.input, req.output, req.target_size,
+                vcodec=req.vcodec, preset=req.preset,
+            )
+        else:
+            runner.run_ffmpeg(commands.build_compress_args(
+                req.input, req.output, crf=req.crf, bitrate=req.bitrate,
+                width=req.width, height=req.height, vcodec=req.vcodec, preset=req.preset,
+            ))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -216,6 +218,7 @@ class RunReq(BaseModel):
     # compress
     crf: int | None = None
     bitrate: str | None = None
+    target_size: float | None = None
     height: int | None = None
     preset: str = "medium"
 
@@ -268,6 +271,15 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
         try:
             probe_target = req.input or (req.inputs[0] if req.inputs else None)
             total = commands.probe_duration(runner, probe_target) if probe_target else None
+            # Two-pass target-size encoding doesn't map to a single streamed pass;
+            # run it to completion and emit just a final done event.
+            if req.op == "compress" and req.target_size is not None:
+                commands.compress_to_size(
+                    runner, req.input, req.output, req.target_size,
+                    duration_s=total, vcodec=req.vcodec or "libx264", preset=req.preset,
+                )
+                yield _sse({"type": "done", "output": req.output})
+                return
             args, cleanup = _build_op_args(req)
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.

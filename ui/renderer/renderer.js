@@ -283,6 +283,7 @@ $("#run-compress").addEventListener("click", () => {
     output: val("compress-output"),
     crf: numOrNull("compress-crf"),
     bitrate: strOrNull("compress-bitrate"),
+    target_size: numOrNull("compress-target"),
     width: numOrNull("compress-width"),
     height: numOrNull("compress-height"),
     vcodec: val("compress-vcodec") || "libx264",

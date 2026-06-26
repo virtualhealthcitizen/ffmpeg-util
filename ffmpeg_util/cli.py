@@ -74,6 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output")
     p.add_argument("--crf", type=int, help="Quality (lower=better, default 23).")
     p.add_argument("--bitrate", help="Target video bitrate, e.g. 2M (vs --crf).")
+    p.add_argument("--target-size", type=float, metavar="MB",
+                   help="Target output size in MB via two-pass encoding (overrides --crf/--bitrate).")
     p.add_argument("--width", type=int, help="Scale width.")
     p.add_argument("--height", type=int, help="Scale height.")
     p.add_argument("--vcodec", default="libx264", help="Video codec.")
@@ -131,6 +133,14 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "compress":
+        if args.target_size is not None:
+            if args.crf is not None or args.bitrate is not None:
+                raise ValueError("Pass only one of --target-size / --crf / --bitrate.")
+            commands.compress_to_size(
+                runner, args.input, args.output, args.target_size,
+                vcodec=args.vcodec, preset=args.preset,
+            )
+            return 0
         ff = commands.build_compress_args(
             args.input, args.output,
             crf=args.crf, bitrate=args.bitrate, width=args.width, height=args.height,
