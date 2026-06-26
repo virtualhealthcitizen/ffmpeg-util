@@ -162,6 +162,22 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class MuteReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/mute")
+def mute(req: MuteReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_mute_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class CropReq(BaseModel):
     input: str
     output: str
@@ -338,6 +354,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "mute":
+        return commands.build_mute_args(req.input, req.output), None
     if op == "crop":
         if not req.width or not req.height:
             raise ValueError("crop requires width and height")

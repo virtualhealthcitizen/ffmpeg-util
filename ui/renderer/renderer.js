@@ -309,6 +309,15 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-mute").addEventListener("click", () => {
+  if (!requireFields("mute-input", "mute-output")) return;
+  run("Stripping audio", "mute", {
+    input: val("mute-input"),
+    output: val("mute-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-crop").addEventListener("click", () => {
   if (!requireFields("crop-input", "crop-output", "crop-width", "crop-height")) return;
   run("Cropping", "crop", {
