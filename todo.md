@@ -131,6 +131,18 @@ Packaging / tests:
 - [ ] Remember window size & position across launches
 - [ ] A/B compare: input vs output side-by-side preview
 
+### More ideas (round 3)
+- [ ] Crop (manual x/y/w/h rectangle)
+- [ ] Mute / strip audio track
+- [ ] Reverse a clip (video + audio)
+- [ ] Fade in/out (video fade + audio afade)
+- [ ] Extract every Nth frame as images
+- [ ] Pad / letterbox to a target aspect ratio
+- [ ] Concatenate with automatic re-encode when inputs differ
+- [ ] Per-op "open output folder" after completion
+- [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
+- [ ] Loop a short clip N times
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
