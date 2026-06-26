@@ -64,6 +64,33 @@ pytest sidecar/tests          # from ui/ — sidecar integration tests
 npm test                      # renderer logic unit tests (node:test, no deps)
 ```
 
+## Packaging
+
+The sidecar is bundled as a **standalone binary** (PyInstaller) so the packaged
+app needs no Python or pip installs at runtime — only `ffmpeg`/`ffprobe` on PATH.
+
+```bash
+# 1) Build the standalone sidecar binary (run from repo root or adjust --paths)
+cd ui/sidecar
+pyinstaller --onefile --name ffmpeg-util-sidecar --noconfirm \
+  --paths <repo-root> \
+  --collect-all uvicorn --collect-all fastapi --collect-all pydantic --collect-all pydantic_core \
+  --collect-submodules ffmpeg_util \
+  --distpath dist --workpath build --specpath build server.py
+
+# 2) Package the Electron app (bundles the sidecar binary as a resource)
+cd ..
+npm run pack          # -> ui/dist/ffmpeg-util-win32-x64/ffmpeg-util.exe
+```
+
+At runtime `main.js` prefers a bundled `ffmpeg-util-sidecar` binary (env
+`FFMPEG_UTIL_SIDECAR`, then packaged `resources/`, then `sidecar/dist/`) and only
+falls back to a discovered Python + `server.py` in development.
+
+> `npm run dist` (electron-builder) is also configured, but on Windows it needs
+> Developer Mode/admin to extract its `winCodeSign` cache (it contains symlinks).
+> `npm run pack` (@electron/packager) has no such requirement.
+
 ## Status
 
 All operations are wired: **probe, convert (incl. audio extraction), trim, concat,

@@ -19,6 +19,11 @@ ui/dist/
 ui/out/
 npm-debug.log*
 
+# PyInstaller (bundled sidecar)
+ui/sidecar/build/
+ui/sidecar/dist/
+ui/sidecar/*.spec
+
 # Editors / OS
 .vscode/
 .idea/

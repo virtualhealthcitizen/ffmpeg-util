@@ -5,10 +5,39 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test renderer/logic.test.js"
+    "test": "node --test renderer/logic.test.js",
+    "pack": "electron-packager . ffmpeg-util --platform=win32 --arch=x64 --out=dist --overwrite --extra-resource=sidecar/dist/ffmpeg-util-sidecar.exe --ignore=\"^/dist($|/)\" --ignore=\"^/sidecar/(build|dist)($|/)\" --ignore=\"^/renderer/logic\\.test\\.js$\"",
+    "dist": "electron-builder --dir"
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0"
+    "@electron/packager": "^20.0.1",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.ffmpegutil.app",
+    "productName": "ffmpeg-util",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "python.js",
+      "settings.js",
+      "sidecar-launcher.js",
+      "renderer/**/*",
+      "!renderer/logic.test.js"
+    ],
+    "extraResources": [
+      {
+        "from": "sidecar/dist/ffmpeg-util-sidecar.exe",
+        "to": "sidecar/ffmpeg-util-sidecar.exe"
+      }
+    ],
+    "win": {
+      "target": "dir"
+    }
   }
 }
