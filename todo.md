@@ -114,6 +114,20 @@ Packaging / tests:
 - [ ] Signed electron-builder installer (needs Windows Developer Mode/admin here)
 - [ ] CLI: read defaults from a config file
 
+### More ideas (round 2)
+- [ ] Playback speed change (setpts + atempo chain), 0.25×–4×
+- [ ] Auto-crop black bars (`cropdetect` → `crop`)
+- [ ] Scene-change thumbnails (`select='gt(scene,…)'`)
+- [ ] Trim multiple segments and join them in one go
+- [ ] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`)
+- [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)
+- [ ] Estimate output size before encoding (compress preview)
+- [ ] GIF tuning: dithering mode + loop count
+- [ ] Denoise / sharpen / deinterlace filter presets
+- [ ] System notification (and optional sound) on completion
+- [ ] Remember window size & position across launches
+- [ ] A/B compare: input vs output side-by-side preview
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
