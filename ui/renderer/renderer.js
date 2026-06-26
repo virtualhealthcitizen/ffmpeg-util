@@ -1,7 +1,8 @@
 // Renderer: thin client over the sidecar HTTP API exposed via window.sidecar.
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
-const { baseUrl, token, pickFile, saveFile, getSettings, setSettings } = window.sidecar;
-const { suggestOutput, isImagePath, previewPath, parseLines, fieldLabel, parseSseBuffer } =
+const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
+  window.sidecar;
+const { suggestOutput, isImagePath, previewPath, parseLines, fieldLabel, parseSseBuffer, dropUpdate } =
   window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -33,6 +34,35 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
   });
 });
+
+function currentTab() {
+  const btn = document.querySelector(".tabs button.active");
+  return btn ? btn.dataset.tab : "convert";
+}
+
+// --- Drag & drop: drop files anywhere to load them into the active tab ---
+(function setupDragDrop() {
+  const body = document.body;
+  ["dragenter", "dragover"].forEach((ev) =>
+    body.addEventListener(ev, (e) => {
+      e.preventDefault();
+      body.classList.add("drag-over");
+    })
+  );
+  body.addEventListener("dragleave", (e) => {
+    if (!e.relatedTarget) body.classList.remove("drag-over"); // left the window
+  });
+  body.addEventListener("drop", (e) => {
+    e.preventDefault();
+    body.classList.remove("drag-over");
+    const paths = Array.from(e.dataTransfer.files).map((f) => getPathForFile(f)).filter(Boolean);
+    const upd = dropUpdate(paths, currentTab(), $("#concat-inputs").value);
+    if (upd) {
+      $("#" + upd.id).value = upd.value;
+      setStatus(`Loaded ${paths.length} file(s) into the ${currentTab()} tab.`);
+    }
+  });
+})();
 
 // --- File pickers (declarative via data attributes) ---
 document.querySelectorAll(".pick-file").forEach((btn) => {

@@ -51,6 +51,28 @@
     return { events, remainder };
   }
 
+  // Which input field a dropped file should populate for the active tab.
+  // Concat collects multiple paths (append); the others take a single input.
+  function inputTargetForTab(tab) {
+    if (tab === "concat") return { id: "concat-inputs", append: true };
+    if (["convert", "trim", "thumbnail", "compress"].includes(tab)) {
+      return { id: tab + "-input", append: false };
+    }
+    return null;
+  }
+
+  // Compute the field update for a drop: returns { id, value } or null.
+  // For concat, dropped paths are appended to whatever's already listed.
+  function dropUpdate(paths, tab, currentConcatValue = "") {
+    const target = inputTargetForTab(tab);
+    if (!target || !paths || !paths.length) return null;
+    if (target.append) {
+      const merged = parseLines(currentConcatValue).concat(paths);
+      return { id: target.id, value: merged.join("\n") };
+    }
+    return { id: target.id, value: paths[0] };
+  }
+
   const api = {
     IMAGE_EXTS,
     isImagePath,
@@ -59,6 +81,8 @@
     parseLines,
     fieldLabel,
     parseSseBuffer,
+    inputTargetForTab,
+    dropUpdate,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

@@ -40,7 +40,10 @@ Architecture / setup:
 - [x] Pick a free localhost port + per-launch bearer token (verified 401 without token)
 
 Renderer (web UI):
-- [x] File picker for source media (drag-and-drop still pending)
+- [x] File picker for source media
+- [x] Drag-and-drop: drop files anywhere to load them into the active tab
+      (concat appends; others take the first file). Uses Electron `webUtils`
+      for paths; window highlights on drag-over. Pure drop logic unit-tested.
 - [x] Operation screens for all commands (convert, trim, concat, thumbnail, compress) — tabbed UI
 - [x] Show `probe` (stream/format) info for a selected file
 - [x] Output path + overwrite handling; surface `FfmpegError` messages cleanly

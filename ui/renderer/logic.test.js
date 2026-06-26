@@ -55,6 +55,36 @@ test("parseSseBuffer ignores malformed blocks", () => {
   assert.equal(events[0].type, "done");
 });
 
+test("inputTargetForTab maps tabs to fields", () => {
+  assert.deepEqual(L.inputTargetForTab("convert"), { id: "convert-input", append: false });
+  assert.deepEqual(L.inputTargetForTab("compress"), { id: "compress-input", append: false });
+  assert.deepEqual(L.inputTargetForTab("concat"), { id: "concat-inputs", append: true });
+  assert.equal(L.inputTargetForTab("nope"), null);
+});
+
+test("dropUpdate sets a single input for non-concat tabs", () => {
+  assert.deepEqual(L.dropUpdate(["a.mp4", "b.mp4"], "convert"), {
+    id: "convert-input",
+    value: "a.mp4", // first file only
+  });
+});
+
+test("dropUpdate appends to existing concat list", () => {
+  assert.deepEqual(L.dropUpdate(["b.mp4", "c.mp4"], "concat", "a.mp4\n"), {
+    id: "concat-inputs",
+    value: "a.mp4\nb.mp4\nc.mp4",
+  });
+  assert.deepEqual(L.dropUpdate(["x.mp4"], "concat", ""), {
+    id: "concat-inputs",
+    value: "x.mp4",
+  });
+});
+
+test("dropUpdate returns null for empty paths or unknown tab", () => {
+  assert.equal(L.dropUpdate([], "convert"), null);
+  assert.equal(L.dropUpdate(["a.mp4"], "bogus"), null);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';
