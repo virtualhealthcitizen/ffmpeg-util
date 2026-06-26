@@ -79,6 +79,39 @@ Packaging / tests:
 - [x] Progress reporting via ffmpeg `-progress` (core `iter_ffmpeg_progress`; used by the UI sidecar)
 - [ ] GitHub Actions CI running pytest on push
 
+## Feature ideas (ideation backlog)
+
+### Media operations
+- [ ] Animated GIF export (palette two-pass: palettegen + paletteuse), fps/width/trim
+- [ ] Transforms: crop, rotate, flip/hflip/vflip
+- [ ] Playback speed: speed up / slow down (setpts + atempo)
+- [ ] Loudness normalization (EBU R128 two-pass `loudnorm`); volume gain
+- [ ] Audio: replace/mux an audio track; mix or strip tracks
+- [ ] Subtitles: burn-in (hardsub) or mux soft subs; extract subtitles
+- [ ] Watermark / text overlay (drawtext, image overlay with position)
+- [ ] Image sequence ↔ video (frames to video, video to frames)
+- [ ] Hardware-accelerated encoding option (NVENC/QSV) when available
+
+### Workflow
+- [ ] Cancel a running operation (kill the ffmpeg process mid-run)
+- [ ] Batch mode: apply one operation to many files / a whole folder
+- [ ] Job queue + history (recent runs, re-run, clear)
+- [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
+- [ ] "Reveal in Explorer" / open output after completion
+- [ ] Before/after size + duration summary on completion
+
+### UI / UX
+- [ ] Recent files list / remembered last input dir
+- [ ] Light/dark theme toggle
+- [ ] Drag-to-reorder the concat list
+- [ ] Keyboard shortcuts (run, switch tabs)
+- [ ] Progress ETA estimate (from speed + remaining duration)
+
+### Project / infra
+- [ ] GitHub Actions CI (pytest + node:test); note: not E2E-verifiable locally
+- [ ] Signed electron-builder installer (needs Windows Developer Mode/admin here)
+- [ ] CLI: read defaults from a config file
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
