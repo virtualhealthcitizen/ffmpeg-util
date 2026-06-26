@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-frames").addEventListener("click", () => {
+  if (!requireFields("frames-input", "frames-output")) return;
+  run("Extracting frames", "frames", {
+    input: val("frames-input"),
+    output: val("frames-output"),
+    every: numOrNull("frames-every") || 1,
+    overwrite: true,
+  });
+});
+
 $("#run-loop").addEventListener("click", () => {
   if (!requireFields("loop-input", "loop-output", "loop-count")) return;
   run("Looping", "loop", {

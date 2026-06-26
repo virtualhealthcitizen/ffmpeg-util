@@ -138,7 +138,8 @@ Packaging / tests:
       (`/mute` + `/run/stream`), Mute tab. Verified E2E: output has 0 audio streams.
 - [ ] Reverse a clip (video + audio)
 - [ ] Fade in/out (video fade + audio afade)
-- [ ] Extract every Nth frame as images
+- [x] Extract every Nth frame as images — core `build_extract_frames_args`, CLI `frames`,
+      sidecar (`/frames` + `/run/stream`), Frames tab. Verified E2E: 90 frames, every 30 -> 3 files.
 - [x] Pad / letterbox to a target frame — core `build_pad_args` (scale-to-fit +
       centered pad), CLI `pad`, sidecar (`/pad` + `/run/stream`), Pad tab.
       Verified E2E: 320x240 -> exact 640x640 frame.

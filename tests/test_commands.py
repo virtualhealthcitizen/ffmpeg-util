@@ -119,6 +119,19 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_extract_frames_args_build_select():
+    args = c.build_extract_frames_args("in.mp4", "f_%04d.png", every=30)
+    vf = args[args.index("-vf") + 1]
+    assert vf == "select=not(mod(n\\,30))"
+    assert args[args.index("-fps_mode") + 1] == "vfr"
+    assert args[-1] == "f_%04d.png"
+
+
+def test_extract_frames_args_reject_zero():
+    with pytest.raises(ValueError):
+        c.build_extract_frames_args("in.mp4", "f_%04d.png", every=0)
+
+
 def test_loop_args_use_stream_loop_count_minus_one():
     args = c.build_loop_args("in.mp4", "out.mp4", 3)
     assert args[args.index("-stream_loop") + 1] == "2"  # 3 plays = 2 extra loops
