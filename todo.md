@@ -139,7 +139,9 @@ Packaging / tests:
 - [ ] Reverse a clip (video + audio)
 - [ ] Fade in/out (video fade + audio afade)
 - [ ] Extract every Nth frame as images
-- [ ] Pad / letterbox to a target aspect ratio
+- [x] Pad / letterbox to a target frame — core `build_pad_args` (scale-to-fit +
+      centered pad), CLI `pad`, sidecar (`/pad` + `/run/stream`), Pad tab.
+      Verified E2E: 320x240 -> exact 640x640 frame.
 - [ ] Concatenate with automatic re-encode when inputs differ
 - [ ] Per-op "open output folder" after completion
 - [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform

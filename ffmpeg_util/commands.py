@@ -368,6 +368,18 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_pad_args(input_path: str, output_path: str, width: int, height: int) -> list[str]:
+    """Build args to letterbox into a ``width``x``height`` frame: scale to fit
+    (preserving aspect), then pad with black bars, centered."""
+    if width < 1 or height < 1:
+        raise ValueError("pad width and height must be >= 1")
+    vf = (
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
+    )
+    return ["-i", input_path, "-vf", vf, output_path]
+
+
 def build_mute_args(input_path: str, output_path: str) -> list[str]:
     """Build args to strip the audio track (stream-copies video, drops audio)."""
     return ["-i", input_path, "-c", "copy", "-an", output_path]

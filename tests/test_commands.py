@@ -119,6 +119,18 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_pad_args_build_filter():
+    args = c.build_pad_args("in.mp4", "o.mp4", 640, 480)
+    vf = args[args.index("-vf") + 1]
+    assert "scale=640:480:force_original_aspect_ratio=decrease" in vf
+    assert "pad=640:480:(ow-iw)/2:(oh-ih)/2" in vf
+
+
+def test_pad_args_reject_bad_values():
+    with pytest.raises(ValueError):
+        c.build_pad_args("in.mp4", "o.mp4", 0, 480)
+
+
 def test_mute_args_strip_audio():
     args = c.build_mute_args("in.mp4", "out.mp4")
     assert "-an" in args

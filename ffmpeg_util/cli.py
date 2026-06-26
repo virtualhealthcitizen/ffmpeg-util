@@ -68,6 +68,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # pad
+    p = sub.add_parser("pad", help="Letterbox into a target frame (scale + pad).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--width", type=int, required=True, help="Target frame width.")
+    p.add_argument("--height", type=int, required=True, help="Target frame height.")
+    _add_global_flags(p)
+
     # mute
     p = sub.add_parser("mute", help="Strip the audio track (keep video).")
     p.add_argument("input")
@@ -181,6 +189,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "pad":
+        runner.run_ffmpeg(commands.build_pad_args(args.input, args.output, args.width, args.height))
         return 0
 
     if args.command == "mute":
