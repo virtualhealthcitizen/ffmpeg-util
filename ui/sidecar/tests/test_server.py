@@ -259,6 +259,16 @@ def test_file_serves_generated_thumbnail(client, media, auth):
     assert r.content[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
 
 
+def test_file_serves_video_with_range(client, media, auth):
+    _, src = media  # the generated clip is an mp4
+    r = client.get("/file", params={"path": str(src)},
+                   headers={**auth, "Range": "bytes=0-99"})
+    assert r.status_code == 206
+    assert len(r.content) == 100
+    assert r.headers.get("content-type", "").startswith("video/")
+    assert "bytes" in r.headers.get("content-range", "")
+
+
 def test_file_missing_404(client, media, auth):
     d, _ = media
     r = client.get("/file", params={"path": str(d / "does-not-exist.png")}, headers=auth)

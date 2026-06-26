@@ -49,8 +49,8 @@ Renderer (web UI):
 - [x] Output path + overwrite handling; surface `FfmpegError` messages cleanly
 - [x] Progress: stream ffmpeg `-progress` sidecar→renderer via SSE (`/run/stream`);
       renderer shows a live progress bar + percent/speed (verified incremental events)
-- [x] Preview generated image output inline (sidecar `/file` endpoint + renderer
-      `<img>` preview; verified via E2E tests + screenshot). Video playback still optional/pending.
+- [x] Preview generated output inline — images via `<img>` and videos via
+      `<video>` (range-served by `/file`). Verified via E2E tests + screenshots.
 - [x] Persist last-used option fields (codecs, crf/bitrate, preset, sizes, trim start)
       across launches — userData JSON via IPC (`ui/settings.js`); BOM-tolerant.
       Verified E2E: save path writes settings, load path restores them in the UI.

@@ -3,9 +3,23 @@
 
 (function () {
   const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"];
+  const VIDEO_EXTS = [".mp4", ".mkv", ".webm", ".mov", ".m4v", ".ogv"];
 
   function isImagePath(p) {
     return IMAGE_EXTS.some((ext) => String(p).toLowerCase().endsWith(ext));
+  }
+
+  function isVideoPath(p) {
+    return VIDEO_EXTS.some((ext) => String(p).toLowerCase().endsWith(ext));
+  }
+
+  // Decide how to preview an output path: { kind: "image"|"video"|null, path }.
+  // path has any %d resolved to the first frame.
+  function previewKind(outputPath) {
+    const path = previewPath(outputPath);
+    if (isImagePath(path)) return { kind: "image", path };
+    if (isVideoPath(path)) return { kind: "video", path };
+    return { kind: null, path };
   }
 
   // Derive a default output path from an input path (swap the extension).
@@ -75,7 +89,10 @@
 
   const api = {
     IMAGE_EXTS,
+    VIDEO_EXTS,
     isImagePath,
+    isVideoPath,
+    previewKind,
     suggestOutput,
     previewPath,
     parseLines,

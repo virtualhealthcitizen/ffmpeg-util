@@ -2,7 +2,7 @@
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
-const { suggestOutput, isImagePath, previewPath, parseLines, fieldLabel, parseSseBuffer, dropUpdate } =
+const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind } =
   window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -141,6 +141,13 @@ let previewUrl = null;
 
 function hidePreview() {
   $("#preview").classList.add("hidden");
+  const img = $("#preview-img");
+  const vid = $("#preview-video");
+  vid.pause();
+  img.classList.add("hidden");
+  vid.classList.add("hidden");
+  img.removeAttribute("src");
+  vid.removeAttribute("src");
   if (previewUrl) {
     URL.revokeObjectURL(previewUrl);
     previewUrl = null;
@@ -148,9 +155,9 @@ function hidePreview() {
 }
 
 async function showPreview(outputPath) {
-  // For multi-frame thumbnails (name has %d), preview the first one.
-  const path = previewPath(outputPath);
-  if (!isImagePath(path)) return hidePreview();
+  // Images (incl. %d -> first frame) show inline; videos get a <video> player.
+  const { kind, path } = previewKind(outputPath);
+  if (!kind) return hidePreview();
   try {
     const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(path), {
       headers: { Authorization: `Bearer ${token}` },
@@ -159,7 +166,19 @@ async function showPreview(outputPath) {
     const blob = await res.blob();
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     previewUrl = URL.createObjectURL(blob);
-    $("#preview-img").src = previewUrl;
+    const img = $("#preview-img");
+    const vid = $("#preview-video");
+    if (kind === "image") {
+      img.src = previewUrl;
+      img.classList.remove("hidden");
+      vid.classList.add("hidden");
+      vid.removeAttribute("src");
+    } else {
+      vid.src = previewUrl;
+      vid.classList.remove("hidden");
+      img.classList.add("hidden");
+      img.removeAttribute("src");
+    }
     $("#preview").classList.remove("hidden");
   } catch (_) {
     hidePreview();

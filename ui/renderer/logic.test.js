@@ -11,6 +11,18 @@ test("isImagePath detects image extensions (case-insensitive)", () => {
   assert.equal(L.isImagePath("noext"), false);
 });
 
+test("isVideoPath detects video extensions", () => {
+  assert.equal(L.isVideoPath("a.mp4"), true);
+  assert.equal(L.isVideoPath("B.MKV"), true);
+  assert.equal(L.isVideoPath("a.png"), false);
+});
+
+test("previewKind classifies image, video, or none", () => {
+  assert.deepEqual(L.previewKind("thumbs%d.png"), { kind: "image", path: "thumbs1.png" });
+  assert.deepEqual(L.previewKind("out.mp4"), { kind: "video", path: "out.mp4" });
+  assert.deepEqual(L.previewKind("audio.mp3"), { kind: null, path: "audio.mp3" });
+});
+
 test("suggestOutput swaps the extension", () => {
   assert.equal(L.suggestOutput("C:\\v\\in.mkv"), "C:\\v\\in.out.mp4");
   assert.equal(L.suggestOutput("in.mov", ".small.mp4"), "in.small.mp4");
