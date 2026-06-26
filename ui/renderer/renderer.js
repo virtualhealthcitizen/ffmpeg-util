@@ -266,6 +266,19 @@ $("#run-concat").addEventListener("click", () => {
 
 $("#run-thumbnail").addEventListener("click", () => {
   if (!requireFields("thumbnail-input", "thumbnail-output")) return;
+  const cols = numOrNull("thumbnail-cols");
+  const rows = numOrNull("thumbnail-rows");
+  if (cols && rows) {
+    run("Building contact sheet", "contact_sheet", {
+      input: val("thumbnail-input"),
+      output: val("thumbnail-output"),
+      cols,
+      rows,
+      width: numOrNull("thumbnail-width") || 320,
+      overwrite: true,
+    });
+    return;
+  }
   run("Extracting thumbnail", "thumbnail", {
     input: val("thumbnail-input"),
     output: val("thumbnail-output"),

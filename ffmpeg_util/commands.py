@@ -255,6 +255,51 @@ def compress_to_size(
     return vkbps
 
 
+def build_contact_sheet_args(
+    input_path: str,
+    output_path: str,
+    *,
+    duration_s: float,
+    cols: int = 4,
+    rows: int = 4,
+    width: int = 320,
+) -> list[str]:
+    """Build args for a contact sheet: ``cols``x``rows`` frames sampled evenly
+    across the clip, scaled to ``width`` per tile, tiled into one image.
+
+    ``width`` is the per-tile width; the montage is ``cols*width`` wide.
+    """
+    if cols < 1 or rows < 1:
+        raise ValueError("cols and rows must be >= 1")
+    if duration_s <= 0:
+        raise ValueError("duration must be > 0 for a contact sheet")
+    fps = (cols * rows) / duration_s  # sample exactly cols*rows frames over the clip
+    vf = f"fps={fps:.6f},scale={width}:-1,tile={cols}x{rows}"
+    return ["-i", input_path, "-vf", vf, "-frames:v", "1", output_path]
+
+
+def contact_sheet(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    *,
+    cols: int = 4,
+    rows: int = 4,
+    width: int = 320,
+    duration_s: float | None = None,
+) -> None:
+    """Generate a contact-sheet montage, probing the duration if not given."""
+    if duration_s is None:
+        duration_s = probe_duration(runner, input_path)
+    if not duration_s:
+        raise ValueError("could not determine input duration for the contact sheet")
+    runner.run_ffmpeg(
+        build_contact_sheet_args(
+            input_path, output_path, duration_s=duration_s, cols=cols, rows=rows, width=width
+        )
+    )
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

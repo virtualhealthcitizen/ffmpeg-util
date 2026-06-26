@@ -72,7 +72,10 @@ Packaging / tests:
 - [x] `--target-size` (two-pass bitrate calc) for `compress` — core (`compress_to_size`,
       `target_video_bitrate_kbps`), CLI `--target-size MB`, sidecar (`/compress` +
       `/run/stream`), and a UI "Target MB" field. Verified E2E: 0.4 MB target → ~0.33 MB output.
-- [ ] Contact-sheet (`tile` filter) montage output for `thumbnail`
+- [x] Contact-sheet (`tile` filter) montage — core (`build_contact_sheet_args`,
+      `contact_sheet`), CLI `contact-sheet`, sidecar (`/contact-sheet` + `/run/stream`),
+      and Cols/Rows fields on the Thumbnail tab (reuses the image preview).
+      Verified E2E: 3x2 grid of 160px tiles -> exactly 480x240.
 - [x] Progress reporting via ffmpeg `-progress` (core `iter_ffmpeg_progress`; used by the UI sidecar)
 - [ ] GitHub Actions CI running pytest on push
 

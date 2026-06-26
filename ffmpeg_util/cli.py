@@ -68,6 +68,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # contact-sheet
+    p = sub.add_parser("contact-sheet", help="Tiled montage of frames sampled across a video.")
+    p.add_argument("input")
+    p.add_argument("output", help="Output image (e.g. sheet.png).")
+    p.add_argument("--cols", type=int, default=4, help="Columns (default 4).")
+    p.add_argument("--rows", type=int, default=4, help="Rows (default 4).")
+    p.add_argument("--width", type=int, default=320, help="Per-tile width (default 320).")
+    _add_global_flags(p)
+
     # compress
     p = sub.add_parser("compress", help="Compress and/or resize a video.")
     p.add_argument("input")
@@ -130,6 +139,13 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "contact-sheet":
+        commands.contact_sheet(
+            runner, args.input, args.output,
+            cols=args.cols, rows=args.rows, width=args.width,
+        )
         return 0
 
     if args.command == "compress":

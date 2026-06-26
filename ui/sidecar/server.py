@@ -162,6 +162,27 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ContactSheetReq(BaseModel):
+    input: str
+    output: str
+    cols: int = 4
+    rows: int = 4
+    width: int = 320
+    overwrite: bool = True
+
+
+@app.post("/contact-sheet")
+def contact_sheet(req: ContactSheetReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.contact_sheet(
+            runner, req.input, req.output, cols=req.cols, rows=req.rows, width=req.width
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class CompressReq(BaseModel):
     input: str
     output: str
@@ -215,6 +236,9 @@ class RunReq(BaseModel):
     time: str = "00:00:01"
     count: int = 1
     width: int | None = None
+    # contact-sheet
+    cols: int = 4
+    rows: int = 4
     # compress
     crf: int | None = None
     bitrate: str | None = None
@@ -223,9 +247,16 @@ class RunReq(BaseModel):
     preset: str = "medium"
 
 
-def _build_op_args(req: RunReq) -> tuple[list, str | None]:
+def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "contact_sheet":
+        if not total:
+            raise ValueError("could not determine input duration for the contact sheet")
+        return commands.build_contact_sheet_args(
+            req.input, req.output, duration_s=total,
+            cols=req.cols, rows=req.rows, width=req.width or 320,
+        ), None
     if op == "convert":
         return commands.build_convert_args(
             req.input, req.output, vcodec=req.vcodec, acodec=req.acodec,
@@ -280,7 +311,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 )
                 yield _sse({"type": "done", "output": req.output})
                 return
-            args, cleanup = _build_op_args(req)
+            args, cleanup = _build_op_args(req, total)
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
                 out_us = fields.get("out_time_us") or fields.get("out_time_ms")

@@ -83,7 +83,22 @@ async function run() {
   const OP = process.env.CAPTURE_OP || "probe";
   const WAIT = Number(process.env.CAPTURE_WAIT || (OP === "compress" ? 700 : 2500));
 
-  if (OP.startsWith("tab:")) {
+  if (PROBE_INPUT && OP === "contactsheet") {
+    const outGuess = PROBE_INPUT.replace(/\.[^.\\/]+$/, "") + ".sheet.png";
+    const js = `
+      (async () => {
+        document.querySelector('.tabs button[data-tab="thumbnail"]').click();
+        document.querySelector('#thumbnail-input').value = ${JSON.stringify(PROBE_INPUT)};
+        document.querySelector('#thumbnail-output').value = ${JSON.stringify(outGuess)};
+        document.querySelector('#thumbnail-width').value = "200";
+        document.querySelector('#thumbnail-cols').value = "3";
+        document.querySelector('#thumbnail-rows').value = "2";
+        document.querySelector('#run-thumbnail').click();
+      })();
+    `;
+    await win.webContents.executeJavaScript(js);
+    await new Promise((r) => setTimeout(r, WAIT));
+  } else if (OP.startsWith("tab:")) {
     // Just switch to a tab and capture (used to show restored settings).
     const tab = OP.slice(4);
     await win.webContents.executeJavaScript(
