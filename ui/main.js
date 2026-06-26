@@ -7,7 +7,7 @@ const { spawn } = require("child_process");
 const crypto = require("crypto");
 const path = require("path");
 const net = require("net");
-const { resolvePython } = require("./python");
+const { resolveSidecarLaunch } = require("./sidecar-launcher");
 const settingsStore = require("./settings");
 
 const TOKEN = crypto.randomBytes(24).toString("hex");
@@ -27,14 +27,17 @@ function getFreePort() {
 }
 
 function startSidecar(p) {
-  const py = resolvePython();
-  if (!py) {
-    console.error("[sidecar] No usable Python interpreter found.");
+  const launch = resolveSidecarLaunch({
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    baseDir: __dirname,
+  });
+  if (!launch) {
+    console.error("[sidecar] No bundled binary and no usable Python interpreter found.");
     return false;
   }
-  console.log(`[sidecar] using python: ${py.cmd} ${py.args.join(" ")}`.trimEnd());
-  const server = path.join(__dirname, "sidecar", "server.py");
-  sidecar = spawn(py.cmd, [...py.args, server], {
+  console.log(`[sidecar] mode=${launch.mode}: ${launch.cmd} ${launch.args.join(" ")}`.trimEnd());
+  sidecar = spawn(launch.cmd, launch.args, {
     env: { ...process.env, SIDECAR_PORT: String(p), SIDECAR_TOKEN: TOKEN },
     stdio: ["ignore", "pipe", "pipe"],
   });

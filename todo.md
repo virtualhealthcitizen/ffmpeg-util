@@ -56,8 +56,11 @@ Renderer (web UI):
       Verified E2E: save path writes settings, load path restores them in the UI.
 
 Packaging / tests:
-- [ ] Package with electron-builder; bundle or locate the Python sidecar
-      (PyInstaller for a standalone binary, or require system Python)
+- [x] Package the app — sidecar bundled as a standalone PyInstaller binary
+      (zero Python needed at runtime); `npm run pack` (@electron/packager)
+      produces a runnable app. Verified E2E: packaged app launches with no
+      Python on PATH, spawns the bundled sidecar, /health ok.
+      (electron-builder config present but blocked by Windows symlink privilege.)
 - [x] Automated sidecar E2E tests (pytest + FastAPI TestClient, real ffmpeg) —
       15 tests covering all endpoints, auth, SSE progress, and error events
       (`ui/sidecar/tests/`, skip cleanly when ffmpeg absent)
