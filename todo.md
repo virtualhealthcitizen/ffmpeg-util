@@ -132,7 +132,8 @@ Packaging / tests:
 - [ ] A/B compare: input vs output side-by-side preview
 
 ### More ideas (round 3)
-- [ ] Crop (manual x/y/w/h rectangle)
+- [x] Crop (manual x/y/w/h rectangle) — core `build_crop_args`, CLI `crop`,
+      sidecar (`/crop` + `/run/stream`), Crop tab. Verified E2E: 320x240 -> 160x120.
 - [ ] Mute / strip audio track
 - [ ] Reverse a clip (video + audio)
 - [ ] Fade in/out (video fade + audio afade)

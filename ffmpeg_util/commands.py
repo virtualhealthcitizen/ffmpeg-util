@@ -368,6 +368,17 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_crop_args(
+    input_path: str, output_path: str, width: int, height: int, x: int = 0, y: int = 0
+) -> list[str]:
+    """Build args to crop a ``width``x``height`` rectangle at offset (``x``, ``y``)."""
+    if width < 1 or height < 1:
+        raise ValueError("crop width and height must be >= 1")
+    if x < 0 or y < 0:
+        raise ValueError("crop x and y must be >= 0")
+    return ["-i", input_path, "-vf", f"crop={width}:{height}:{x}:{y}", output_path]
+
+
 def build_transform_args(input_path: str, output_path: str, op: str) -> list[str]:
     """Build args to rotate or flip a video. ``op`` is one of TRANSFORM_FILTERS."""
     if op not in TRANSFORM_FILTERS:

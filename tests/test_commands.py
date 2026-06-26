@@ -119,6 +119,19 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_crop_args_build_filter():
+    args = c.build_crop_args("in.mp4", "o.mp4", 160, 120, 10, 20)
+    assert args[args.index("-vf") + 1] == "crop=160:120:10:20"
+    assert args[-1] == "o.mp4"
+
+
+def test_crop_args_reject_bad_values():
+    with pytest.raises(ValueError):
+        c.build_crop_args("in.mp4", "o.mp4", 0, 100)
+    with pytest.raises(ValueError):
+        c.build_crop_args("in.mp4", "o.mp4", 100, 100, x=-1)
+
+
 def test_transform_args_map_to_filters():
     assert c.build_transform_args("in.mp4", "o.mp4", "rotate-cw")[3] == "transpose=1"
     assert c.build_transform_args("in.mp4", "o.mp4", "rotate-ccw")[3] == "transpose=2"
