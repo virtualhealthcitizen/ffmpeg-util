@@ -68,6 +68,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # gif
+    p = sub.add_parser("gif", help="Export an animated GIF (palette two-pass).")
+    p.add_argument("input")
+    p.add_argument("output", help="Output .gif")
+    p.add_argument("--fps", type=int, default=12, help="Frames per second (default 12).")
+    p.add_argument("--width", type=int, default=480, help="Output width (default 480).")
+    p.add_argument("--start", help="Start time (HH:MM:SS or seconds).")
+    p.add_argument("--duration", help="Clip length.")
+    _add_global_flags(p)
+
     # contact-sheet
     p = sub.add_parser("contact-sheet", help="Tiled montage of frames sampled across a video.")
     p.add_argument("input")
@@ -139,6 +149,13 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "gif":
+        commands.make_gif(
+            runner, args.input, args.output,
+            fps=args.fps, width=args.width, start=args.start, duration=args.duration,
+        )
         return 0
 
     if args.command == "contact-sheet":

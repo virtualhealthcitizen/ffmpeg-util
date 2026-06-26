@@ -82,7 +82,9 @@ Packaging / tests:
 ## Feature ideas (ideation backlog)
 
 ### Media operations
-- [ ] Animated GIF export (palette two-pass: palettegen + paletteuse), fps/width/trim
+- [x] Animated GIF export (palette two-pass: palettegen + paletteuse), fps/width/trim —
+      core `make_gif`, CLI `gif`, sidecar (`/gif` + `/run/stream`), GIF tab (auto-previews).
+      Verified E2E: CLI/sidecar produce a valid gif (codec=gif, width matches).
 - [ ] Transforms: crop, rotate, flip/hflip/vflip
 - [ ] Playback speed: speed up / slow down (setpts + atempo)
 - [ ] Loudness normalization (EBU R128 two-pass `loudnorm`); volume gain

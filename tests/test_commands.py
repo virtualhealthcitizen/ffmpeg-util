@@ -119,6 +119,27 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_gif_filter_string():
+    assert c.gif_filter(12, 480) == "fps=12,scale=480:-1:flags=lanczos"
+
+
+def test_make_gif_two_pass_dry_run(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.make_gif(runner, "in.mp4", "out.gif", fps=15, width=320, start="1", duration="2")
+    out = capsys.readouterr().out
+    assert "palettegen" in out and "paletteuse" in out
+    assert "out.gif" in out
+    assert "-ss 1" in out and "-t 2" in out
+
+
+def test_make_gif_rejects_bad_inputs():
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError):
+        c.make_gif(runner, "in.mp4", "out.gif", fps=0)
+    with pytest.raises(ValueError):
+        c.make_gif(runner, "in.mp4", "out.gif", width=0)
+
+
 def test_contact_sheet_args_builds_tile_filter():
     # 6 tiles over a 5s clip -> fps = 6/5 = 1.2
     args = c.build_contact_sheet_args("in.mp4", "sheet.png", duration_s=5, cols=3, rows=2, width=160)

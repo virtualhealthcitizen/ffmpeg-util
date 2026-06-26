@@ -83,7 +83,22 @@ async function run() {
   const OP = process.env.CAPTURE_OP || "probe";
   const WAIT = Number(process.env.CAPTURE_WAIT || (OP === "compress" ? 700 : 2500));
 
-  if (PROBE_INPUT && OP === "contactsheet") {
+  if (PROBE_INPUT && OP === "gif") {
+    const outGuess = PROBE_INPUT.replace(/\.[^.\\/]+$/, "") + ".gif";
+    const js = `
+      (async () => {
+        document.querySelector('.tabs button[data-tab="gif"]').click();
+        document.querySelector('#gif-input').value = ${JSON.stringify(PROBE_INPUT)};
+        document.querySelector('#gif-output').value = ${JSON.stringify(outGuess)};
+        document.querySelector('#gif-fps').value = "10";
+        document.querySelector('#gif-width').value = "240";
+        document.querySelector('#gif-duration').value = "2";
+        document.querySelector('#run-gif').click();
+      })();
+    `;
+    await win.webContents.executeJavaScript(js);
+    await new Promise((r) => setTimeout(r, WAIT));
+  } else if (PROBE_INPUT && OP === "contactsheet") {
     const outGuess = PROBE_INPUT.replace(/\.[^.\\/]+$/, "") + ".sheet.png";
     const js = `
       (async () => {
