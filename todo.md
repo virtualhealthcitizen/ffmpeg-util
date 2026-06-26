@@ -58,7 +58,9 @@ Packaging / tests:
 - [x] Automated sidecar E2E tests (pytest + FastAPI TestClient, real ffmpeg) —
       15 tests covering all endpoints, auth, SSE progress, and error events
       (`ui/sidecar/tests/`, skip cleanly when ffmpeg absent)
-- [ ] Renderer logic tests (state/validation) still to add
+- [x] Renderer logic unit tests — extracted pure helpers to `renderer/logic.js`
+      (path suggestion, image detection, SSE buffer parsing, line/field parsing);
+      8 tests via Node's built-in `node:test` (zero new deps). `npm test`.
 
 ### Possible v2
 - [ ] `--target-size` (two-pass bitrate calc) for `compress`

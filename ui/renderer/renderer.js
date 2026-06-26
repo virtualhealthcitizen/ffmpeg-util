@@ -1,5 +1,8 @@
 // Renderer: thin client over the sidecar HTTP API exposed via window.sidecar.
+// Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings } = window.sidecar;
+const { suggestOutput, isImagePath, previewPath, parseLines, fieldLabel, parseSseBuffer } =
+  window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -20,11 +23,6 @@ function setStatus(msg, isErr = false) {
   const el = $("#status");
   el.textContent = msg;
   el.className = "status " + (isErr ? "err" : "ok");
-}
-
-function suggestOutput(inputPath, ext = ".out.mp4") {
-  if (!inputPath) return "output" + ext;
-  return inputPath.replace(/\.[^.\\/]+$/, "") + ext;
 }
 
 // --- Tabs ---
@@ -109,12 +107,7 @@ async function saveSettings() {
 loadSettings();
 
 // --- Output preview (images) ---
-const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"];
 let previewUrl = null;
-
-function isImagePath(p) {
-  return IMAGE_EXTS.some((ext) => p.toLowerCase().endsWith(ext));
-}
 
 function hidePreview() {
   $("#preview").classList.add("hidden");
@@ -126,7 +119,7 @@ function hidePreview() {
 
 async function showPreview(outputPath) {
   // For multi-frame thumbnails (name has %d), preview the first one.
-  const path = outputPath.replace(/%d/g, "1");
+  const path = previewPath(outputPath);
   if (!isImagePath(path)) return hidePreview();
   try {
     const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(path), {
@@ -176,12 +169,9 @@ async function run(label, op, body) {
       const { value, done } = await reader.read();
       if (done) break;
       buf += decoder.decode(value, { stream: true });
-      const blocks = buf.split("\n\n");
-      buf = blocks.pop(); // keep trailing partial
-      for (const block of blocks) {
-        const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
-        if (!dataLine) continue;
-        const ev = JSON.parse(dataLine.slice(5).trim());
+      const parsed = parseSseBuffer(buf);
+      buf = parsed.remainder; // keep trailing partial
+      for (const ev of parsed.events) {
         if (ev.type === "progress") {
           if (ev.percent != null) showProgress(ev.percent);
           setStatus(`${label}… ${ev.percent != null ? ev.percent + "%" : ""}${ev.speed ? " (" + ev.speed + ")" : ""}`);
@@ -205,7 +195,7 @@ async function run(label, op, body) {
 function requireFields(...ids) {
   for (const id of ids) {
     if (!val(id)) {
-      setStatus("Missing required field: " + id.replace(/^[a-z]+-/, ""), true);
+      setStatus("Missing required field: " + fieldLabel(id), true);
       return false;
     }
   }
@@ -238,7 +228,7 @@ $("#run-trim").addEventListener("click", () => {
 });
 
 $("#run-concat").addEventListener("click", () => {
-  const inputs = val("concat-inputs").split("\n").map((s) => s.trim()).filter(Boolean);
+  const inputs = parseLines(val("concat-inputs"));
   if (inputs.length < 2) return setStatus("Concat needs at least two input files.", true);
   if (!requireFields("concat-output")) return;
   run("Concatenating", "concat", { inputs, output: val("concat-output"), overwrite: true });

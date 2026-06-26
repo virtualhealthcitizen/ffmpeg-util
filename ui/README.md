@@ -60,7 +60,8 @@ ffmpeg). They skip automatically when ffmpeg isn't on PATH.
 
 ```bash
 pip install -r sidecar/requirements-dev.txt
-pytest sidecar/tests          # from ui/
+pytest sidecar/tests          # from ui/ — sidecar integration tests
+npm test                      # renderer logic unit tests (node:test, no deps)
 ```
 
 ## Status
