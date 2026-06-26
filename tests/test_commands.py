@@ -119,6 +119,38 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_atempo_chain_decomposes_out_of_range_factors():
+    assert c.atempo_chain(1.5) == "atempo=1.500000"
+    assert c.atempo_chain(4) == "atempo=2.000000,atempo=2.000000"
+    assert c.atempo_chain(0.25) == "atempo=0.500000,atempo=0.500000"
+
+
+def test_atempo_chain_rejects_nonpositive():
+    with pytest.raises(ValueError):
+        c.atempo_chain(0)
+
+
+def test_build_speed_args_with_audio():
+    args = c.build_speed_args("in.mp4", "out.mp4", 2.0, audio=True)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "setpts=0.500000*PTS" in fc
+    assert "atempo=2.000000" in fc
+    assert args.count("-map") == 2
+
+
+def test_build_speed_args_without_audio():
+    args = c.build_speed_args("in.mp4", "out.mp4", 0.5, audio=False)
+    assert "-an" in args
+    assert "-filter_complex" not in args
+    assert args[args.index("-vf") + 1] == "setpts=2.000000*PTS"
+
+
+def test_change_speed_rejects_bad_factor():
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError):
+        c.change_speed(runner, "in.mp4", "out.mp4", 0)
+
+
 def test_gif_filter_string():
     assert c.gif_filter(12, 480) == "fps=12,scale=480:-1:flags=lanczos"
 

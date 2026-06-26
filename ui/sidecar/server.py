@@ -162,6 +162,23 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class SpeedReq(BaseModel):
+    input: str
+    output: str
+    factor: float
+    overwrite: bool = True
+
+
+@app.post("/speed")
+def speed(req: SpeedReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.change_speed(runner, req.input, req.output, req.factor)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class GifReq(BaseModel):
     input: str
     output: str
@@ -264,6 +281,8 @@ class RunReq(BaseModel):
     rows: int = 4
     # gif
     fps: int = 12
+    # speed
+    factor: float = 1.0
     # compress
     crf: int | None = None
     bitrate: str | None = None
@@ -343,7 +362,13 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 )
                 yield _sse({"type": "done", "output": req.output})
                 return
-            args, cleanup = _build_op_args(req, total)
+            if req.op == "speed":
+                audio = commands.has_audio(runner, req.input)
+                args, cleanup = commands.build_speed_args(
+                    req.input, req.output, req.factor, audio=audio
+                ), None
+            else:
+                args, cleanup = _build_op_args(req, total)
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
                 out_us = fields.get("out_time_us") or fields.get("out_time_ms")

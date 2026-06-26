@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # speed
+    p = sub.add_parser("speed", help="Change playback speed (>1 faster, <1 slower).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--factor", type=float, required=True, help="Speed factor, e.g. 2 (2x) or 0.5 (half).")
+    _add_global_flags(p)
+
     # gif
     p = sub.add_parser("gif", help="Export an animated GIF (palette two-pass).")
     p.add_argument("input")
@@ -149,6 +156,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "speed":
+        commands.change_speed(runner, args.input, args.output, args.factor)
         return 0
 
     if args.command == "gif":

@@ -115,7 +115,8 @@ Packaging / tests:
 - [ ] CLI: read defaults from a config file
 
 ### More ideas (round 2)
-- [ ] Playback speed change (setpts + atempo chain), 0.25×–4×
+- [x] Playback speed change (setpts + atempo chain) — core `change_speed`/`build_speed_args`,
+      CLI `speed`, sidecar (`/speed` + `/run/stream`), Speed tab. Verified E2E: 2× -> ~half duration.
 - [ ] Auto-crop black bars (`cropdetect` → `crop`)
 - [ ] Scene-change thumbnails (`select='gt(scene,…)'`)
 - [ ] Trim multiple segments and join them in one go
