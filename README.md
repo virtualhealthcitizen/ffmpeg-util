@@ -4,6 +4,8 @@ Small, scriptable command-line helpers around [`ffmpeg`](https://ffmpeg.org/) fo
 the media chores you reach for constantly: convert, trim, concatenate,
 thumbnail, compress/resize, and probe.
 
+> 📖 Full usage guide: **[MANUAL.md](MANUAL.md)** (CLI, library, desktop UI, packaging).
+
 - **Zero runtime dependencies** — pure Python 3.11+ stdlib, shells out to `ffmpeg`/`ffprobe`.
 - **`--dry-run` everywhere** — print the exact command before running it.
 - **Library + CLI** — import `ffmpeg_util` or use the `ffmpeg-util` command.
