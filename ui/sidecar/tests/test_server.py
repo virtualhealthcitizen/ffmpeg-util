@@ -147,6 +147,53 @@ def _duration(path):
     return float(out.stdout.strip())
 
 
+def _dims(path):
+    import json as _json
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "json", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    s = _json.loads(out.stdout)["streams"][0]
+    return s["width"], s["height"]
+
+
+def test_transform_rotate_swaps_dimensions(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "rot.mp4"
+    r = client.post(
+        "/transform",
+        json={"input": str(src), "output": str(out), "op": "rotate-cw", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (240, 320)  # swapped
+
+
+def test_transform_hflip_keeps_dimensions(client, media, auth):
+    d, src = media
+    out = d / "flip.mp4"
+    r = client.post(
+        "/transform",
+        json={"input": str(src), "output": str(out), "op": "hflip", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 240)
+
+
+def test_transform_unknown_op_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/transform",
+        json={"input": str(src), "output": str(d / "x.mp4"), "op": "nope"},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def test_speed_2x_halves_duration(client, media, auth):
     d, src = media  # ~3s clip
     out = d / "fast.mp4"

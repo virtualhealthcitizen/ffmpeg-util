@@ -119,6 +119,19 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_transform_args_map_to_filters():
+    assert c.build_transform_args("in.mp4", "o.mp4", "rotate-cw")[3] == "transpose=1"
+    assert c.build_transform_args("in.mp4", "o.mp4", "rotate-ccw")[3] == "transpose=2"
+    assert c.build_transform_args("in.mp4", "o.mp4", "rotate-180")[3] == "transpose=2,transpose=2"
+    assert c.build_transform_args("in.mp4", "o.mp4", "hflip")[3] == "hflip"
+    assert c.build_transform_args("in.mp4", "o.mp4", "vflip")[3] == "vflip"
+
+
+def test_transform_args_rejects_unknown_op():
+    with pytest.raises(ValueError):
+        c.build_transform_args("in.mp4", "o.mp4", "barrel-roll")
+
+
 def test_atempo_chain_decomposes_out_of_range_factors():
     assert c.atempo_chain(1.5) == "atempo=1.500000"
     assert c.atempo_chain(4) == "atempo=2.000000,atempo=2.000000"

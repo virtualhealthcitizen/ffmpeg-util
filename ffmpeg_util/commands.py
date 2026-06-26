@@ -357,6 +357,26 @@ def change_speed(
     runner.run_ffmpeg(build_speed_args(input_path, output_path, factor, audio=audio))
 
 
+# Orientation transforms -> ffmpeg video filter. transpose swaps width/height
+# for the 90° rotations; 180 and flips preserve dimensions.
+TRANSFORM_FILTERS = {
+    "rotate-cw": "transpose=1",
+    "rotate-ccw": "transpose=2",
+    "rotate-180": "transpose=2,transpose=2",
+    "hflip": "hflip",
+    "vflip": "vflip",
+}
+
+
+def build_transform_args(input_path: str, output_path: str, op: str) -> list[str]:
+    """Build args to rotate or flip a video. ``op`` is one of TRANSFORM_FILTERS."""
+    if op not in TRANSFORM_FILTERS:
+        raise ValueError(
+            f"unknown transform {op!r}; choose from {sorted(TRANSFORM_FILTERS)}"
+        )
+    return ["-i", input_path, "-vf", TRANSFORM_FILTERS[op], output_path]
+
+
 def build_contact_sheet_args(
     input_path: str,
     output_path: str,

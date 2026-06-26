@@ -20,6 +20,7 @@
       <button data-tab="compress">Compress</button>
       <button data-tab="gif">GIF</button>
       <button data-tab="speed">Speed</button>
+      <button data-tab="transform">Transform</button>
     </nav>
 
     <!-- Convert -->
@@ -172,6 +173,34 @@
       </div>
       <p class="hint">&gt;1 speeds up, &lt;1 slows down. Audio is retimed to match.</p>
       <div class="row"><button class="primary" id="run-speed">Change speed</button></div>
+    </section>
+
+    <!-- Transform -->
+    <section class="card panel" id="panel-transform">
+      <label>Input file</label>
+      <div class="row">
+        <input id="transform-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="transform-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="transform-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="transform-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="transform-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Operation
+          <select id="transform-op">
+            <option value="rotate-cw">Rotate 90° CW</option>
+            <option value="rotate-ccw">Rotate 90° CCW</option>
+            <option value="rotate-180">Rotate 180°</option>
+            <option value="hflip">Flip horizontal</option>
+            <option value="vflip">Flip vertical</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">90° rotations swap width and height; the video is re-encoded.</p>
+      <div class="row"><button class="primary" id="run-transform">Transform</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>

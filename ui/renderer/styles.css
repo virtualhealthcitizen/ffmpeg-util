@@ -88,6 +88,15 @@ input[type="text"], input[type="number"], textarea {
   font-family: inherit;
 }
 input[type="number"] { max-width: 120px; }
+select {
+  padding: 9px 11px;
+  background: #1b1c1f;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
 textarea { width: 100%; resize: vertical; }
 
 label.inline {
