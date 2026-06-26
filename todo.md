@@ -145,7 +145,8 @@ Packaging / tests:
 - [ ] Concatenate with automatic re-encode when inputs differ
 - [ ] Per-op "open output folder" after completion
 - [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
-- [ ] Loop a short clip N times
+- [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,
+      sidecar (`/loop` + `/run/stream`), Loop tab. Verified E2E: count=3 -> ~3x duration.
 
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)

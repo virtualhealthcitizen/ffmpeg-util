@@ -119,6 +119,18 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_loop_args_use_stream_loop_count_minus_one():
+    args = c.build_loop_args("in.mp4", "out.mp4", 3)
+    assert args[args.index("-stream_loop") + 1] == "2"  # 3 plays = 2 extra loops
+    assert "-c" in args and args[args.index("-c") + 1] == "copy"
+    assert args[-1] == "out.mp4"
+
+
+def test_loop_args_reject_zero():
+    with pytest.raises(ValueError):
+        c.build_loop_args("in.mp4", "out.mp4", 0)
+
+
 def test_pad_args_build_filter():
     args = c.build_pad_args("in.mp4", "o.mp4", 640, 480)
     vf = args[args.index("-vf") + 1]
