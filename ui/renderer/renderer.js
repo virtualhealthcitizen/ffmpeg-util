@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-volume").addEventListener("click", () => {
+  if (!requireFields("volume-input", "volume-output", "volume-gain")) return;
+  run("Adjusting volume", "volume", {
+    input: val("volume-input"),
+    output: val("volume-output"),
+    gain: numOrNull("volume-gain"),
+    overwrite: true,
+  });
+});
+
 $("#run-reverse").addEventListener("click", () => {
   if (!requireFields("reverse-input", "reverse-output")) return;
   run("Reversing", "reverse", {
