@@ -245,6 +245,12 @@ def test_grayscale_args_build_filter():
     assert args[-1] == "out.mp4"
 
 
+def test_invert_args_build_filter():
+    args = c.build_invert_args("in.mp4", "out.mp4")
+    assert args[args.index("-vf") + 1] == "negate"
+    assert args[-1] == "out.mp4"
+
+
 def test_fade_args_with_audio():
     args = c.build_fade_args("in.mp4", "out.mp4", 1.0, 5.0, audio=True)
     vf = args[args.index("-vf") + 1]

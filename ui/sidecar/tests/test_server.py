@@ -350,6 +350,22 @@ def test_grayscale_removes_saturation(client, media, auth):
     assert after < 3, f"grayscale should be ~0 saturation, got {after}"
 
 
+def test_invert_negates_luma(client, media, auth):
+    d, src = media
+    base = _first_frame_yavg(src)
+    out = d / "inverted.mp4"
+    r = client.post(
+        "/invert",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    inverted = _first_frame_yavg(out)
+    assert base is not None and inverted is not None, f"base={base} inverted={inverted}"
+    # negate maps each 8-bit sample x -> 255-x, so YAVG_out ≈ 255 - YAVG_in.
+    assert abs((base + inverted) - 255) < 25, f"base={base} inverted={inverted}"
+
+
 def test_fade_makes_first_frame_dark(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)
