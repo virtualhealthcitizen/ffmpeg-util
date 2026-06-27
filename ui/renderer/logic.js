@@ -66,13 +66,13 @@
   }
 
   // Which input field a dropped file should populate for the active tab.
-  // Concat collects multiple paths (append); the others take a single input.
+  // Concat collects multiple paths (append); the two-input stack tabs drop into
+  // the first slot; every other tab uses a single `{tab}-input` field.
   function inputTargetForTab(tab) {
+    if (!tab) return null;
     if (tab === "concat") return { id: "concat-inputs", append: true };
-    if (["convert", "trim", "thumbnail", "compress"].includes(tab)) {
-      return { id: tab + "-input", append: false };
-    }
-    return null;
+    if (tab === "hstack" || tab === "vstack") return { id: tab + "-input-a", append: false };
+    return { id: tab + "-input", append: false };
   }
 
   // Compute the field update for a drop: returns { id, value } or null.

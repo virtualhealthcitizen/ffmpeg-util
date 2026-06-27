@@ -71,7 +71,13 @@ test("inputTargetForTab maps tabs to fields", () => {
   assert.deepEqual(L.inputTargetForTab("convert"), { id: "convert-input", append: false });
   assert.deepEqual(L.inputTargetForTab("compress"), { id: "compress-input", append: false });
   assert.deepEqual(L.inputTargetForTab("concat"), { id: "concat-inputs", append: true });
-  assert.equal(L.inputTargetForTab("nope"), null);
+  // every other single-input tab is supported generically (not just a hardcoded few)
+  assert.deepEqual(L.inputTargetForTab("eq"), { id: "eq-input", append: false });
+  assert.deepEqual(L.inputTargetForTab("blur_pad"), { id: "blur_pad-input", append: false });
+  // the two-input stack tabs drop into the first slot
+  assert.deepEqual(L.inputTargetForTab("hstack"), { id: "hstack-input-a", append: false });
+  assert.deepEqual(L.inputTargetForTab("vstack"), { id: "vstack-input-a", append: false });
+  assert.equal(L.inputTargetForTab(""), null);
 });
 
 test("dropUpdate sets a single input for non-concat tabs", () => {
@@ -92,9 +98,13 @@ test("dropUpdate appends to existing concat list", () => {
   });
 });
 
-test("dropUpdate returns null for empty paths or unknown tab", () => {
+test("dropUpdate returns null for empty paths or no tab", () => {
   assert.equal(L.dropUpdate([], "convert"), null);
-  assert.equal(L.dropUpdate(["a.mp4"], "bogus"), null);
+  assert.equal(L.dropUpdate(["a.mp4"], ""), null);
+});
+
+test("dropUpdate works for a generic single-input tab", () => {
+  assert.deepEqual(L.dropUpdate(["a.mp4"], "eq"), { id: "eq-input", value: "a.mp4" });
 });
 
 test("parseSseBuffer reassembles an event split across chunks", () => {
