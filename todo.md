@@ -237,8 +237,14 @@ Navigation (cross-cutting — the 30-tab wall):
       the 30 buttons live by name + aliases (e.g. "rotate"→Transform, "resize"→Compress,
       "square"→Aspect). Ctrl/Cmd+K focuses it; Enter jumps to the first match; Esc clears.
       *(Highest leverage: every session starts by finding the right tool.)*
-- [ ] Group the tabs into labeled categories (Convert · Trim/Frames · Resize/Frame ·
-      Video FX · Color · Audio · Combine · Metadata) so the nav scans in seconds.
+- [x] **Group the tabs into labeled categories** (Convert · Trim & Frames · Resize &
+      Frame · Video FX · Color · Audio · Combine · Metadata) so the nav scans in
+      seconds. Pure `TOOL_CATEGORIES`/`groupTabs` in `logic.js` partition all 33 tabs;
+      `layoutNavGroups` rearranges the flat nav into full-width labeled rows at load
+      and search hides a category label when all its tools filter away. Verified:
+      node:test (3 new, 92 total) + headless Electron E2E vs the real sidecar (nav
+      lays out into 8 ordered category rows; "rotate" → only Transform + the Video FX
+      label; clear restores all 8 labels; real compress still runs → output produced).
 - [ ] Favorites / recently-used tools pinned to the top of the nav.
 
 Direct-manipulation (visual instead of typed numbers):
@@ -370,7 +376,8 @@ Workflow / re-use:
       (missing input → "A path doesn't exist…" hint above the raw "No such file" text).
 
 Navigation / layout polish (the 30-tab nav is still a wall when search is empty):
-- [ ] Group tabs into labeled categories (carried from round 7) — pairs well with search.
+- [x] Group tabs into labeled categories (carried from round 7) — DONE (see round 7
+      "Group the tabs into labeled categories": `TOOL_CATEGORIES`/`groupTabs`). ← next
 - [ ] Favorites: pin frequently-used tools to a top row; persist across launches.
 - [ ] Collapse/expand the Source and Probe cards to reclaim vertical space.
 - [x] Keyboard: run the active tab + cycle tabs — DONE (see "Keyboard shortcuts"

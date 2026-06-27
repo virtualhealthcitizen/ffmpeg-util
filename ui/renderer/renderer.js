@@ -9,7 +9,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
-  buildCliCommand, previewPath, keyboardAction, nextVisibleTab } = window.FfuLogic;
+  buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
+  TOOL_CATEGORIES, groupTabs } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -73,6 +74,39 @@ function currentTab() {
   return btn ? btn.dataset.tab : "convert";
 }
 
+// Lay the flat list of tab buttons out into labeled category rows so the ~30-tab
+// nav scans in seconds. The order comes straight from the (unit-tested) data in
+// logic.js: each label is a full-width divider that wraps the buttons after it
+// onto their own rows. Buttons are moved (not cloned), so the click/search/
+// keyboard wiring queried elsewhere keeps working on the same nodes.
+function layoutNavGroups() {
+  const nav = document.querySelector(".tabs");
+  if (!nav) return;
+  const byTab = new Map(
+    Array.from(nav.querySelectorAll("button")).map((b) => [b.dataset.tab, b])
+  );
+  const groups = groupTabs(Array.from(byTab.keys()), TOOL_CATEGORIES);
+  for (const g of groups) {
+    const label = document.createElement("span");
+    label.className = "tab-group-label";
+    label.dataset.group = g.name;
+    label.textContent = g.name;
+    nav.appendChild(label);
+    for (const tab of g.tabs) nav.appendChild(byTab.get(tab));
+  }
+}
+layoutNavGroups();
+
+// Hide a category label when search has filtered away every tool under it, so an
+// empty heading never floats over a blank row. `visible` is the set of tab ids
+// the search currently shows.
+function updateNavGroupLabels(visible) {
+  const present = new Set(groupTabs(visible, TOOL_CATEGORIES).map((g) => g.name));
+  document.querySelectorAll(".tabs .tab-group-label").forEach((label) => {
+    label.classList.toggle("hidden", !present.has(label.dataset.group));
+  });
+}
+
 // --- Tool search / command palette: narrow the 30 tabs by name + alias ---
 (function setupToolSearch() {
   const search = $("#tool-search");
@@ -90,6 +124,7 @@ function currentTab() {
     const q = search.value;
     const matches = new Set(filterTools(q, tools));
     buttons.forEach((b) => b.classList.toggle("hidden", !matches.has(b.dataset.tab)));
+    updateNavGroupLabels(matches);
     noTools.classList.toggle("hidden", matches.size > 0);
     clearBtn.hidden = q.trim() === "";
   }
