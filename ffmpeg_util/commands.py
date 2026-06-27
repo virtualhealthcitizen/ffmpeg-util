@@ -547,6 +547,57 @@ def build_mute_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-c", "copy", "-an", output_path]
 
 
+def parse_aspect(s: str) -> tuple[int, int]:
+    """Parse an aspect string like '16:9' into (16, 9)."""
+    try:
+        aw, ah = str(s).split(":")
+        return int(aw), int(ah)
+    except (ValueError, AttributeError):
+        raise ValueError(f"aspect must look like '16:9', got {s!r}")
+
+
+def compute_aspect_crop(width: int, height: int, aw: int, ah: int) -> tuple[int, int, int, int]:
+    """Largest centered crop of ``width``x``height`` matching aspect ``aw:ah``.
+
+    Returns (crop_w, crop_h, x, y) with even dimensions (for yuv420)."""
+    if aw < 1 or ah < 1:
+        raise ValueError("aspect parts must be >= 1")
+    target = aw / ah
+    if width / height > target:
+        cw, ch = round(height * target), height
+    else:
+        cw, ch = width, round(width / target)
+    cw -= cw % 2
+    ch -= ch % 2
+    cw = max(2, min(cw, width))
+    ch = max(2, min(ch, height))
+    return cw, ch, (width - cw) // 2, (height - ch) // 2
+
+
+def probe_dimensions(runner: FfmpegRunner, path: str) -> tuple[int, int] | None:
+    """Return (width, height) of the first video stream, or None."""
+    proc = runner.run_ffprobe(
+        ["-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", path]
+    )
+    if proc is None:
+        return None
+    try:
+        w, h = (proc.stdout or "").strip().split(",")
+        return int(w), int(h)
+    except ValueError:
+        return None
+
+
+def crop_to_aspect(runner: FfmpegRunner, input_path: str, output_path: str, aw: int, ah: int) -> None:
+    """Crop ``input_path`` to the ``aw:ah`` aspect (centered), probing its size."""
+    dims = probe_dimensions(runner, input_path)
+    if not dims:
+        raise ValueError("could not determine input dimensions for crop-to-aspect")
+    cw, ch, x, y = compute_aspect_crop(dims[0], dims[1], aw, ah)
+    runner.run_ffmpeg(build_crop_args(input_path, output_path, cw, ch, x, y))
+
+
 def build_crop_args(
     input_path: str, output_path: str, width: int, height: int, x: int = 0, y: int = 0
 ) -> list[str]:

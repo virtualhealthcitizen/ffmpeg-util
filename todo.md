@@ -168,7 +168,9 @@ Packaging / tests:
 - [ ] Invert colors (`negate`) / sepia tone
 - [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
 - [ ] Deinterlace (`yadif`)
-- [ ] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1)
+- [x] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1) — core `compute_aspect_crop`/
+      `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
+      Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
 - [ ] Side-by-side (`hstack`) or stacked (`vstack`) two videos
 - [ ] Picture-in-picture overlay
 - [ ] Still image → video (image + duration, optional audio)

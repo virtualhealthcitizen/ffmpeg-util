@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # crop-aspect
+    p = sub.add_parser("crop-aspect", help="Center-crop to an aspect ratio (e.g. 16:9).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--aspect", required=True, help="Target aspect, e.g. 16:9, 9:16, 1:1.")
+    _add_global_flags(p)
+
     # fps (resample frame rate)
     p = sub.add_parser("fps", help="Change frame rate without changing speed.")
     p.add_argument("input")
@@ -265,6 +272,11 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "crop-aspect":
+        aw, ah = commands.parse_aspect(args.aspect)
+        commands.crop_to_aspect(runner, args.input, args.output, aw, ah)
         return 0
 
     if args.command == "fps":

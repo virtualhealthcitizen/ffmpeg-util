@@ -119,6 +119,25 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_parse_aspect():
+    assert c.parse_aspect("16:9") == (16, 9)
+    assert c.parse_aspect("1:1") == (1, 1)
+    with pytest.raises(ValueError):
+        c.parse_aspect("16-9")
+
+
+def test_compute_aspect_crop_wide_from_4x3():
+    # 320x240 (4:3) -> 16:9 keeps width, crops height to 180 (centered)
+    assert c.compute_aspect_crop(320, 240, 16, 9) == (320, 180, 0, 30)
+
+
+def test_compute_aspect_crop_square_and_even():
+    cw, ch, x, y = c.compute_aspect_crop(320, 240, 1, 1)
+    assert cw == 240 and ch == 240  # square = min side
+    assert cw % 2 == 0 and ch % 2 == 0
+    assert x == 40 and y == 0
+
+
 def test_fps_args_build_filter():
     args = c.build_fps_args("in.mp4", "out.mp4", 15)
     assert args[args.index("-vf") + 1] == "fps=15"

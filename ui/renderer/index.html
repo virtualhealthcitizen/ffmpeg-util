@@ -34,6 +34,7 @@
       <button data-tab="boomerang">Boomerang</button>
       <button data-tab="eq">Adjust</button>
       <button data-tab="fps">FPS</button>
+      <button data-tab="crop_aspect">Aspect</button>
     </nav>
 
     <!-- Convert -->
@@ -469,6 +470,33 @@
       </div>
       <p class="hint">Resamples to the target frame rate (same duration/speed; drops or duplicates frames).</p>
       <div class="row"><button class="primary" id="run-fps">Set FPS</button></div>
+    </section>
+
+    <!-- Aspect (crop to aspect ratio) -->
+    <section class="card panel" id="panel-crop_aspect">
+      <label>Input file</label>
+      <div class="row">
+        <input id="crop_aspect-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="crop_aspect-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="crop_aspect-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="crop_aspect-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="crop_aspect-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Aspect
+          <select id="crop_aspect-aspect">
+            <option value="16:9">16:9 (wide)</option>
+            <option value="9:16">9:16 (vertical)</option>
+            <option value="1:1">1:1 (square)</option>
+            <option value="4:3">4:3</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">Center-crops the largest region matching the chosen aspect ratio.</p>
+      <div class="row"><button class="primary" id="run-crop_aspect">Crop to aspect</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>
