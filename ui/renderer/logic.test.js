@@ -319,6 +319,13 @@ test("timeTargetsForTab maps trim/gif/thumbnail to their time fields", () => {
   assert.deepEqual(L.timeTargetsForTab("compress"), []);
 });
 
+test("overwriteMessage names the path and asks to overwrite", () => {
+  const msg = L.overwriteMessage("C:\\out\\clip.mp4");
+  assert.match(msg, /clip\.mp4/);
+  assert.match(msg, /already exists/);
+  assert.match(msg, /[Oo]verwrite/);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

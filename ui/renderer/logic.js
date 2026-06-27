@@ -337,6 +337,13 @@
     return [];
   }
 
+  // --- Overwrite confirmation: warn before clobbering an existing output ---
+
+  // The confirm() prompt shown when an op's output path already exists.
+  function overwriteMessage(path) {
+    return `"${path}" already exists.\n\nOverwrite it with the new output?`;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -349,6 +356,7 @@
     compatReport,
     formatTimecode,
     timeTargetsForTab,
+    overwriteMessage,
     formatBytes,
     formatDuration,
     parseFrameRate,

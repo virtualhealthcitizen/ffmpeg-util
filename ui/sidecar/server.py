@@ -56,6 +56,16 @@ def get_file(path: str, _: None = Depends(require_token)) -> FileResponse:
     return FileResponse(path)
 
 
+@app.get("/exists")
+def exists(path: str, _: None = Depends(require_token)) -> dict:
+    """Report whether ``path`` already exists on disk.
+
+    The renderer calls this before a run so it can warn about (and confirm)
+    clobbering an existing output, instead of silently overwriting it.
+    """
+    return {"exists": os.path.isfile(path)}
+
+
 class ProbeReq(BaseModel):
     input: str
     as_json: bool = False

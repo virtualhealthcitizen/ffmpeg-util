@@ -4,7 +4,8 @@ const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathFor
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
-  videoDims, compatReport, formatTimecode, timeTargetsForTab } = window.FfuLogic;
+  videoDims, compatReport, formatTimecode, timeTargetsForTab,
+  overwriteMessage } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -458,7 +459,39 @@ function hideProgress() {
 }
 
 // --- Operation runners (stream progress via SSE over fetch) ---
+
+// True while an op is streaming, so a second click can't fire the same op twice
+// against the same output. Every run button is disabled for the duration.
+let opInFlight = false;
+function setRunButtonsDisabled(disabled) {
+  document.querySelectorAll('[id^="run-"]').forEach((b) => (b.disabled = disabled));
+}
+
+// Ask the sidecar whether the output already exists; if so, confirm before we
+// clobber it. Best-effort: a failed check never blocks the run.
+async function confirmOverwrite(output) {
+  if (!output) return true;
+  try {
+    const res = await fetch(baseUrl + "/exists?path=" + encodeURIComponent(output), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return true;
+    const { exists } = await res.json();
+    if (!exists) return true;
+    return window.confirm(overwriteMessage(output));
+  } catch (_) {
+    return true;
+  }
+}
+
 async function run(label, op, body) {
+  if (opInFlight) return; // an op is already running — ignore the extra click
+  if (!(await confirmOverwrite(body.output))) {
+    setStatus("Cancelled — existing file left in place.");
+    return;
+  }
+  opInFlight = true;
+  setRunButtonsDisabled(true);
   setStatus(label + "…");
   showProgress(0);
   hidePreview();
@@ -500,6 +533,9 @@ async function run(label, op, body) {
   } catch (e) {
     hideProgress();
     setStatus("Error: " + e.message, true);
+  } finally {
+    opInFlight = false;
+    setRunButtonsDisabled(false);
   }
 }
 
