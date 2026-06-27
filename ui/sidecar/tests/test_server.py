@@ -43,6 +43,22 @@ def test_probe_requires_token(client, media):
     assert r.status_code == 401
 
 
+def test_exists_reports_presence(client, media, auth):
+    d, src = media
+    r = client.get("/exists", params={"path": str(src)}, headers=auth)
+    assert r.status_code == 200
+    assert r.json()["exists"] is True
+    r = client.get("/exists", params={"path": str(d / "nope.mp4")}, headers=auth)
+    assert r.status_code == 200
+    assert r.json()["exists"] is False
+
+
+def test_exists_requires_token(client, media):
+    _, src = media
+    r = client.get("/exists", params={"path": str(src)})
+    assert r.status_code == 401
+
+
 def test_probe(client, media, auth):
     _, src = media
     r = client.post("/probe", json={"input": str(src)}, headers=auth)

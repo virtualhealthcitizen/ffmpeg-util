@@ -334,10 +334,16 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 > the current renderer, not just nice-to-haves.
 
 Safety / correctness (latent gaps in the current UI):
-- [ ] **Overwrite confirmation** — every run sends `overwrite: true`, so the UI
-      silently clobbers existing outputs. Probe the output path and confirm first.
-- [ ] **Disable the Run button while an op is in flight** — today buttons stay live,
-      so a double-click fires the op twice against the same output.
+- [x] **Overwrite confirmation** — before a run, the renderer probes the output
+      via a new sidecar `GET /exists` and, if present, asks `window.confirm`
+      (pure `overwriteMessage` in `logic.js`); declining leaves the file in place.
+      Best-effort: a failed check never blocks the run. Verified: node:test +
+      sidecar pytest (`/exists` true/false + auth) + headless Electron E2E
+      (decline → "Cancelled — existing file left in place.", op never starts).
+- [x] **Disable the Run button while an op is in flight** — an `opInFlight` guard
+      ignores re-clicks and `setRunButtonsDisabled` disables every `run-*` button
+      for the op's duration, re-enabled in a `finally`. Verified: Electron E2E
+      (button observed disabled mid-run via MutationObserver, re-enabled after).
 - [ ] Pre-run validation — verify the input exists and the output dir is writable
       before launching ffmpeg; highlight the offending field instead of a late error.
 - [ ] Warn on odd width/height for x264 (must be even) before the run fails.
@@ -358,9 +364,8 @@ Help / discoverability:
 - [ ] Friendly error mapping (carried from round 8) surfaced above the raw stderr.
 
 **Priority for round 9 (highest first):**
-1. Overwrite confirmation + Run-button-disabled-while-running — the two real safety
-   gaps; small, high-confidence, E2E-verifiable.
-2. Cancel a running op; 3. remember tab + window; 4. presets; 5. the rest.
+1. ~~Overwrite confirmation + Run-button-disabled-while-running~~ — DONE.
+2. Cancel a running op — **← next.** 3. remember tab + window; 4. presets; 5. the rest.
 
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
