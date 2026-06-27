@@ -166,6 +166,30 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class EqReq(BaseModel):
+    input: str
+    output: str
+    brightness: float = 0.0
+    contrast: float = 1.0
+    saturation: float = 1.0
+    overwrite: bool = True
+
+
+@app.post("/eq")
+def eq(req: EqReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_eq_args(
+            req.input, req.output,
+            brightness=req.brightness, contrast=req.contrast, saturation=req.saturation,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class BoomerangReq(BaseModel):
     input: str
     output: str
@@ -535,6 +559,10 @@ class RunReq(BaseModel):
     fade: float = 1.0
     # transform
     transform: str | None = None
+    # eq (color adjust)
+    brightness: float = 0.0
+    contrast: float = 1.0
+    saturation: float = 1.0
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -549,6 +577,11 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "eq":
+        return commands.build_eq_args(
+            req.input, req.output,
+            brightness=req.brightness, contrast=req.contrast, saturation=req.saturation,
+        ), None
     if op == "loudnorm":
         return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":
@@ -614,7 +647,28 @@ def _sse(obj: dict) -> str:
     return f"data: {json.dumps(obj)}\n\n"
 
 
-def _expected_output_duration(op: str, total: float | None, *, factor: float = 1.0, count: int = 1) -> float | None:
+def _parse_time(t: str) -> float:
+    """Parse an ffmpeg time (seconds, MM:SS, or HH:MM:SS, with optional .ms)."""
+    parts = [float(p) for p in str(t).split(":")]
+    if len(parts) == 1:
+        return parts[0]
+    if len(parts) == 2:
+        return parts[0] * 60 + parts[1]
+    if len(parts) == 3:
+        return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    raise ValueError(f"unrecognized time: {t!r}")
+
+
+def _expected_output_duration(
+    op: str,
+    total: float | None,
+    *,
+    factor: float = 1.0,
+    count: int = 1,
+    start: str | None = None,
+    end: str | None = None,
+    duration: str | None = None,
+) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
     if not total:
         return total
@@ -624,6 +678,16 @@ def _expected_output_duration(op: str, total: float | None, *, factor: float = 1
         return total * max(1, count)
     if op == "boomerang":
         return total * 2
+    if op == "trim":
+        try:
+            if duration is not None:
+                return _parse_time(duration)
+            if end is not None:
+                return max(0.0, _parse_time(end) - _parse_time(start or "0"))
+            if start is not None:
+                return max(0.0, total - _parse_time(start))
+        except ValueError:
+            return total
     return total
 
 
@@ -674,7 +738,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             else:
                 args, cleanup = _build_op_args(req, total)
             expected = _expected_output_duration(
-                req.op, total, factor=req.factor, count=req.count
+                req.op, total, factor=req.factor, count=req.count,
+                start=req.start, end=req.end, duration=req.duration,
             )
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.

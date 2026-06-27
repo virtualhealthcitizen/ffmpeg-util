@@ -18,6 +18,17 @@ def test_expected_output_duration():
     assert server._expected_output_duration("loop", 10, count=3) == 30
     assert server._expected_output_duration("boomerang", 10) == 20
     assert server._expected_output_duration("convert", None) is None
+    # trim: output length comes from duration / end-start / remaining-after-start
+    assert server._expected_output_duration("trim", 30, duration="5") == 5
+    assert server._expected_output_duration("trim", 30, start="10", end="00:00:25") == 15
+    assert server._expected_output_duration("trim", 30, start="20") == 10
+
+
+def test_parse_time():
+    import server
+    assert server._parse_time("5") == 5
+    assert server._parse_time("01:30") == 90
+    assert server._parse_time("01:00:00") == 3600
 
 
 def test_health(client):
@@ -219,6 +230,21 @@ def _first_frame_satavg(path):
     )
     m = re.search(r"lavfi\.signalstats\.SATAVG=([\d.]+)", out.stdout + out.stderr)
     return float(m.group(1)) if m else None
+
+
+def test_eq_brightness_raises_luma(client, media, auth):
+    d, src = media
+    base = _first_frame_yavg(src)
+    out = d / "bright.mp4"
+    r = client.post(
+        "/eq",
+        json={"input": str(src), "output": str(out), "brightness": 0.3, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    brightened = _first_frame_yavg(out)
+    assert base is not None and brightened is not None
+    assert brightened > base + 15, f"base={base} brightened={brightened}"
 
 
 def test_grayscale_removes_saturation(client, media, auth):

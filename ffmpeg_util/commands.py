@@ -406,6 +406,20 @@ def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "hue=s=0", output_path]
 
 
+def build_eq_args(
+    input_path: str,
+    output_path: str,
+    *,
+    brightness: float = 0.0,
+    contrast: float = 1.0,
+    saturation: float = 1.0,
+) -> list[str]:
+    """Build args to adjust color via the ``eq`` filter. Defaults are no-ops
+    (brightness 0, contrast/saturation 1)."""
+    vf = f"eq=brightness={brightness}:contrast={contrast}:saturation={saturation}"
+    return ["-i", input_path, "-vf", vf, output_path]
+
+
 def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
     """Build args to boomerang a clip: play it forward then reversed (video only),
     so the output runs about twice the input duration."""
