@@ -432,6 +432,15 @@ $("#run-pad").addEventListener("click", () => {
   });
 });
 
+$("#run-mono").addEventListener("click", () => {
+  if (!requireFields("mono-input", "mono-output")) return;
+  run("Downmixing to mono", "mono", {
+    input: val("mono-input"),
+    output: val("mono-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-mute").addEventListener("click", () => {
   if (!requireFields("mute-input", "mute-output")) return;
   run("Stripping audio", "mute", {

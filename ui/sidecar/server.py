@@ -398,6 +398,24 @@ def pad(req: PadReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class MonoReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/mono")
+def mono(req: MonoReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_mono_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class MuteReq(BaseModel):
     input: str
     output: str
@@ -643,6 +661,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_pad_args(req.input, req.output, req.width, req.height), None
     if op == "mute":
         return commands.build_mute_args(req.input, req.output), None
+    if op == "mono":
+        return commands.build_mono_args(req.input, req.output), None
     if op == "crop":
         if not req.width or not req.height:
             raise ValueError("crop requires width and height")

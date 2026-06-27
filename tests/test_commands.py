@@ -291,6 +291,13 @@ def test_pad_args_reject_bad_values():
         c.build_pad_args("in.mp4", "o.mp4", 0, 480)
 
 
+def test_mono_args_downmix():
+    args = c.build_mono_args("in.mp4", "out.mp4")
+    assert args[args.index("-ac") + 1] == "1"
+    assert args[args.index("-c:v") + 1] == "copy"
+    assert args[-1] == "out.mp4"
+
+
 def test_mute_args_strip_audio():
     args = c.build_mute_args("in.mp4", "out.mp4")
     assert "-an" in args
