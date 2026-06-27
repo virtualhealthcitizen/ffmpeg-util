@@ -119,6 +119,15 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_require_output_extension():
+    c.require_output_extension("out.mp4")  # ok, no raise
+    c.require_output_extension("dir/clip.gif")
+    with pytest.raises(ValueError):
+        c.require_output_extension("output")  # no extension
+    with pytest.raises(ValueError):
+        c.require_output_extension("C:\\path\\to\\output")
+
+
 def test_grayscale_args_build_filter():
     args = c.build_grayscale_args("in.mp4", "out.mp4")
     assert args[args.index("-vf") + 1] == "hue=s=0"
