@@ -176,7 +176,8 @@ Packaging / tests:
 - [ ] Set / clear metadata title
 
 ### More ideas (round 5)
-- [ ] Change frame rate without changing speed (`fps` filter)
+- [x] Change frame rate without changing speed (`fps` filter) — core `build_fps_args`,
+      CLI `fps`, sidecar (`/fps` + `/run/stream`), FPS tab. Verified E2E: 30fps -> 15fps.
 - [ ] Downmix audio to mono / pick a single channel
 - [ ] Trim silence from the ends (`silenceremove`)
 - [ ] Blur or pixelate a region

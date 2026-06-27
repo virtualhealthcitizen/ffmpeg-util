@@ -232,6 +232,30 @@ def _first_frame_satavg(path):
     return float(m.group(1)) if m else None
 
 
+def _avg_frame_rate(path):
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=avg_frame_rate", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    num, den = out.stdout.strip().split("/")
+    return float(num) / float(den)
+
+
+def test_fps_resamples_frame_rate(client, media, auth):
+    d, src = media  # 30 fps source
+    out = d / "fps15.mp4"
+    r = client.post(
+        "/fps",
+        json={"input": str(src), "output": str(out), "fps": 15, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert abs(_avg_frame_rate(out) - 15) < 0.5
+
+
 def test_eq_brightness_raises_luma(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)

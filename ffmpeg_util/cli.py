@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # fps (resample frame rate)
+    p = sub.add_parser("fps", help="Change frame rate without changing speed.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--fps", type=float, required=True, help="Target frames per second.")
+    _add_global_flags(p)
+
     # eq (color adjust)
     p = sub.add_parser("eq", help="Adjust brightness / contrast / saturation.")
     p.add_argument("input")
@@ -258,6 +265,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "fps":
+        runner.run_ffmpeg(commands.build_fps_args(args.input, args.output, args.fps))
         return 0
 
     if args.command == "eq":
