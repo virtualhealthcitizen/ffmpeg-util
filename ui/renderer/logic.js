@@ -272,6 +272,62 @@
     return actions;
   }
 
+  // --- Dimension presets: one-click frame sizes for width/height fields ---
+
+  // Round to the nearest even integer (x264 needs even dims), with a floor of 2.
+  function evenRound(n) {
+    const v = Math.max(2, Math.round(Number(n) || 0));
+    return v % 2 === 0 ? v : v + 1;
+  }
+
+  // The preset chips offered on tabs that have both a width *and* a height field.
+  // Fixed-resolution presets carry concrete dims; ratio presets derive the height
+  // from a base width; "match" copies the probed source dims.
+  const DIMENSION_PRESETS = [
+    { key: "480p", label: "480p", width: 854, height: 480 },
+    { key: "720p", label: "720p", width: 1280, height: 720 },
+    { key: "1080p", label: "1080p", width: 1920, height: 1080 },
+    { key: "1440p", label: "1440p", width: 2560, height: 1440 },
+    { key: "2160p", label: "4K", width: 3840, height: 2160 },
+    { key: "16:9", label: "16:9", ratio: [16, 9] },
+    { key: "9:16", label: "9:16", ratio: [9, 16] },
+    { key: "1:1", label: "1:1", ratio: [1, 1] },
+    { key: "4:3", label: "4:3", ratio: [4, 3] },
+    { key: "match", label: "Match source", match: true },
+  ];
+
+  // Tabs that get the dimension-preset chip row: those whose Size chip fills both
+  // a width and a height field (single-width tabs like gif/thumbnail are skipped).
+  function dimensionPresetTabs() {
+    return Object.keys(DIMENSION_FIELDS).filter((t) => DIMENSION_FIELDS[t] && DIMENSION_FIELDS[t].h);
+  }
+
+  // Resolve a preset to concrete { width, height }, or null when it can't apply.
+  // Ratio presets keep the current width (falling back to the source width, then
+  // 1280) and compute an even matching height. "Match source" copies the probed
+  // source dims verbatim; it needs them, returning null otherwise.
+  function presetDimensions(preset, ctx) {
+    const c = ctx || {};
+    if (!preset) return null;
+    if (preset.match) {
+      const w = Number(c.sourceWidth);
+      const h = Number(c.sourceHeight);
+      return w > 0 && h > 0 ? { width: w, height: h } : null;
+    }
+    if (preset.width && preset.height) {
+      return { width: preset.width, height: preset.height };
+    }
+    if (preset.ratio) {
+      const base =
+        Number(c.width) > 0 ? Number(c.width)
+        : Number(c.sourceWidth) > 0 ? Number(c.sourceWidth)
+        : 1280;
+      const [rw, rh] = preset.ratio;
+      return { width: evenRound(base), height: evenRound((base * rh) / rw) };
+    }
+    return null;
+  }
+
   // --- Multi-input compatibility (hstack/vstack/concat) ---
 
   // Pull {w,h} of the first video stream from parsed ffprobe data, or null.
@@ -387,6 +443,9 @@
     DIMENSION_FIELDS,
     FPS_FIELDS,
     sourceFillActions,
+    DIMENSION_PRESETS,
+    dimensionPresetTabs,
+    presetDimensions,
     videoDims,
     compatReport,
     formatTimecode,
