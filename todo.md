@@ -247,8 +247,13 @@ Input affordances (kill the typed-number friction — this is what bit "Blur pad
       renderer reuses `/probe?as_json` + `/file`. Verified: node:test (7 new cases,
       28 total) + headless Electron E2E against the real sidecar (320×240 clip →
       correct chips + video preview, screenshot).
-- [ ] **Dimension / aspect presets** — clickable chips (16:9, 9:16, 1:1, 720p, 1080p,
-      "match source") that fill Width/Height for pad, blur_pad, crop, compress.
+- [x] **Dimension / aspect presets** — clickable chips (480p–4K, 16:9/9:16/1:1/4:3,
+      Match source) fill Width/Height on tabs with both fields (compress, crop, pad,
+      blur_pad, waveform). Pure `DIMENSION_PRESETS`/`presetDimensions`/`evenRound`/
+      `dimensionPresetTabs` in `logic.js` (ratio presets derive an even height from
+      the current/source width; Match copies probed dims). Verified: node:test
+      (5 new, 50 total) + headless Electron E2E (720p→1280×720; 16:9 from 1000→
+      1000×564; row hidden on gif). [Adopted a stranded 2h-old burn WIP.]
 - [ ] Sliders with live readouts for the numeric ops — volume (dB), speed (×),
       eq (brightness/contrast/saturation), fade (s), loudnorm (LUFS), blur sigma.
 - [ ] Auto-fill the output path from input + op suffix (in.mp4 → in.blurpad.mp4) so
@@ -269,7 +274,7 @@ Workflow / feedback components:
 **Priority for this round (highest first):**
 1. ~~Tool search / command palette~~ — DONE (round 7).
 2. ~~Auto source-preview + friendly probe card~~ — DONE (round 7).
-3. Dimension / aspect presets — directly fixes the Blur-pad width/height pain. **← next.**
+3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts — **← next.**
 4. Sliders with live readouts; 5. Visual crop selector; 6. the rest.
 
 - [x] **Tool search / command palette** — filter box above the tabs (pure
