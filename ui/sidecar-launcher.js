@@ -2,8 +2,10 @@
 //   1. a bundled standalone binary (PyInstaller) if present — no Python needed, or
 //   2. a resolved Python interpreter + server.py (development).
 //
-// Packaged builds ship the binary under resources/sidecar/; dev builds may have a
-// locally-built one under sidecar/dist/. FFMPEG_UTIL_SIDECAR overrides both.
+// Packaged builds ship the binary under resources/. In development we deliberately
+// run the live server.py so newly-added ops are picked up — a locally-built
+// sidecar/dist/ binary is NOT auto-used (it would shadow the source and go stale);
+// set FFMPEG_UTIL_SIDECAR to use a specific binary on purpose.
 
 const fs = require("fs");
 const path = require("path");
@@ -11,14 +13,13 @@ const { resolvePython } = require("./python");
 
 const EXE = process.platform === "win32" ? "ffmpeg-util-sidecar.exe" : "ffmpeg-util-sidecar";
 
-function bundledCandidates({ isPackaged, resourcesPath, baseDir }) {
+function bundledCandidates({ isPackaged, resourcesPath }) {
   const list = [];
   if (process.env.FFMPEG_UTIL_SIDECAR) list.push(process.env.FFMPEG_UTIL_SIDECAR);
   if (isPackaged && resourcesPath) {
     list.push(path.join(resourcesPath, "sidecar", EXE)); // electron-builder extraResources
     list.push(path.join(resourcesPath, EXE)); // @electron/packager --extra-resource
   }
-  list.push(path.join(baseDir, "sidecar", "dist", EXE)); // locally built
   return list;
 }
 
