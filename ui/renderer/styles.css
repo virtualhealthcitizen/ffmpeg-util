@@ -272,6 +272,19 @@ button.secondary { background: transparent; }
 button.danger { background: transparent; border-color: var(--err); color: var(--err); }
 button.danger:hover { background: var(--err); color: #fff; }
 
+/* Friendly one-line hint shown above the raw error text when an op fails. */
+.error-hint {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 193, 7, 0.08);
+  color: #ffc107;
+  font-size: 13px;
+}
+.error-hint.hidden { display: none; }
+.error-hint::before { content: "💡 "; }
+
 .status { margin-top: 14px; font-size: 13px; min-height: 18px; }
 .status.ok { color: var(--ok); }
 .status.err { color: var(--err); white-space: pre-wrap; }

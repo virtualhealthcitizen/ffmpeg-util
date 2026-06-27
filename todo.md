@@ -332,8 +332,13 @@ Workflow / re-use:
 - [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
 - [ ] Output filename templating with tokens ({name}, {op}, {w}x{h}, {date}).
 - [ ] Toast on completion with inline "Open" / "Reveal in Explorer" actions.
-- [ ] Friendlier error surface — map common ffmpeg stderr (no such file, codec not
-      found, dimensions not divisible by 2) to a one-line hint above the raw text.
+- [x] **Friendlier error surface** — a friendly one-line hint now appears above the
+      raw stderr when an op fails. Pure `friendlyError`/`ERROR_HINTS` in `logic.js`
+      map common ffmpeg failures (no such file, codec not found, dims not divisible
+      by 2, bad output format, corrupt input, missing stream, disk full) to a hint;
+      `#error-hint` renders it in the renderer (cleared on each run). Verified:
+      node:test (3 new, 58 total) + headless Electron E2E vs the real sidecar
+      (missing input → "A path doesn't exist…" hint above the raw "No such file" text).
 
 Navigation / layout polish (the 30-tab nav is still a wall when search is empty):
 - [ ] Group tabs into labeled categories (carried from round 7) — pairs well with search.
@@ -345,7 +350,7 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 1. ~~Clickable probe chips + "Match source"~~ — DONE.
 2. ~~Multi-input probe + mismatch guard~~ — DONE.
 3. ~~Scrub-to-set-time~~ — DONE.
-4. ~~Estimated-output readout~~ — DONE. 5. friendlier errors — **← next.** 6. the rest.
+4. ~~Estimated-output readout~~ — DONE. 5. ~~friendlier errors~~ — DONE. 6. the rest — **← next.**
 
 ### UI/UX components (round 9) — safety, persistence, power-user flow
 > A different angle from rounds 7–8: not new affordances, but making the existing
@@ -399,7 +404,8 @@ Power-user flow:
 
 Help / discoverability:
 - [ ] Per-tab one-line example + a "?" tooltip explaining each field.
-- [ ] Friendly error mapping (carried from round 8) surfaced above the raw stderr.
+- [x] Friendly error mapping (carried from round 8) — DONE (see round 8: friendlier
+      error surface; `friendlyError` in `logic.js`, `#error-hint` above the raw stderr).
 
 **Priority for round 9 (highest first):**
 1. ~~Overwrite confirmation + Run-button-disabled-while-running~~ — DONE.
