@@ -91,7 +91,10 @@ Packaging / tests:
 - [ ] Playback speed: speed up / slow down (setpts + atempo)
 - [x] Volume gain — core `build_volume_args` (`volume=NdB`), CLI `volume --gain`,
       sidecar (`/volume` + `/run/stream`), Volume tab. Verified E2E: -6 dB drops measured
-      mean_volume by ~6 dB. (EBU R128 two-pass `loudnorm` still pending.)
+      mean_volume by ~6 dB.
+- [x] Loudness normalization (EBU R128 `loudnorm`) — core `build_loudnorm_args`,
+      CLI `loudnorm --target`, sidecar (`/loudnorm` + `/run/stream`), Loudness tab.
+      Verified E2E: output integrated loudness hits target (-16 LUFS, measured via ebur128).
 - [ ] Audio: replace/mux an audio track; mix or strip tracks
 - [ ] Subtitles: burn-in (hardsub) or mux soft subs; extract subtitles
 - [ ] Watermark / text overlay (drawtext, image overlay with position)

@@ -30,6 +30,7 @@
       <button data-tab="volume">Volume</button>
       <button data-tab="fade">Fade</button>
       <button data-tab="grayscale">Grayscale</button>
+      <button data-tab="loudnorm">Loudness</button>
     </nav>
 
     <!-- Convert -->
@@ -386,6 +387,26 @@
       </div>
       <p class="hint">Desaturates the video to grayscale (audio is left untouched).</p>
       <div class="row"><button class="primary" id="run-grayscale">Grayscale</button></div>
+    </section>
+
+    <!-- Loudness -->
+    <section class="card panel" id="panel-loudnorm">
+      <label>Input file</label>
+      <div class="row">
+        <input id="loudnorm-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="loudnorm-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="loudnorm-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="loudnorm-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="loudnorm-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Target (LUFS) <input id="loudnorm-target" type="number" step="0.5" placeholder="-16" /></label>
+      </div>
+      <p class="hint">Normalizes integrated loudness (EBU R128). Common targets: -16 (web), -14 (streaming), -23 (broadcast).</p>
+      <div class="row"><button class="primary" id="run-loudnorm">Normalize loudness</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>

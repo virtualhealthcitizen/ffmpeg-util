@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm**.
 
 ---
 
@@ -183,6 +183,13 @@ ffmpeg-util volume in.mp4 louder.mp4 --gain 3
 ffmpeg-util volume in.mp4 quieter.mp4 --gain=-6
 ```
 
+### loudnorm — normalize loudness (EBU R128)
+Normalizes integrated loudness to a `--target` (LUFS). Common targets: -16 (web),
+-14 (streaming), -23 (broadcast).
+```bash
+ffmpeg-util loudnorm in.mp4 normalized.mp4 --target -14
+```
+
 ---
 
 ## 5. Using as a library
@@ -206,7 +213,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 
