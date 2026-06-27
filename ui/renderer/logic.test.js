@@ -917,3 +917,49 @@ test("groupTabs accepts a Set and collects unknown tabs into 'Other'", () => {
   assert.deepEqual(L.groupTabs([], L.TOOL_CATEGORIES), []);
   assert.deepEqual(L.groupTabs(null, L.TOOL_CATEGORIES), []);
 });
+
+test("normalizeFavorites cleans the stored list", () => {
+  assert.deepEqual(L.normalizeFavorites(["crop", "crop", "", null, "gif"]), ["crop", "gif"]);
+  assert.deepEqual(L.normalizeFavorites(null), []);
+  assert.deepEqual(L.normalizeFavorites("crop"), []); // non-array is ignored
+});
+
+test("toggleFavorite pins and unpins immutably, appending new pins", () => {
+  const a = L.toggleFavorite([], "crop");
+  assert.deepEqual(a, ["crop"]);
+  const b = L.toggleFavorite(a, "gif");
+  assert.deepEqual(b, ["crop", "gif"]);
+  assert.deepEqual(a, ["crop"], "the original list is not mutated");
+  assert.deepEqual(L.toggleFavorite(b, "crop"), ["gif"]); // unpin removes it
+  assert.deepEqual(L.toggleFavorite(["crop"], ""), ["crop"]); // blank tab is a no-op
+});
+
+test("isFavorite reflects membership", () => {
+  assert.equal(L.isFavorite(["crop", "gif"], "gif"), true);
+  assert.equal(L.isFavorite(["crop"], "gif"), false);
+  assert.equal(L.isFavorite(null, "gif"), false);
+});
+
+test("groupTabsWithFavorites leads with a Favorites row and de-dupes categories", () => {
+  const groups = L.groupTabsWithFavorites(NAV_TABS, ["gif", "crop"], L.TOOL_CATEGORIES);
+  // the Favorites group is first, in favorites order
+  assert.equal(groups[0].name, L.FAVORITES_GROUP);
+  assert.deepEqual(groups[0].tabs, ["gif", "crop"]);
+  // pinned tabs are removed from their normal categories
+  assert.ok(!groups.find((g) => g.name === "Trim & Frames").tabs.includes("gif"));
+  assert.ok(!groups.find((g) => g.name === "Resize & Frame").tabs.includes("crop"));
+  // every nav tab still appears exactly once across all groups
+  const flat = groups.flatMap((g) => g.tabs);
+  assert.equal(new Set(flat).size, flat.length);
+  assert.deepEqual([...flat].sort(), [...NAV_TABS].sort());
+});
+
+test("groupTabsWithFavorites with no/absent favorites matches groupTabs", () => {
+  assert.deepEqual(
+    L.groupTabsWithFavorites(NAV_TABS, [], L.TOOL_CATEGORIES),
+    L.groupTabs(NAV_TABS, L.TOOL_CATEGORIES)
+  );
+  // only *present* favorites appear — a filtered-away pin drops out of the row
+  const groups = L.groupTabsWithFavorites(["convert", "gif"], ["gif", "crop"], L.TOOL_CATEGORIES);
+  assert.deepEqual(groups[0].tabs, ["gif"]); // crop isn't present → excluded
+});
