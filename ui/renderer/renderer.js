@@ -13,7 +13,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
   addRecentFile, recentFileLabel, recentDir, reorderList,
-  resolveTheme, nextTheme, themeToggleLabel } = window.FfuLogic;
+  resolveTheme, nextTheme, themeToggleLabel, helpForTab } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -68,6 +68,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     refreshPresetSelect(); // show this tab's saved presets
     refreshDimPresets(); // show frame-size presets when the tab has W/H fields
     renderCropOverlay(); // show/hide the visual crop selector for this tab
+    updateTabHelp(tab); // one-line "what it does + example" for the new tab
     setSettings({ activeTab: tab }).catch(() => {}); // remember across launches
   });
 });
@@ -75,6 +76,16 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
 function currentTab() {
   const btn = document.querySelector(".tabs button.active");
   return btn ? btn.dataset.tab : "convert";
+}
+
+// Show the active tab's one-line help (from logic.js) above its panel; hide the
+// line for any tab without help so an empty box never floats there.
+function updateTabHelp(tab) {
+  const el = $("#tab-help");
+  if (!el) return;
+  const text = helpForTab(tab);
+  el.textContent = text;
+  el.classList.toggle("hidden", !text);
 }
 
 // --- Light/dark theme toggle ---
@@ -1025,6 +1036,7 @@ async function loadSettings() {
   } catch (_) {
     // first run / no store yet — ignore
   }
+  updateTabHelp(currentTab()); // seed help for the default/restored tab
 }
 
 async function saveSettings() {

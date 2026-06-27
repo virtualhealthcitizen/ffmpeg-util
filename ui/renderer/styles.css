@@ -125,6 +125,19 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .no-tools { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 .no-tools.hidden { display: none; }
 
+/* One-line help for the active tool, between the nav and the source card. */
+.tab-help {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+  background: var(--inset);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+.tab-help.hidden { display: none; }
+
 .tabs { display: flex; gap: 4px 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: baseline; }
 .tabs button.hidden { display: none; }
 /* Category divider: full-width so the buttons after it wrap onto their own row. */

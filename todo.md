@@ -507,7 +507,15 @@ Power-user flow:
       row hidden before any run; Copy button feedback; real output produced). ← next
 
 Help / discoverability:
-- [ ] Per-tab one-line example + a "?" tooltip explaining each field.
+- [~] Per-tab one-line example — DONE: a `#tab-help` line between the nav and the
+      source card shows the active tool's "what it does + a worked example" sentence
+      (e.g. compress → "Shrink with CRF/bitrate… Example: CRF 28 + Width 1280…").
+      Pure `TOOL_HELP`/`helpForTab` in `logic.js` (an entry for every nav tab);
+      renderer `updateTabHelp` sets/hides it on tab switch and on load. Verified:
+      node:test (2 new, 114 total) + headless Electron E2E vs the real sidecar
+      (Convert help on load; switching to Compress updates it to the CRF line; all
+      33 nav tabs show a non-empty visible help line; real compress still runs →
+      output produced). (Per-field "?" tooltips still open.) ← next
 - [x] Friendly error mapping (carried from round 8) — DONE (see round 8: friendlier
       error surface; `friendlyError` in `logic.js`, `#error-hint` above the raw stderr).
 

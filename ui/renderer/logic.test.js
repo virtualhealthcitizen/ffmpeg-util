@@ -184,6 +184,29 @@ test("TOOL_ALIASES covers tabs and is searchable via filterTools", () => {
   assert.deepEqual(L.filterTools("backwards", tools), ["reverse"]);
 });
 
+test("helpForTab returns a one-line hint for a known tab, '' for unknown", () => {
+  const h = L.helpForTab("compress");
+  assert.ok(h.length > 0);
+  assert.ok(/CRF/i.test(h)); // mentions the tool's key option
+  assert.equal(L.helpForTab("nope"), "");
+  assert.equal(L.helpForTab(""), "");
+  assert.equal(L.helpForTab(undefined), "");
+});
+
+test("TOOL_HELP covers every tab in TOOL_CATEGORIES with a concise string", () => {
+  const allTabs = L.TOOL_CATEGORIES.flatMap((c) => c.tabs);
+  assert.ok(allTabs.length >= 30);
+  for (const tab of allTabs) {
+    const h = L.helpForTab(tab);
+    assert.ok(h && h.length > 0, `missing help for ${tab}`);
+    assert.ok(h.length <= 160, `help for ${tab} too long (${h.length})`);
+  }
+  // No stray help keys for tabs that aren't in the nav.
+  for (const tab of Object.keys(L.TOOL_HELP)) {
+    assert.ok(allTabs.includes(tab), `help for unknown tab ${tab}`);
+  }
+});
+
 test("formatBytes scales to KB/MB/GB", () => {
   assert.equal(L.formatBytes(0), "0 B");
   assert.equal(L.formatBytes(512), "512 B");

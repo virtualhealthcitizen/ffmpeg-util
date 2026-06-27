@@ -315,6 +315,53 @@
     return groups;
   }
 
+  // --- Per-tab help: a one-line "what it does + a concrete example" for the
+  // active tool, shown above its panel. With ~30 near-identical input/output/run
+  // tabs, the tab name alone doesn't say what the fields mean or what good values
+  // look like; this gives each tool a plain-English sentence and a worked example.
+  // Pure data + a lookup so the renderer just prints helpForTab(tab). Every tab in
+  // the nav has an entry — a stray/unknown id returns "" (the renderer hides it).
+  const TOOL_HELP = {
+    convert: "Change container or codec (or extract audio). Example: in.mov → in.mp4, or tick Extract audio for in.mp3.",
+    trim: "Cut a section by start + end/duration. Example: Start 00:00:05, Duration 10 keeps 5s–15s.",
+    concat: "Join clips end-to-end (one path per line, in order). They must share codec/size — re-encode first if not.",
+    thumbnail: "Grab a still (or N stills, or a contact sheet). Example: Time 00:00:03 → one frame; Count 5 → 5 frames.",
+    compress: "Shrink with CRF/bitrate, optionally resizing. Example: CRF 28 + Width 1280 for a smaller 720p file.",
+    gif: "Make an animated GIF (palette two-pass). Example: Width 480, FPS 12, Start 0, Duration 3 for a short loop.",
+    speed: "Speed up or slow down (keeps pitch sane). Example: 2.0 plays twice as fast; 0.5 is half speed.",
+    transform: "Rotate or flip. Example: op = rotate-cw turns 320×240 into 240×320; flip-h mirrors left↔right.",
+    crop: "Cut a rectangle (drag on the preview or type x/y/w/h). Example: 160×120 at 80,60 keeps the centre.",
+    mute: "Strip the audio track — output is silent video, copied without re-encoding.",
+    replace_audio: "Swap in an external audio file (video copied, audio re-encoded, trimmed to the shorter). Pick a new track.",
+    pad: "Letterbox to a target frame with solid bars (no cropping). Example: 320×240 → 640×640 centred.",
+    loop: "Repeat the whole clip N times. Example: Count 3 makes the output ~3× as long.",
+    frames: "Export every Nth frame as images. Example: Every 30 on a 30fps clip writes one PNG per second (use %d).",
+    reverse: "Play the clip backwards (video and audio). Duration is unchanged.",
+    volume: "Adjust loudness by decibels. Example: -6 halves perceived volume; +6 boosts it.",
+    fade: "Fade in and out at the ends. Example: Duration 1 gives a 1s fade-in and 1s fade-out.",
+    grayscale: "Desaturate to black & white (hue=s=0). No options to set — just run.",
+    invert: "Invert colours (photo negative). No options to set — just run.",
+    loudnorm: "Normalize loudness to a broadcast target (EBU R128). Example: -16 LUFS for web/podcast levels.",
+    boomerang: "Play forward then reversed so it bounces. Output duration is ~2× the input.",
+    eq: "Tweak brightness/contrast/saturation (eq filter). Example: Brightness +0.1, Saturation 1.3 for a punchier look.",
+    fps: "Change frame rate without changing speed. Example: 30 → 15 drops/duplicates frames, same duration.",
+    crop_aspect: "Auto-crop to an aspect ratio. Example: 16:9 turns 320×240 into 320×180 (sides kept, top/bottom trimmed).",
+    mono: "Downmix audio to a single channel (-ac 1). No options to set — just run.",
+    title: "Set or clear the metadata title tag. Example: type a Title, or leave it blank to clear.",
+    waveform: "Render the audio as a waveform PNG. Example: 640×120 for a compact strip.",
+    sample_rate: "Resample audio. Example: Rate 22050 down-samples a 44100 Hz track.",
+    hstack: "Place two videos side by side (equal heights). Output width is the sum of both.",
+    vstack: "Stack two videos top-and-bottom (equal widths). Output height is the sum of both.",
+    blur_pad: "Pad to a target frame, filling the bars with a blurred copy of the video (no solid bars). Example: 320×240 → 480×480.",
+    image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
+    autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
+  };
+
+  // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
+  function helpForTab(tab) {
+    return Object.prototype.hasOwnProperty.call(TOOL_HELP, tab) ? TOOL_HELP[tab] : "";
+  }
+
   // --- Favorites: pin tools into a leading quick-access row, persisted ---
 
   // The label of the synthetic group that leads the nav with the pinned tabs.
@@ -1075,6 +1122,8 @@
     filterTools,
     TOOL_CATEGORIES,
     groupTabs,
+    TOOL_HELP,
+    helpForTab,
     FAVORITES_GROUP,
     normalizeFavorites,
     isFavorite,
