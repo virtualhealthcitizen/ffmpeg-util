@@ -463,8 +463,19 @@ function hideProgress() {
 // True while an op is streaming, so a second click can't fire the same op twice
 // against the same output. Every run button is disabled for the duration.
 let opInFlight = false;
+let currentAbort = null; // AbortController for the in-flight /run/stream fetch
 function setRunButtonsDisabled(disabled) {
   document.querySelectorAll('[id^="run-"]').forEach((b) => (b.disabled = disabled));
+}
+function setCancelVisible(show) {
+  $("#run-actions").classList.toggle("hidden", !show);
+}
+
+// Cancel the running op: aborting the stream disconnects the client, which makes
+// the sidecar stop consuming progress and kill the ffmpeg process (see
+// FfmpegRunner.iter_ffmpeg_progress's finally).
+function cancelOp() {
+  if (currentAbort) currentAbort.abort();
 }
 
 // Ask the sidecar whether the output already exists; if so, confirm before we
@@ -491,7 +502,10 @@ async function run(label, op, body) {
     return;
   }
   opInFlight = true;
+  const abort = new AbortController();
+  currentAbort = abort;
   setRunButtonsDisabled(true);
+  setCancelVisible(true);
   setStatus(label + "…");
   showProgress(0);
   hidePreview();
@@ -500,6 +514,7 @@ async function run(label, op, body) {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ op, ...body }),
+      signal: abort.signal,
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -532,12 +547,20 @@ async function run(label, op, body) {
     if (result && result.output) showPreview(result.output);
   } catch (e) {
     hideProgress();
-    setStatus("Error: " + e.message, true);
+    if (abort.signal.aborted) {
+      setStatus("Cancelled — operation stopped.");
+    } else {
+      setStatus("Error: " + e.message, true);
+    }
   } finally {
     opInFlight = false;
+    currentAbort = null;
+    setCancelVisible(false);
     setRunButtonsDisabled(false);
   }
 }
+
+$("#cancel-op").addEventListener("click", cancelOp);
 
 function requireFields(...ids) {
   for (const id of ids) {
