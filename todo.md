@@ -203,6 +203,64 @@ Packaging / tests:
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [ ] Change container only (remux) with codec compatibility check
 
+### UI/UX components (round 7) — specialized components to ease individual tools
+> Theme: the app now has ~30 near-identical "input / output / fields / run" tabs in
+> one wrap-around nav. The friction is no longer *missing operations* — it's
+> *navigation, parameter entry, and feedback*. These are specialized UI components,
+> not new ffmpeg ops.
+
+Navigation (cross-cutting — the 30-tab wall):
+- [ ] **Tool search / command palette** — a filter box above the tabs that narrows
+      the 30 buttons live by name + aliases (e.g. "rotate"→Transform, "resize"→Compress,
+      "square"→Aspect). Ctrl/Cmd+K focuses it; Enter jumps to the first match; Esc clears.
+      *(Highest leverage: every session starts by finding the right tool.)*
+- [ ] Group the tabs into labeled categories (Convert · Trim/Frames · Resize/Frame ·
+      Video FX · Color · Audio · Combine · Metadata) so the nav scans in seconds.
+- [ ] Favorites / recently-used tools pinned to the top of the nav.
+
+Direct-manipulation (visual instead of typed numbers):
+- [ ] **Visual crop selector** — draggable rectangle over a source frame; fills the
+      Crop x/y/w/h (and Aspect) instead of typing pixels.
+- [ ] Trim/GIF timeline scrubber — load the video, drag in/out handles to set
+      start/end/duration visually (trim, gif, thumbnail time, poster frame).
+- [ ] Before/after compare slider on the output preview (drag a divider over input↔output).
+
+Input affordances (kill the typed-number friction — this is what bit "Blur pad"):
+- [ ] **Auto source-preview + friendly probe card** — on file select/drop, auto-show
+      the input thumbnail/player plus a readable summary (duration · W×H · fps · codecs ·
+      size). Would have shown the Blur-pad user the source dimensions up front.
+- [ ] **Dimension / aspect presets** — clickable chips (16:9, 9:16, 1:1, 720p, 1080p,
+      "match source") that fill Width/Height for pad, blur_pad, crop, compress.
+- [ ] Sliders with live readouts for the numeric ops — volume (dB), speed (×),
+      eq (brightness/contrast/saturation), fade (s), loudnorm (LUFS), blur sigma.
+- [ ] Auto-fill the output path from input + op suffix (in.mp4 → in.blurpad.mp4) so
+      "output required" stops being a manual step.
+
+Workflow / feedback components:
+- [ ] Cancel button — kill the running ffmpeg process mid-op.
+- [ ] "Show ffmpeg command" + copy-to-clipboard (surface the dry-run for any op).
+- [ ] Drag-to-reorder the concat list, with per-row thumbnails.
+- [ ] Output presets dropdown ("Web MP4", "Discord 8 MB", "GIF", …).
+- [ ] Job history strip — recent runs with re-run / reveal-in-Explorer.
+- [ ] "Reveal in Explorer" / open-output button on completion.
+- [ ] Before/after size + duration summary on completion.
+- [ ] Inline per-field validation (highlight the offending field, not just the status line).
+- [ ] System notification (+ optional sound) on completion; light/dark theme toggle;
+      remember window size & position.
+
+**Priority for this round (highest first):**
+1. Tool search / command palette — biggest, most universal friction; clean pure logic
+   to unit-test; E2E-screenshottable via `capture.js`. **← burning next.**
+2. Auto source-preview + friendly probe card — broad, every tab benefits.
+3. Dimension / aspect presets — directly fixes the Blur-pad width/height pain.
+4. Sliders with live readouts; 5. Visual crop selector; 6. the rest.
+
+- [x] **Tool search / command palette** — filter box above the tabs (pure
+      `filterTools`/`TOOL_ALIASES` in `logic.js`), live-narrows the 30 buttons by
+      name + alias; Ctrl/Cmd+K focus, Enter jumps to first match, Esc clears, "no
+      tools match" state. CLI/sidecar untouched. Verified: node:test unit tests +
+      headless Electron E2E (typed "rotate" → only Transform visible, screenshot).
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`

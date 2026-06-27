@@ -87,9 +87,65 @@
     return { id: target.id, value: paths[0] };
   }
 
+  // Search aliases per tab — extra keywords so the tool filter finds a tool by
+  // what it *does*, not just its visible label ("rotate" -> Transform, etc.).
+  const TOOL_ALIASES = {
+    convert: "transcode container codec extract audio format change",
+    trim: "cut clip split start end duration",
+    concat: "join merge combine append stitch",
+    thumbnail: "screenshot poster still snapshot contact sheet montage frame grab",
+    compress: "resize scale shrink smaller size crf bitrate target quality",
+    gif: "animated giphy meme loop palette",
+    speed: "fast slow timelapse slowmo retime tempo",
+    transform: "rotate flip mirror turn orientation cw ccw",
+    crop: "cut rectangle trim edges region",
+    mute: "silent remove strip audio no sound",
+    pad: "letterbox bars frame fit border",
+    loop: "repeat times duplicate",
+    frames: "extract images sequence export png every nth",
+    reverse: "backwards rewind",
+    volume: "gain loud quiet db amplify boost attenuate",
+    fade: "in out dissolve intro outro",
+    grayscale: "black white desaturate mono color monochrome",
+    loudnorm: "loudness normalize lufs ebu r128 level",
+    boomerang: "forward back bounce pingpong instagram",
+    eq: "adjust brightness contrast saturation color levels",
+    fps: "frame rate resample smooth",
+    crop_aspect: "aspect ratio square vertical wide 16 9 1 reframe",
+    mono: "downmix single channel audio",
+    title: "metadata tag name rename",
+    waveform: "audio visual spectrum showwaves wave png",
+    sample_rate: "audio hz khz resample rate 44100 48000",
+    hstack: "side by side horizontal compare two videos",
+    vstack: "stacked vertical top bottom two videos",
+    blur_pad: "blurred fill background letterbox frame fit no bars",
+  };
+
+  // Filter a list of tools by a search query. Pure & order-preserving.
+  // tools: [{ tab, label, keywords }]. Returns the matching `tab` ids in order.
+  // Empty/whitespace query returns every tab. Multi-word queries are AND-matched:
+  // each whitespace-separated token must appear as a substring of the tool's
+  // haystack (label + tab + keywords), so "rotate left" still finds Transform.
+  function filterTools(query, tools) {
+    const list = Array.isArray(tools) ? tools : [];
+    const tokens = String(query || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (tokens.length === 0) return list.map((t) => t.tab);
+    return list
+      .filter((t) => {
+        const hay = `${t.label || ""} ${t.tab || ""} ${t.keywords || ""}`.toLowerCase();
+        return tokens.every((tok) => hay.includes(tok));
+      })
+      .map((t) => t.tab);
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
+    TOOL_ALIASES,
+    filterTools,
     isImagePath,
     isVideoPath,
     previewKind,

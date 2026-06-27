@@ -2,8 +2,8 @@
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
-const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind } =
-  window.FfuLogic;
+const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
+  filterTools, TOOL_ALIASES } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -39,6 +39,52 @@ function currentTab() {
   const btn = document.querySelector(".tabs button.active");
   return btn ? btn.dataset.tab : "convert";
 }
+
+// --- Tool search / command palette: narrow the 30 tabs by name + alias ---
+(function setupToolSearch() {
+  const search = $("#tool-search");
+  const clearBtn = $("#tool-search-clear");
+  const noTools = $("#no-tools");
+  const buttons = Array.from(document.querySelectorAll(".tabs button"));
+  // Build the (tab, label, keywords) list once from the DOM + alias table.
+  const tools = buttons.map((b) => ({
+    tab: b.dataset.tab,
+    label: b.textContent.trim(),
+    keywords: (TOOL_ALIASES && TOOL_ALIASES[b.dataset.tab]) || "",
+  }));
+
+  function applyFilter() {
+    const q = search.value;
+    const matches = new Set(filterTools(q, tools));
+    buttons.forEach((b) => b.classList.toggle("hidden", !matches.has(b.dataset.tab)));
+    noTools.classList.toggle("hidden", matches.size > 0);
+    clearBtn.hidden = q.trim() === "";
+  }
+
+  search.addEventListener("input", applyFilter);
+  search.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const first = buttons.find((b) => !b.classList.contains("hidden"));
+      if (first) first.click();
+    } else if (e.key === "Escape") {
+      search.value = "";
+      applyFilter();
+    }
+  });
+  clearBtn.addEventListener("click", () => {
+    search.value = "";
+    applyFilter();
+    search.focus();
+  });
+  // Ctrl/Cmd+K focuses and selects the search box from anywhere.
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      search.focus();
+      search.select();
+    }
+  });
+})();
 
 // --- Drag & drop: drop files anywhere to load them into the active tab ---
 (function setupDragDrop() {

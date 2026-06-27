@@ -12,6 +12,12 @@
     <p class="sub">Convert &amp; inspect media — Electron UI over the Python sidecar.</p>
     <p class="sub hint-drop">Tip: drag a file onto the window to load it into the current tab.</p>
 
+    <div class="toolsearch">
+      <input id="tool-search" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Search tools…  (Ctrl+K)" aria-label="Search tools" />
+      <button id="tool-search-clear" class="secondary" title="Clear search" hidden>✕</button>
+    </div>
+
     <nav class="tabs">
       <button data-tab="convert" class="active">Convert</button>
       <button data-tab="trim">Trim</button>
@@ -43,6 +49,7 @@
       <button data-tab="vstack">Stacked</button>
       <button data-tab="blur_pad">Blur pad</button>
     </nav>
+    <p id="no-tools" class="no-tools hidden">No tools match your search.</p>
 
     <!-- Convert -->
     <section class="card panel active" id="panel-convert">

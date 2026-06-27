@@ -107,6 +107,62 @@ test("dropUpdate works for a generic single-input tab", () => {
   assert.deepEqual(L.dropUpdate(["a.mp4"], "eq"), { id: "eq-input", value: "a.mp4" });
 });
 
+test("filterTools returns every tab for an empty/whitespace query", () => {
+  const tools = [
+    { tab: "convert", label: "Convert", keywords: "" },
+    { tab: "trim", label: "Trim", keywords: "cut" },
+  ];
+  assert.deepEqual(L.filterTools("", tools), ["convert", "trim"]);
+  assert.deepEqual(L.filterTools("   ", tools), ["convert", "trim"]);
+  assert.deepEqual(L.filterTools(null, tools), ["convert", "trim"]);
+});
+
+test("filterTools matches on label (case-insensitive) and preserves order", () => {
+  const tools = [
+    { tab: "convert", label: "Convert", keywords: "" },
+    { tab: "compress", label: "Compress", keywords: "" },
+    { tab: "trim", label: "Trim", keywords: "" },
+  ];
+  assert.deepEqual(L.filterTools("co", tools), ["convert", "compress"]);
+  assert.deepEqual(L.filterTools("TRIM", tools), ["trim"]);
+});
+
+test("filterTools matches on alias keywords, not just the label", () => {
+  const tools = [
+    { tab: "transform", label: "Transform", keywords: "rotate flip mirror" },
+    { tab: "compress", label: "Compress", keywords: "resize scale shrink" },
+  ];
+  assert.deepEqual(L.filterTools("rotate", tools), ["transform"]);
+  assert.deepEqual(L.filterTools("resize", tools), ["compress"]);
+});
+
+test("filterTools AND-matches every whitespace token", () => {
+  const tools = [
+    { tab: "transform", label: "Transform", keywords: "rotate flip mirror turn" },
+    { tab: "crop", label: "Crop", keywords: "rectangle edges" },
+  ];
+  assert.deepEqual(L.filterTools("rotate flip", tools), ["transform"]);
+  assert.deepEqual(L.filterTools("rotate edges", tools), []); // no single tool has both
+});
+
+test("filterTools returns [] when nothing matches", () => {
+  const tools = [{ tab: "convert", label: "Convert", keywords: "" }];
+  assert.deepEqual(L.filterTools("zzz", tools), []);
+});
+
+test("TOOL_ALIASES covers tabs and is searchable via filterTools", () => {
+  // Build the same tool list the renderer builds, from the alias table.
+  const tools = Object.keys(L.TOOL_ALIASES).map((tab) => ({
+    tab,
+    label: tab,
+    keywords: L.TOOL_ALIASES[tab],
+  }));
+  assert.ok(tools.length >= 28); // ~30 tools
+  assert.deepEqual(L.filterTools("letterbox", tools).sort(), ["blur_pad", "pad"]);
+  assert.deepEqual(L.filterTools("lufs", tools), ["loudnorm"]);
+  assert.deepEqual(L.filterTools("backwards", tools), ["reverse"]);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';
