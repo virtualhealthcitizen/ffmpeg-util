@@ -305,8 +305,13 @@ Make the probe data actionable (the source card is read-only today):
       the renderer (debounced, supersede-safe). Verified: node:test (4 new, 35 total)
       + headless Electron E2E vs the real sidecar (320×240 + 320×360 → hstack warns
       "Heights differ", vstack OK, concat warns; hidden on single-input tabs; shot).
-- [ ] Estimated-output readout — live size/duration estimate from the probed input
-      + current settings (compress CRF, gif fps/width, speed factor, trim range).
+- [x] **Estimated-output readout** — a live "Estimated output: ~…" line predicts
+      output DURATION for length-changing ops (trim/speed/loop/boomerang) and SIZE
+      for compress when a target-MB or bitrate is given (CRF size isn't predictable
+      → hidden). Pure `estimateOutput`/`parseTimeToSeconds`/`parseBitrateBps` in
+      `logic.js`, fed by the probed source duration. Verified: node:test (5 new) +
+      headless Electron E2E vs the real sidecar (2s clip → speed 2× ~0:01, loop ×3
+      ~0:06, trim dur 1 ~0:01, compress target 5 → ~5.0 MB, CRF-only/convert hidden).
 
 Direct manipulation on the embedded source player (it's already there):
 - [x] **Scrub-to-set-time** — a "Set from playhead:" button row under the source
@@ -337,7 +342,7 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 1. ~~Clickable probe chips + "Match source"~~ — DONE.
 2. ~~Multi-input probe + mismatch guard~~ — DONE.
 3. ~~Scrub-to-set-time~~ — DONE.
-4. Estimated-output readout — **← next.** 5. friendlier errors; 6. the rest.
+4. ~~Estimated-output readout~~ — DONE. 5. friendlier errors — **← next.** 6. the rest.
 
 ### UI/UX components (round 9) — safety, persistence, power-user flow
 > A different angle from rounds 7–8: not new affordances, but making the existing
