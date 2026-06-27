@@ -299,6 +299,26 @@ test("compatReport returns null when it doesn't apply", () => {
   assert.equal(L.compatReport("hstack", [{ w: 320, h: 240 }, null]), null); // second not probed yet
 });
 
+test("formatTimecode renders HH:MM:SS.mmm with correct ms carry", () => {
+  assert.equal(L.formatTimecode(0), "00:00:00.000");
+  assert.equal(L.formatTimecode(1.5), "00:00:01.500");
+  assert.equal(L.formatTimecode(65.25), "00:01:05.250");
+  assert.equal(L.formatTimecode(3661.007), "01:01:01.007");
+  assert.equal(L.formatTimecode(1.9999), "00:00:02.000"); // ms rounds up & carries
+  assert.equal(L.formatTimecode(-5), "00:00:00.000"); // clamp negatives
+});
+
+test("timeTargetsForTab maps trim/gif/thumbnail to their time fields", () => {
+  assert.deepEqual(L.timeTargetsForTab("trim"), [
+    { id: "trim-start", label: "start" },
+    { id: "trim-end", label: "end" },
+  ]);
+  assert.deepEqual(L.timeTargetsForTab("gif"), [{ id: "gif-start", label: "start" }]);
+  assert.deepEqual(L.timeTargetsForTab("thumbnail"), [{ id: "thumbnail-time", label: "time" }]);
+  assert.deepEqual(L.timeTargetsForTab("convert"), []);
+  assert.deepEqual(L.timeTargetsForTab("compress"), []);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

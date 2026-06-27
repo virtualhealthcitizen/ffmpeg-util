@@ -298,8 +298,13 @@ Make the probe data actionable (the source card is read-only today):
       + current settings (compress CRF, gif fps/width, speed factor, trim range).
 
 Direct manipulation on the embedded source player (it's already there):
-- [ ] **Scrub-to-set-time** — "Use current time" buttons that read the source
-      player's playhead into Trim start/end, GIF start, Thumbnail time, poster frame.
+- [x] **Scrub-to-set-time** — a "Set from playhead:" button row under the source
+      player fills the active tab's time field(s) from the video's currentTime
+      (Trim start/end, GIF start, Thumbnail time); hidden on tabs without a time
+      field or for image sources. Pure `formatTimecode`/`timeTargetsForTab` in
+      `logic.js`. Verified: node:test (2 new, 37 total) + headless Electron E2E vs
+      the real sidecar (playhead 1.5s → trim-start "00:00:01.500"; GIF/Thumbnail
+      fill; hidden on Convert + image; shot).
 - [ ] Draw-a-rectangle crop overlay on the source frame → fills Crop x/y/w/h.
 - [ ] In/out range handles on the player's scrub bar for Trim/GIF duration.
 
@@ -320,8 +325,8 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 **Priority for round 8 (highest first):**
 1. ~~Clickable probe chips + "Match source"~~ — DONE.
 2. ~~Multi-input probe + mismatch guard~~ — DONE.
-3. Scrub-to-set-time — high-value, reuses the player we just shipped. **← next.**
-4. Estimated-output readout; 5. friendlier errors; 6. the rest.
+3. ~~Scrub-to-set-time~~ — DONE.
+4. Estimated-output readout — **← next.** 5. friendlier errors; 6. the rest.
 
 ### UI/UX components (round 9) — safety, persistence, power-user flow
 > A different angle from rounds 7–8: not new affordances, but making the existing

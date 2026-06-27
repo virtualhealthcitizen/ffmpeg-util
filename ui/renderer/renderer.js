@@ -4,7 +4,7 @@ const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathFor
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
-  videoDims, compatReport } = window.FfuLogic;
+  videoDims, compatReport, formatTimecode, timeTargetsForTab } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -111,10 +111,43 @@ function hideSource() {
   vid.classList.add("hidden");
   img.removeAttribute("src");
   vid.removeAttribute("src");
+  $("#source-actions").classList.add("hidden");
   if (sourceUrl) {
     URL.revokeObjectURL(sourceUrl);
     sourceUrl = null;
   }
+}
+
+// "Set from playhead" buttons: read the source <video> currentTime into the
+// active tab's time field(s). Shown only when the tab has time fields and a
+// video preview is loaded.
+function renderSourceActions() {
+  const box = $("#source-actions");
+  box.textContent = "";
+  const vid = $("#source-video");
+  const targets = timeTargetsForTab(currentTab());
+  const hasVideo = !vid.classList.contains("hidden") && vid.getAttribute("src");
+  if (!targets.length || !hasVideo) {
+    box.classList.add("hidden");
+    return;
+  }
+  const label = document.createElement("span");
+  label.className = "sa-label";
+  label.textContent = "Set from playhead:";
+  box.appendChild(label);
+  for (const t of targets) {
+    const btn = document.createElement("button");
+    btn.className = "secondary sa-btn";
+    btn.textContent = "→ " + t.label;
+    btn.addEventListener("click", () => {
+      const tc = formatTimecode(vid.currentTime);
+      const field = $("#" + t.id);
+      if (field) field.value = tc;
+      setStatus(`Set ${t.label} to ${tc} (from preview).`);
+    });
+    box.appendChild(btn);
+  }
+  box.classList.remove("hidden");
 }
 
 async function showSourceMedia(path) {
@@ -190,11 +223,12 @@ function renderChips(chips, actions = {}) {
 async function refreshSource() {
   const path = activeInputPath();
   if (!path) return hideSource();
-  if (path === lastSourcePath) return; // already shown
+  if (path === lastSourcePath) return renderSourceActions(); // re-target buttons for this tab
   lastSourcePath = path;
   $("#source").classList.remove("hidden");
   renderChips([]); // clear stale chips while loading
-  showSourceMedia(path);
+  await showSourceMedia(path);
+  renderSourceActions();
   try {
     const { result } = await api("/probe", { input: path, as_json: true });
     if (path !== lastSourcePath) return; // a newer input superseded this one
