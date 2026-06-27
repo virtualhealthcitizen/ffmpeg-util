@@ -550,6 +550,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
         runner = FfmpegRunner(overwrite=req.overwrite)
         cleanup = None
         try:
+            commands.require_output_extension(req.output)
             probe_target = req.input or (req.inputs[0] if req.inputs else None)
             total = commands.probe_duration(runner, probe_target) if probe_target else None
             # Two-pass target-size encoding doesn't map to a single streamed pass;

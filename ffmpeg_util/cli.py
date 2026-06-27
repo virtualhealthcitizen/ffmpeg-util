@@ -197,6 +197,12 @@ def _runner(args: argparse.Namespace) -> FfmpegRunner:
 def _dispatch(args: argparse.Namespace) -> int:
     runner = _runner(args)
 
+    # Every command except probe writes an output file; catch a missing extension
+    # early with a clear message instead of ffmpeg's cryptic muxer error.
+    out = getattr(args, "output", None)
+    if out is not None:
+        commands.require_output_extension(out)
+
     if args.command == "probe":
         out = commands.probe(runner, args.input, as_json=args.json)
         if out:

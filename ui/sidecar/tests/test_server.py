@@ -541,6 +541,20 @@ def test_run_stream_target_size_two_pass(client, media, auth):
     assert 0.4 * 0.4 <= size_mb <= 1.8 * 0.4, f"got {size_mb:.3f} MB"
 
 
+def test_run_stream_missing_extension_error(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/run/stream",
+        json={"op": "gif", "input": str(src), "output": str(d / "output"),  # no extension
+              "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    last = _sse_events(r.text)[-1]
+    assert last["type"] == "error"
+    assert "extension" in last["detail"].lower()
+
+
 def test_run_stream_error_event(client, media, auth):
     d, _ = media
     r = client.post(

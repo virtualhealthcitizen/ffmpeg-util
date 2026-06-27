@@ -16,6 +16,19 @@ from .runner import FfmpegRunner
 _AUDIO_ONLY_EXT = {".mp3", ".aac", ".m4a", ".wav", ".flac", ".ogg", ".opus"}
 
 
+def require_output_extension(path: str) -> None:
+    """Raise a clear error if ``path`` has no extension.
+
+    ffmpeg infers the container from the output extension; without one it fails
+    with a cryptic "Unable to choose an output format" message, so we catch it early.
+    """
+    if not os.path.splitext(path)[1]:
+        raise ValueError(
+            f"Output '{path}' has no file extension — add one "
+            f"(e.g. .mp4, .gif, .png) so the format is clear."
+        )
+
+
 def probe(runner: FfmpegRunner, path: str, *, as_json: bool = False) -> str:
     """Return ffprobe output for ``path`` as pretty JSON or a short summary."""
     args = [
