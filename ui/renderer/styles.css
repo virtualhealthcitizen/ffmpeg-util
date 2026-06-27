@@ -151,6 +151,12 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .chip.clickable .chip-value { color: var(--accent); }
 .chips .chips-msg { color: var(--muted); font-size: 12px; align-self: center; }
 
+/* "Set from playhead" buttons under the source player (Trim/GIF/Thumbnail). */
+.source-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.source-actions.hidden { display: none; }
+.source-actions .sa-label { color: var(--muted); font-size: 12px; }
+.source-actions .sa-btn { padding: 5px 10px; font-size: 12px; }
+
 /* Multi-input compatibility banner (hstack/vstack/concat). */
 .compat {
   padding: 10px 14px;

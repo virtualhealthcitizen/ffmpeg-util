@@ -313,6 +313,30 @@
     return { ok: true, message: `All inputs are ${uniq[0]} — ready to concat.` };
   }
 
+  // --- Scrub-to-set-time: read the source player's playhead into time fields ---
+
+  // Seconds -> "HH:MM:SS.mmm" (ffmpeg-accepted everywhere). Carries ms rounding
+  // correctly (1.9999 -> "00:00:02.000") and clamps negatives to zero.
+  function formatTimecode(seconds) {
+    const totalMs = Math.max(0, Math.round((Number(seconds) || 0) * 1000));
+    const ms = totalMs % 1000;
+    const totalSec = Math.floor(totalMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const sec = totalSec % 60;
+    const pad = (n, w = 2) => String(n).padStart(w, "0");
+    return `${pad(h)}:${pad(m)}:${pad(sec)}.${pad(ms, 3)}`;
+  }
+
+  // Which time fields the "set from playhead" buttons fill, per tab. [] when the
+  // tab has no time field the source player's current time maps to.
+  function timeTargetsForTab(tab) {
+    if (tab === "trim") return [{ id: "trim-start", label: "start" }, { id: "trim-end", label: "end" }];
+    if (tab === "gif") return [{ id: "gif-start", label: "start" }];
+    if (tab === "thumbnail") return [{ id: "thumbnail-time", label: "time" }];
+    return [];
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -323,6 +347,8 @@
     sourceFillActions,
     videoDims,
     compatReport,
+    formatTimecode,
+    timeTargetsForTab,
     formatBytes,
     formatDuration,
     parseFrameRate,
