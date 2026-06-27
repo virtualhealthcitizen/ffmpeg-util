@@ -309,6 +309,15 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-grayscale").addEventListener("click", () => {
+  if (!requireFields("grayscale-input", "grayscale-output")) return;
+  run("Converting to grayscale", "grayscale", {
+    input: val("grayscale-input"),
+    output: val("grayscale-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-fade").addEventListener("click", () => {
   if (!requireFields("fade-input", "fade-output", "fade-duration")) return;
   run("Fading", "fade", {

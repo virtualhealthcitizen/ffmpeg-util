@@ -368,6 +368,11 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to desaturate the video to grayscale (keeps the pixel format)."""
+    return ["-i", input_path, "-vf", "hue=s=0", output_path]
+
+
 def build_fade_args(
     input_path: str, output_path: str, fade_s: float, total_s: float, *, audio: bool = True
 ) -> list[str]:

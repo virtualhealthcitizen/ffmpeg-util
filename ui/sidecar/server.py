@@ -162,6 +162,22 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class GrayscaleReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/grayscale")
+def grayscale(req: GrayscaleReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_grayscale_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FadeReq(BaseModel):
     input: str
     output: str
@@ -462,6 +478,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "grayscale":
+        return commands.build_grayscale_args(req.input, req.output), None
     if op == "volume":
         return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":

@@ -128,6 +128,8 @@ Packaging / tests:
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)
 - [ ] Estimate output size before encoding (compress preview)
 - [ ] GIF tuning: dithering mode + loop count
+- [x] Grayscale (desaturate) — core `build_grayscale_args` (`hue=s=0`), CLI `grayscale`,
+      sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.
 - [ ] Denoise / sharpen / deinterlace filter presets
 - [ ] System notification (and optional sound) on completion
 - [ ] Remember window size & position across launches
