@@ -198,6 +198,36 @@ def _first_frame_yavg(path):
     return float(m.group(1)) if m else None
 
 
+def _first_frame_satavg(path):
+    import re
+    import subprocess
+    from conftest import FFMPEG
+    out = subprocess.run(
+        [FFMPEG, "-hide_banner", "-i", str(path),
+         "-vf", r"select=eq(n\,0),signalstats,metadata=print",
+         "-frames:v", "1", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    m = re.search(r"lavfi\.signalstats\.SATAVG=([\d.]+)", out.stdout + out.stderr)
+    return float(m.group(1)) if m else None
+
+
+def test_grayscale_removes_saturation(client, media, auth):
+    d, src = media
+    base = _first_frame_satavg(src)
+    out = d / "gray.mp4"
+    r = client.post(
+        "/grayscale",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    after = _first_frame_satavg(out)
+    assert base is not None and after is not None, f"base={base} after={after}"
+    assert base > 10, f"source should be colorful, SATAVG={base}"
+    assert after < 3, f"grayscale should be ~0 saturation, got {after}"
+
+
 def test_fade_makes_first_frame_dark(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)

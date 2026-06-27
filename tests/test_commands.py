@@ -119,6 +119,12 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_grayscale_args_build_filter():
+    args = c.build_grayscale_args("in.mp4", "out.mp4")
+    assert args[args.index("-vf") + 1] == "hue=s=0"
+    assert args[-1] == "out.mp4"
+
+
 def test_fade_args_with_audio():
     args = c.build_fade_args("in.mp4", "out.mp4", 1.0, 5.0, audio=True)
     vf = args[args.index("-vf") + 1]

@@ -68,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # grayscale
+    p = sub.add_parser("grayscale", help="Desaturate the video to grayscale.")
+    p.add_argument("input")
+    p.add_argument("output")
+    _add_global_flags(p)
+
     # fade
     p = sub.add_parser("fade", help="Fade in from / out to black (video + audio).")
     p.add_argument("input")
@@ -223,6 +229,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "grayscale":
+        runner.run_ffmpeg(commands.build_grayscale_args(args.input, args.output))
         return 0
 
     if args.command == "fade":
