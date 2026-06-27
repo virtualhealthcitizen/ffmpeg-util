@@ -779,6 +779,30 @@ def test_run_stream_speed(client, media, auth):
     assert _duration(out) > _duration(src)  # slower -> longer
 
 
+def test_run_stream_progress_carries_eta_fields(client, media, auth):
+    # Progress events must expose out_time (output position) + total (expected
+    # output duration) so the renderer can compute a live ETA from the speed.
+    d, src = media
+    out = d / "eta.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "compress", "input": str(src), "output": str(out),
+              "crf": 30, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    progress = [e for e in _sse_events(r.text) if e["type"] == "progress"]
+    assert progress, "expected at least one progress event"
+    # `total` is the expected output duration (~3s source, compress keeps length).
+    assert all(e["total"] is not None for e in progress)
+    assert abs(progress[-1]["total"] - 3.0) < 0.5
+    # at least one event reports a concrete output position
+    assert any(e.get("out_time") is not None for e in progress)
+    for e in progress:
+        if e["out_time"] is not None:
+            assert 0 <= e["out_time"] <= e["total"] + 0.5
+
+
 def test_gif_export(client, media, auth):
     import json as _json
     import subprocess

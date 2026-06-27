@@ -399,6 +399,12 @@ button.secondary { background: transparent; }
   margin-top: 14px;
 }
 .progress.hidden { display: none; }
+.eta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.eta.hidden { display: none; }
 #progress-bar {
   height: 100%;
   width: 0%;

@@ -13,7 +13,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
   addRecentFile, recentFileLabel, recentDir, reorderList,
-  resolveTheme, nextTheme, themeToggleLabel, helpForTab } = window.FfuLogic;
+  resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1246,6 +1246,13 @@ function showProgress(pct) {
 function hideProgress() {
   $("#progress").classList.add("hidden");
   $("#progress-bar").style.width = "0%";
+  setEta(null);
+}
+// Live "ETA ~0:42" readout next to the status line (cleared when empty).
+function setEta(text) {
+  const el = $("#eta");
+  el.textContent = text || "";
+  el.classList.toggle("hidden", !text);
 }
 
 // --- Operation runners (stream progress via SSE over fetch) ---
@@ -1327,6 +1334,7 @@ async function run(label, op, body) {
         if (ev.type === "progress") {
           if (ev.percent != null) showProgress(ev.percent);
           setStatus(`${label}… ${ev.percent != null ? ev.percent + "%" : ""}${ev.speed ? " (" + ev.speed + ")" : ""}`);
+          setEta(etaLabel(ev)); // remaining time from speed + output position
         } else if (ev.type === "done") {
           result = ev;
         } else if (ev.type === "error") {

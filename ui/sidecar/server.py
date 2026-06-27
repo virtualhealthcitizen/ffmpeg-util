@@ -1071,18 +1071,24 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
                 out_us = fields.get("out_time_us") or fields.get("out_time_ms")
-                percent = None
-                if expected and out_us:
+                out_time = None
+                if out_us:
                     try:
-                        secs = int(out_us) / 1_000_000
-                        percent = max(0.0, min(100.0, round(secs / expected * 100, 1)))
+                        out_time = int(out_us) / 1_000_000
                     except ValueError:
-                        percent = None
+                        out_time = None
+                percent = None
+                if expected and out_time is not None:
+                    percent = max(0.0, min(100.0, round(out_time / expected * 100, 1)))
                 yield _sse({
                     "type": "progress",
                     "percent": percent,
                     "speed": fields.get("speed"),
                     "phase": fields.get("progress"),
+                    # out_time (output position, s) + total (expected output, s) let
+                    # the renderer compute a live ETA from the encode speed.
+                    "out_time": out_time,
+                    "total": expected,
                 })
             yield _sse({"type": "done", "output": req.output})
         except (FfmpegError, ValueError) as exc:
