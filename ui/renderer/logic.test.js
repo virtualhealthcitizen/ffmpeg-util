@@ -824,3 +824,43 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
   assert.equal(L.nextVisibleTab(tabs, "convert", -1), "compress"); // last when moving back
   assert.equal(L.nextVisibleTab([], "convert", 1), null);
 });
+
+// The canonical nav order from index.html — the category map must cover exactly
+// these, each once. (Kept in sync with the <nav class="tabs"> buttons.)
+const NAV_TABS = [
+  "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
+  "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
+  "fade", "grayscale", "invert", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
+  "mono", "title", "waveform", "sample_rate", "hstack", "vstack", "blur_pad",
+  "image_to_video", "autocrop",
+];
+
+test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
+  const flat = L.TOOL_CATEGORIES.flatMap((c) => c.tabs);
+  // no tab appears twice across categories
+  assert.equal(new Set(flat).size, flat.length, "a tab is listed under two categories");
+  // the category map and the nav cover the same set of tabs
+  assert.deepEqual([...flat].sort(), [...NAV_TABS].sort());
+});
+
+test("groupTabs orders categories, keeps tab order, and drops empty groups", () => {
+  const groups = L.groupTabs(NAV_TABS, L.TOOL_CATEGORIES);
+  // category order is preserved and all categories are present for the full nav
+  assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
+  // within a category, the configured tab order is kept
+  const fx = groups.find((g) => g.name === "Video FX");
+  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video"]);
+  // a partial set keeps only the categories that still have a visible tab
+  const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
+  assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);
+  assert.deepEqual(some.find((g) => g.name === "Color").tabs, ["eq"]);
+});
+
+test("groupTabs accepts a Set and collects unknown tabs into 'Other'", () => {
+  const groups = L.groupTabs(new Set(["convert", "brand_new"]), L.TOOL_CATEGORIES);
+  assert.deepEqual(groups.map((g) => g.name), ["Convert", "Other"]);
+  assert.deepEqual(groups.find((g) => g.name === "Other").tabs, ["brand_new"]);
+  // empty / nullish input yields no groups
+  assert.deepEqual(L.groupTabs([], L.TOOL_CATEGORIES), []);
+  assert.deepEqual(L.groupTabs(null, L.TOOL_CATEGORIES), []);
+});

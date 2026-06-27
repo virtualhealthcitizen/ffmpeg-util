@@ -181,6 +181,44 @@
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
   };
 
+  // Group the operation tabs into labeled categories so the ~30-tab nav scans in
+  // seconds instead of reading as one undifferentiated wall. Ordered; every tab
+  // belongs to exactly one category. Pure data + a grouping helper, consumed by
+  // renderer.js to lay the nav out into rows and to hide a category label when
+  // search has filtered all of its tools away. A new tab not listed here is never
+  // silently dropped — groupTabs() collects any strays into a trailing "Other".
+  const TOOL_CATEGORIES = [
+    { name: "Convert", tabs: ["convert"] },
+    { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "gif"] },
+    { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
+    { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video"] },
+    { name: "Color", tabs: ["grayscale", "invert", "eq"] },
+    { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "waveform"] },
+    { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
+    { name: "Metadata", tabs: ["title"] },
+  ];
+
+  // Lay the given tab ids out under their categories, in category order, keeping
+  // each category's tab order and dropping categories with no present tab. `present`
+  // is the set of tab ids to show (an array or a Set) — pass every tab to build the
+  // full nav, or just the search-visible tabs to decide which labels to show. Any
+  // present tab not in TOOL_CATEGORIES lands in a trailing "Other" group so an
+  // unlisted tab is never hidden.
+  function groupTabs(present, categories) {
+    const cats = Array.isArray(categories) ? categories : TOOL_CATEGORIES;
+    const show = present instanceof Set ? present : new Set(present || []);
+    const seen = new Set();
+    const groups = [];
+    for (const cat of cats) {
+      const tabs = cat.tabs.filter((t) => show.has(t));
+      tabs.forEach((t) => seen.add(t));
+      if (tabs.length) groups.push({ name: cat.name, tabs });
+    }
+    const leftover = [...show].filter((t) => !seen.has(t));
+    if (leftover.length) groups.push({ name: "Other", tabs: leftover });
+    return groups;
+  }
+
   // Filter a list of tools by a search query. Pure & order-preserving.
   // tools: [{ tab, label, keywords }]. Returns the matching `tab` ids in order.
   // Empty/whitespace query returns every tab. Multi-word queries are AND-matched:
@@ -862,6 +900,8 @@
     EVEN_DIM_TABS,
     oddDimensionWarning,
     filterTools,
+    TOOL_CATEGORIES,
+    groupTabs,
     DIMENSION_FIELDS,
     FPS_FIELDS,
     sourceFillActions,
