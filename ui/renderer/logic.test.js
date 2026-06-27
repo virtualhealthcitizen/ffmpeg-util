@@ -265,6 +265,47 @@ test("sourceFillActions returns {} when the tab has no fillable fields or no vid
   assert.deepEqual(L.sourceFillActions("crop", null), {});
 });
 
+test("dimensionPresetTabs covers both-width-and-height tabs only", () => {
+  const tabs = L.dimensionPresetTabs();
+  for (const t of ["crop", "pad", "blur_pad", "compress", "waveform"]) {
+    assert.ok(tabs.includes(t), `expected ${t} in dimension preset tabs`);
+  }
+  // width-only tabs have no height field, so they're excluded
+  assert.equal(tabs.includes("gif"), false);
+  assert.equal(tabs.includes("thumbnail"), false);
+});
+
+test("presetDimensions returns fixed resolutions verbatim", () => {
+  const p720 = L.DIMENSION_PRESETS.find((p) => p.key === "720p");
+  assert.deepEqual(L.presetDimensions(p720, {}), { width: 1280, height: 720 });
+  const p4k = L.DIMENSION_PRESETS.find((p) => p.key === "2160p");
+  assert.deepEqual(L.presetDimensions(p4k, { width: 100 }), { width: 3840, height: 2160 });
+});
+
+test("presetDimensions derives height from the current width for ratio presets", () => {
+  const wide = { ratio: [16, 9] };
+  assert.deepEqual(L.presetDimensions(wide, { width: 1920 }), { width: 1920, height: 1080 });
+  const tall = { ratio: [9, 16] };
+  assert.deepEqual(L.presetDimensions(tall, { width: 1080 }), { width: 1080, height: 1920 });
+  const square = { ratio: [1, 1] };
+  assert.deepEqual(L.presetDimensions(square, { width: 500 }), { width: 500, height: 500 });
+});
+
+test("presetDimensions falls back to source width, then 1280, and rounds even", () => {
+  const wide = { ratio: [16, 9] };
+  assert.deepEqual(L.presetDimensions(wide, { sourceWidth: 640 }), { width: 640, height: 360 });
+  assert.deepEqual(L.presetDimensions(wide, {}), { width: 1280, height: 720 });
+  // odd base width is bumped to even, and the derived height too
+  assert.deepEqual(L.presetDimensions(wide, { width: 853 }), { width: 854, height: 480 });
+});
+
+test("presetDimensions matches source dims only when probed", () => {
+  const match = { match: true };
+  assert.deepEqual(L.presetDimensions(match, { sourceWidth: 320, sourceHeight: 240 }), { width: 320, height: 240 });
+  assert.equal(L.presetDimensions(match, {}), null);
+  assert.equal(L.presetDimensions(null, {}), null);
+});
+
 test("videoDims pulls first video stream size, else null", () => {
   assert.deepEqual(
     L.videoDims({ streams: [{ codec_type: "audio" }, { codec_type: "video", width: 1920, height: 1080 }] }),

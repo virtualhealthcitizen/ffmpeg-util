@@ -4,6 +4,7 @@ const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathFor
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
+  DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset } = window.FfuLogic;
@@ -37,6 +38,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
     refreshInputs(); // show the new tab's input + multi-input compat (if any)
     refreshPresetSelect(); // show this tab's saved presets
+    refreshDimPresets(); // show frame-size presets when the tab has W/H fields
     setSettings({ activeTab: tab }).catch(() => {}); // remember across launches
   });
 });
@@ -104,9 +106,12 @@ function activeInputPath() {
 
 let sourceUrl = null;
 let lastSourcePath = null;
+let sourceDims = null; // {w,h} of the active input's video, for the "Match source" preset
 
 function hideSource() {
   lastSourcePath = null;
+  sourceDims = null;
+  refreshDimPresets(); // drop the "Match source" chip once there's no source
   $("#source").classList.add("hidden");
   const img = $("#source-img");
   const vid = $("#source-video");
@@ -238,6 +243,8 @@ async function refreshSource() {
     if (path !== lastSourcePath) return; // a newer input superseded this one
     const data = typeof result === "string" ? JSON.parse(result) : result;
     renderChips(summarizeProbe(data), sourceFillActions(currentTab(), data));
+    sourceDims = videoDims(data); // feeds the "Match source" frame-size preset
+    refreshDimPresets();
   } catch (_) {
     renderChips([]); // shows the soft "couldn't read" message
   }
@@ -284,6 +291,50 @@ async function refreshCompat() {
   }
   el.textContent = (report.ok ? "✓ " : "⚠ ") + report.message;
   el.className = "compat " + (report.ok ? "ok" : "warn");
+}
+
+// --- Dimension presets: one-click frame sizes for the active tab's W/H fields ---
+// Shown only on tabs that have both a width and height field (crop/pad/blur_pad/
+// compress/waveform). Each chip fills both fields; ratio chips derive the height
+// from the current width, and "Match source" appears once the input is probed.
+function refreshDimPresets() {
+  const box = $("#dim-presets");
+  const tab = currentTab();
+  const fields = DIMENSION_FIELDS[tab];
+  box.textContent = "";
+  if (!fields || !fields.h) {
+    box.classList.add("hidden");
+    return;
+  }
+  const label = document.createElement("span");
+  label.className = "dim-presets-label";
+  label.textContent = "Frame size";
+  box.appendChild(label);
+  for (const preset of DIMENSION_PRESETS) {
+    if (preset.match && !sourceDims) continue; // "Match source" needs probed dims
+    const btn = document.createElement("button");
+    btn.className = "secondary dim-chip";
+    btn.textContent = preset.label;
+    btn.title = preset.match
+      ? "Fill width & height from the source"
+      : `Set width & height to ${preset.label}`;
+    btn.addEventListener("click", () => {
+      const dims = presetDimensions(preset, {
+        width: Number($("#" + fields.w).value) || null,
+        sourceWidth: sourceDims ? sourceDims.w : null,
+        sourceHeight: sourceDims ? sourceDims.h : null,
+      });
+      if (!dims) {
+        setStatus("Load a source first to match its size.", true);
+        return;
+      }
+      $("#" + fields.w).value = dims.width;
+      $("#" + fields.h).value = dims.height;
+      setStatus(`Set frame size to ${dims.width}×${dims.height} (${preset.label}).`);
+    });
+    box.appendChild(btn);
+  }
+  box.classList.remove("hidden");
 }
 
 // Refresh both the source card and the multi-input compatibility banner.
@@ -388,6 +439,7 @@ async function loadSettings() {
       if (tb && !tb.classList.contains("active")) tb.click(); // restore last tab
     }
     refreshPresetSelect();
+    refreshDimPresets();
   } catch (_) {
     // first run / no store yet — ignore
   }
