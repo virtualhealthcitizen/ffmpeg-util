@@ -159,6 +159,19 @@ Packaging / tests:
 - [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,
       sidecar (`/loop` + `/run/stream`), Loop tab. Verified E2E: count=3 -> ~3x duration.
 
+### More ideas (round 4)
+- [ ] Boomerang (play forward then reversed — duration doubles)
+- [ ] Brightness / contrast / saturation adjust (`eq` filter)
+- [ ] Invert colors (`negate`) / sepia tone
+- [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
+- [ ] Deinterlace (`yadif`)
+- [ ] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1)
+- [ ] Side-by-side (`hstack`) or stacked (`vstack`) two videos
+- [ ] Picture-in-picture overlay
+- [ ] Still image → video (image + duration, optional audio)
+- [ ] Replace the audio track with an external audio file
+- [ ] Set / clear metadata title
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
