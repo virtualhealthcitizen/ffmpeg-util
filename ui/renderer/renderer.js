@@ -3,7 +3,8 @@
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
-  filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions } = window.FfuLogic;
+  filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
+  videoDims, compatReport } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -32,7 +33,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     const tab = btn.dataset.tab;
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
-    refreshSource(); // show the new tab's input (if any)
+    refreshInputs(); // show the new tab's input + multi-input compat (if any)
   });
 });
 
@@ -204,6 +205,55 @@ async function refreshSource() {
   }
 }
 
+// --- Multi-input compatibility banner (hstack/vstack/concat) ---
+function multiInputPaths(tab) {
+  if (tab === "concat") return parseLines($("#concat-inputs").value);
+  if (tab === "hstack" || tab === "vstack") {
+    return [val(tab + "-input-a"), val(tab + "-input-b")].filter(Boolean);
+  }
+  return [];
+}
+
+async function probeDims(path) {
+  try {
+    const { result } = await api("/probe", { input: path, as_json: true });
+    const data = typeof result === "string" ? JSON.parse(result) : result;
+    return videoDims(data);
+  } catch (_) {
+    return null;
+  }
+}
+
+let lastCompatKey = null;
+async function refreshCompat() {
+  const tab = currentTab();
+  const el = $("#compat");
+  const paths = multiInputPaths(tab);
+  const key = tab + "|" + paths.join("|");
+  if (paths.length < 2) {
+    el.classList.add("hidden");
+    lastCompatKey = null;
+    return;
+  }
+  if (key === lastCompatKey) return; // same inputs already reported
+  lastCompatKey = key;
+  const dimsList = await Promise.all(paths.map(probeDims));
+  if (key !== lastCompatKey) return; // a newer set of inputs superseded this run
+  const report = compatReport(tab, dimsList);
+  if (!report) {
+    el.classList.add("hidden");
+    return;
+  }
+  el.textContent = (report.ok ? "✓ " : "⚠ ") + report.message;
+  el.className = "compat " + (report.ok ? "ok" : "warn");
+}
+
+// Refresh both the source card and the multi-input compatibility banner.
+function refreshInputs() {
+  refreshSource();
+  refreshCompat();
+}
+
 // --- Drag & drop: drop files anywhere to load them into the active tab ---
 (function setupDragDrop() {
   const body = document.body;
@@ -224,7 +274,7 @@ async function refreshSource() {
     if (upd) {
       $("#" + upd.id).value = upd.value;
       setStatus(`Loaded ${paths.length} file(s) into the ${currentTab()} tab.`);
-      refreshSource();
+      refreshInputs();
     }
   });
 })();
@@ -240,16 +290,16 @@ document.querySelectorAll(".pick-file").forEach((btn) => {
     } else {
       $("#" + btn.dataset.target).value = p;
     }
-    refreshSource();
+    refreshInputs();
   });
 });
 
-// Typed/edited input paths refresh the source card on commit (blur/Enter).
+// Typed/edited input paths refresh the source card + compat banner (blur/Enter).
 document.addEventListener("change", (e) => {
   const id = e.target && e.target.id;
   if (!id) return;
-  if (id.endsWith("-input") || id.endsWith("-input-a") || id === "concat-inputs") {
-    refreshSource();
+  if (id.endsWith("-input") || id.endsWith("-input-a") || id.endsWith("-input-b") || id === "concat-inputs") {
+    refreshInputs();
   }
 });
 
@@ -284,6 +334,7 @@ const STICKY = [
   "compress-vcodec", "compress-preset",
   "gif-fps", "gif-width",
   "image_to_video-seconds", "image_to_video-fps",
+  "autocrop-limit",
 ];
 
 async function loadSettings() {
@@ -756,6 +807,17 @@ $("#run-compress").addEventListener("click", () => {
     height: numOrNull("compress-height"),
     vcodec: val("compress-vcodec") || "libx264",
     preset: val("compress-preset") || "medium",
+    overwrite: true,
+  });
+});
+
+$("#run-autocrop").addEventListener("click", () => {
+  if (!requireFields("autocrop-input", "autocrop-output")) return;
+  const limit = numOrNull("autocrop-limit");
+  run("Auto-cropping", "autocrop", {
+    input: val("autocrop-input"),
+    output: val("autocrop-output"),
+    limit: limit != null ? limit : 24,
     overwrite: true,
   });
 });

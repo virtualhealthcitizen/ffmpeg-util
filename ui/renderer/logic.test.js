@@ -265,6 +265,40 @@ test("sourceFillActions returns {} when the tab has no fillable fields or no vid
   assert.deepEqual(L.sourceFillActions("crop", null), {});
 });
 
+test("videoDims pulls first video stream size, else null", () => {
+  assert.deepEqual(
+    L.videoDims({ streams: [{ codec_type: "audio" }, { codec_type: "video", width: 1920, height: 1080 }] }),
+    { w: 1920, h: 1080 }
+  );
+  assert.equal(L.videoDims({ streams: [{ codec_type: "audio", channels: 2 }] }), null);
+  assert.equal(L.videoDims({ streams: [{ codec_type: "video", width: 0, height: 0 }] }), null);
+  assert.equal(L.videoDims(null), null);
+});
+
+test("compatReport flags hstack height mismatch / vstack width mismatch", () => {
+  const a = { w: 320, h: 240 }, tallerSameW = { w: 320, h: 360 }, widerSameH = { w: 480, h: 240 };
+  // hstack needs equal heights
+  assert.equal(L.compatReport("hstack", [a, tallerSameW]).ok, false);
+  assert.match(L.compatReport("hstack", [a, tallerSameW]).message, /Heights differ \(240 vs 360/);
+  assert.equal(L.compatReport("hstack", [a, widerSameH]).ok, true); // heights both 240
+  // vstack needs equal widths
+  assert.equal(L.compatReport("vstack", [a, widerSameH]).ok, false);
+  assert.match(L.compatReport("vstack", [a, widerSameH]).message, /Widths differ \(320 vs 480/);
+  assert.equal(L.compatReport("vstack", [a, tallerSameW]).ok, true); // widths both 320
+});
+
+test("compatReport checks concat size match", () => {
+  const a = { w: 320, h: 240 };
+  assert.equal(L.compatReport("concat", [a, a, a]).ok, true);
+  assert.match(L.compatReport("concat", [a, { w: 640, h: 480 }]).message, /differ in size \(320×240, 640×480\)/);
+});
+
+test("compatReport returns null when it doesn't apply", () => {
+  assert.equal(L.compatReport("convert", [{ w: 1, h: 1 }, { w: 2, h: 2 }]), null); // not multi-input
+  assert.equal(L.compatReport("hstack", [{ w: 320, h: 240 }]), null); // only one input
+  assert.equal(L.compatReport("hstack", [{ w: 320, h: 240 }, null]), null); // second not probed yet
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

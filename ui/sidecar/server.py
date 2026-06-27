@@ -206,6 +206,30 @@ def crop_aspect(req: CropAspectReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class AutocropReq(BaseModel):
+    input: str
+    output: str
+    limit: int = 24
+    overwrite: bool = True
+
+
+@app.post("/autocrop")
+def autocrop(req: AutocropReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        crop = commands.autocrop(runner, req.input, req.output, limit=req.limit)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    if crop is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not detect a crop region (no black bars found?).",
+        )
+    return {"output": req.output}
+
+
 class FpsReq(BaseModel):
     input: str
     output: str
@@ -759,6 +783,8 @@ class RunReq(BaseModel):
     sigma: float = 20
     # image-to-video
     seconds: float = 5.0
+    # autocrop
+    limit: int = 24
     # title (metadata)
     title: str = ""
     # sample-rate
@@ -971,6 +997,13 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     raise ValueError("could not determine input dimensions for crop-to-aspect")
                 aw, ah = commands.parse_aspect(req.aspect)
                 cw, ch, x, y = commands.compute_aspect_crop(dims[0], dims[1], aw, ah)
+                args = commands.build_crop_args(req.input, req.output, cw, ch, x, y)
+                cleanup = None
+            elif req.op == "autocrop":
+                crop = commands.detect_crop(runner, req.input, limit=req.limit)
+                if crop is None:
+                    raise ValueError("could not detect a crop region (no black bars found?)")
+                cw, ch, x, y = crop
                 args = commands.build_crop_args(req.input, req.output, cw, ch, x, y)
                 cleanup = None
             else:

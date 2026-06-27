@@ -403,6 +403,20 @@ def test_crop_args_reject_bad_values():
         c.build_crop_args("in.mp4", "o.mp4", 100, 100, x=-1)
 
 
+def test_parse_cropdetect_takes_last_suggestion():
+    # cropdetect logs one crop= line per frame; the last is the most stable.
+    text = (
+        "[Parsed_cropdetect_0 @ 0x1] x1:0 y1:30 ... crop=320:160:0:40\n"
+        "[Parsed_cropdetect_0 @ 0x1] x1:0 y1:30 ... crop=320:180:0:30\n"
+    )
+    assert c.parse_cropdetect(text) == (320, 180, 0, 30)
+
+
+def test_parse_cropdetect_returns_none_when_absent():
+    assert c.parse_cropdetect("") is None
+    assert c.parse_cropdetect("no crop suggestions here") is None
+
+
 def test_transform_args_map_to_filters():
     assert c.build_transform_args("in.mp4", "o.mp4", "rotate-cw")[3] == "transpose=1"
     assert c.build_transform_args("in.mp4", "o.mp4", "rotate-ccw")[3] == "transpose=2"

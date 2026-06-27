@@ -696,6 +696,58 @@ def build_crop_args(
     return ["-i", input_path, "-vf", f"crop={width}:{height}:{x}:{y}", output_path]
 
 
+_CROPDETECT_RE = re.compile(r"crop=(\d+):(\d+):(\d+):(\d+)")
+
+
+def parse_cropdetect(text: str) -> tuple[int, int, int, int] | None:
+    """Return the last ``crop=w:h:x:y`` suggestion from ffmpeg cropdetect output.
+
+    ffmpeg's ``cropdetect`` filter logs one ``crop=…`` line per analyzed frame;
+    the final one reflects the most stable estimate, so we take the last match.
+    Pure (no ffmpeg) so it can be unit-tested. Returns None if nothing matched.
+    """
+    matches = _CROPDETECT_RE.findall(text or "")
+    if not matches:
+        return None
+    w, h, x, y = matches[-1]
+    return int(w), int(h), int(x), int(y)
+
+
+def detect_crop(
+    runner: FfmpegRunner, input_path: str, *, limit: int = 24, round_to: int = 2
+) -> tuple[int, int, int, int] | None:
+    """Detect the non-black crop region of a video via ffmpeg ``cropdetect``.
+
+    Returns (w, h, x, y) or None if it could not be determined (e.g. dry-run or
+    no usable output). ``limit`` is the black threshold (0-255); ``round_to``
+    forces the crop size to a multiple (2 keeps it yuv420-friendly).
+    """
+    proc = runner.run_ffmpeg_capture(
+        ["-i", input_path, "-vf", f"cropdetect=limit={limit}:round={round_to}",
+         "-f", "null", "-"]
+    )
+    if proc is None:
+        return None
+    return parse_cropdetect(proc.stderr or "")
+
+
+def autocrop(
+    runner: FfmpegRunner, input_path: str, output_path: str, *, limit: int = 24
+) -> tuple[int, int, int, int] | None:
+    """Detect and remove black bars from ``input_path``, writing ``output_path``.
+
+    Returns the applied (w, h, x, y), or None in dry-run / when detection fails
+    (in which case nothing is written). Used by the CLI; the UI sidecar mirrors
+    this two-pass flow (detect, then crop) so it can stream progress.
+    """
+    crop = detect_crop(runner, input_path, limit=limit)
+    if crop is None:
+        return None
+    w, h, x, y = crop
+    runner.run_ffmpeg(build_crop_args(input_path, output_path, w, h, x, y))
+    return crop
+
+
 def build_transform_args(input_path: str, output_path: str, op: str) -> list[str]:
     """Build args to rotate or flip a video. ``op`` is one of TRANSFORM_FILTERS."""
     if op not in TRANSFORM_FILTERS:
