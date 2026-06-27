@@ -225,6 +225,28 @@ def fps(req: FpsReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ImageToVideoReq(BaseModel):
+    input: str
+    output: str
+    seconds: float
+    fps: int = 30
+    overwrite: bool = True
+
+
+@app.post("/image-to-video")
+def image_to_video(req: ImageToVideoReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(
+            commands.build_image_to_video_args(req.input, req.output, req.seconds, fps=req.fps)
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class EqReq(BaseModel):
     input: str
     output: str
@@ -735,6 +757,8 @@ class RunReq(BaseModel):
     aspect: str = "16:9"
     # blur-pad
     sigma: float = 20
+    # image-to-video
+    seconds: float = 5.0
     # title (metadata)
     title: str = ""
     # sample-rate
@@ -789,6 +813,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             raise ValueError("blur-pad requires width and height")
         return commands.build_blur_pad_args(
             req.input, req.output, req.width, req.height, req.sigma
+        ), None
+    if op == "image_to_video":
+        return commands.build_image_to_video_args(
+            req.input, req.output, req.seconds, fps=req.fps or 30
         ), None
     if op == "mute":
         return commands.build_mute_args(req.input, req.output), None
@@ -866,8 +894,12 @@ def _expected_output_duration(
     start: str | None = None,
     end: str | None = None,
     duration: str | None = None,
+    seconds: float | None = None,
 ) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
+    if op == "image_to_video":
+        # A still image has no input duration; the output runs for `seconds`.
+        return seconds
     if not total:
         return total
     if op == "speed" and factor:
@@ -946,6 +978,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             expected = _expected_output_duration(
                 req.op, total, factor=req.factor, count=req.count,
                 start=req.start, end=req.end, duration=req.duration,
+                seconds=req.seconds,
             )
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.

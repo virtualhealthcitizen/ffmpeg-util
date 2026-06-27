@@ -471,6 +471,27 @@ def test_blur_pad_produces_target_frame(client, media, auth):
     assert _dims(out) == (480, 480)
 
 
+def test_image_to_video_makes_clip(client, media, auth):
+    import subprocess
+    from conftest import FFMPEG
+    d, _ = media
+    img = d / "still.png"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=red:s=320x240", "-frames:v", "1", str(img)],
+        check=True,
+    )
+    out = d / "fromimage.mp4"
+    r = client.post(
+        "/image-to-video",
+        json={"input": str(img), "output": str(out), "seconds": 2, "fps": 24, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert abs(_duration(out) - 2) < 0.3  # ~2s clip
+    assert _dims(out) == (320, 240)  # has a video stream at the image size
+
+
 def test_pad_produces_target_frame(client, media, auth):
     d, src = media  # 320x240
     out = d / "padded.mp4"

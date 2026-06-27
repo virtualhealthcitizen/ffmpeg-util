@@ -102,6 +102,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-o", "--output", required=True, help="Output file.")
     _add_global_flags(p)
 
+    # image-to-video
+    p = sub.add_parser("image-to-video", help="Make a video from a still image.")
+    p.add_argument("input", help="Input image (e.g. photo.png).")
+    p.add_argument("output")
+    p.add_argument("--seconds", type=float, required=True, help="Output duration in seconds.")
+    p.add_argument("--fps", type=int, default=30, help="Frame rate (default 30).")
+    _add_global_flags(p)
+
     # eq (color adjust)
     p = sub.add_parser("eq", help="Adjust brightness / contrast / saturation.")
     p.add_argument("input")
@@ -343,6 +351,11 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "vstack":
         runner.run_ffmpeg(commands.build_vstack_args(args.inputs, args.output))
+        return 0
+
+    if args.command == "image-to-video":
+        runner.run_ffmpeg(commands.build_image_to_video_args(
+            args.input, args.output, args.seconds, fps=args.fps))
         return 0
 
     if args.command == "eq":

@@ -107,6 +107,164 @@ test("dropUpdate works for a generic single-input tab", () => {
   assert.deepEqual(L.dropUpdate(["a.mp4"], "eq"), { id: "eq-input", value: "a.mp4" });
 });
 
+test("filterTools returns every tab for an empty/whitespace query", () => {
+  const tools = [
+    { tab: "convert", label: "Convert", keywords: "" },
+    { tab: "trim", label: "Trim", keywords: "cut" },
+  ];
+  assert.deepEqual(L.filterTools("", tools), ["convert", "trim"]);
+  assert.deepEqual(L.filterTools("   ", tools), ["convert", "trim"]);
+  assert.deepEqual(L.filterTools(null, tools), ["convert", "trim"]);
+});
+
+test("filterTools matches on label (case-insensitive) and preserves order", () => {
+  const tools = [
+    { tab: "convert", label: "Convert", keywords: "" },
+    { tab: "compress", label: "Compress", keywords: "" },
+    { tab: "trim", label: "Trim", keywords: "" },
+  ];
+  assert.deepEqual(L.filterTools("co", tools), ["convert", "compress"]);
+  assert.deepEqual(L.filterTools("TRIM", tools), ["trim"]);
+});
+
+test("filterTools matches on alias keywords, not just the label", () => {
+  const tools = [
+    { tab: "transform", label: "Transform", keywords: "rotate flip mirror" },
+    { tab: "compress", label: "Compress", keywords: "resize scale shrink" },
+  ];
+  assert.deepEqual(L.filterTools("rotate", tools), ["transform"]);
+  assert.deepEqual(L.filterTools("resize", tools), ["compress"]);
+});
+
+test("filterTools AND-matches every whitespace token", () => {
+  const tools = [
+    { tab: "transform", label: "Transform", keywords: "rotate flip mirror turn" },
+    { tab: "crop", label: "Crop", keywords: "rectangle edges" },
+  ];
+  assert.deepEqual(L.filterTools("rotate flip", tools), ["transform"]);
+  assert.deepEqual(L.filterTools("rotate edges", tools), []); // no single tool has both
+});
+
+test("filterTools returns [] when nothing matches", () => {
+  const tools = [{ tab: "convert", label: "Convert", keywords: "" }];
+  assert.deepEqual(L.filterTools("zzz", tools), []);
+});
+
+test("TOOL_ALIASES covers tabs and is searchable via filterTools", () => {
+  // Build the same tool list the renderer builds, from the alias table.
+  const tools = Object.keys(L.TOOL_ALIASES).map((tab) => ({
+    tab,
+    label: tab,
+    keywords: L.TOOL_ALIASES[tab],
+  }));
+  assert.ok(tools.length >= 28); // ~30 tools
+  assert.deepEqual(L.filterTools("letterbox", tools).sort(), ["blur_pad", "pad"]);
+  assert.deepEqual(L.filterTools("lufs", tools), ["loudnorm"]);
+  assert.deepEqual(L.filterTools("backwards", tools), ["reverse"]);
+});
+
+test("formatBytes scales to KB/MB/GB", () => {
+  assert.equal(L.formatBytes(0), "0 B");
+  assert.equal(L.formatBytes(512), "512 B");
+  assert.equal(L.formatBytes(1536), "1.5 KB");
+  assert.equal(L.formatBytes(5 * 1024 * 1024), "5.0 MB");
+  assert.equal(L.formatBytes(1024 * 1024 * 1024), "1.0 GB");
+  assert.equal(L.formatBytes("2048"), "2.0 KB"); // numeric strings (ffprobe)
+  assert.equal(L.formatBytes("nope"), null);
+});
+
+test("formatDuration renders M:SS and H:MM:SS", () => {
+  assert.equal(L.formatDuration(5), "0:05");
+  assert.equal(L.formatDuration(65), "1:05");
+  assert.equal(L.formatDuration(3661), "1:01:01");
+  assert.equal(L.formatDuration("12.5"), "0:13");
+  assert.equal(L.formatDuration(null), null);
+});
+
+test("parseFrameRate handles ratios and plain numbers", () => {
+  assert.equal(L.parseFrameRate("30/1"), 30);
+  assert.equal(Math.round(L.parseFrameRate("30000/1001") * 100) / 100, 29.97);
+  assert.equal(L.parseFrameRate("25"), 25);
+  assert.equal(L.parseFrameRate("0/0"), null);
+  assert.equal(L.parseFrameRate(null), null);
+});
+
+test("channelLabel names mono/stereo/N ch", () => {
+  assert.equal(L.channelLabel(1), "mono");
+  assert.equal(L.channelLabel(2), "stereo");
+  assert.equal(L.channelLabel(6), "6 ch");
+  assert.equal(L.channelLabel(0), null);
+});
+
+test("summarizeProbe builds ordered chips from ffprobe JSON", () => {
+  const data = {
+    format: { duration: "65", size: "5242880" },
+    streams: [
+      { codec_type: "video", codec_name: "h264", width: 1920, height: 1080, avg_frame_rate: "30/1" },
+      { codec_type: "audio", codec_name: "aac", channels: 2, sample_rate: "48000" },
+    ],
+  };
+  assert.deepEqual(L.summarizeProbe(data), [
+    { label: "Duration", value: "1:05" },
+    { label: "Size", value: "1920×1080" },
+    { label: "FPS", value: "30 fps" },
+    { label: "Video", value: "h264" },
+    { label: "Audio", value: "aac" },
+    { label: "Channels", value: "stereo" },
+    { label: "Rate", value: "48 kHz" },
+    { label: "File", value: "5.0 MB" },
+  ]);
+});
+
+test("summarizeProbe skips missing facts (audio-only, no size)", () => {
+  const data = {
+    format: { duration: "12" },
+    streams: [{ codec_type: "audio", codec_name: "mp3", channels: 1, sample_rate: "44100" }],
+  };
+  assert.deepEqual(L.summarizeProbe(data), [
+    { label: "Duration", value: "0:12" },
+    { label: "Audio", value: "mp3" },
+    { label: "Channels", value: "mono" },
+    { label: "Rate", value: "44.1 kHz" },
+  ]);
+});
+
+test("summarizeProbe tolerates empty/garbage input", () => {
+  assert.deepEqual(L.summarizeProbe(null), []);
+  assert.deepEqual(L.summarizeProbe({}), []);
+  assert.deepEqual(L.summarizeProbe({ streams: "nope" }), []);
+});
+
+test("sourceFillActions maps the Size chip to a tab's width/height fields", () => {
+  const data = { streams: [{ codec_type: "video", width: 1920, height: 1080, avg_frame_rate: "30/1" }] };
+  assert.deepEqual(L.sourceFillActions("blur_pad", data), {
+    Size: [
+      { id: "blur_pad-width", value: "1920" },
+      { id: "blur_pad-height", value: "1080" },
+    ],
+  });
+  assert.deepEqual(L.sourceFillActions("compress", data), {
+    Size: [
+      { id: "compress-width", value: "1920" },
+      { id: "compress-height", value: "1080" },
+    ],
+  });
+});
+
+test("sourceFillActions handles width-only tabs and the FPS tab", () => {
+  const data = { streams: [{ codec_type: "video", width: 640, height: 360, r_frame_rate: "25/1" }] };
+  assert.deepEqual(L.sourceFillActions("gif", data), { Size: [{ id: "gif-width", value: "640" }] });
+  assert.deepEqual(L.sourceFillActions("fps", data), { FPS: [{ id: "fps-fps", value: "25" }] });
+});
+
+test("sourceFillActions returns {} when the tab has no fillable fields or no video", () => {
+  const video = { streams: [{ codec_type: "video", width: 100, height: 50, avg_frame_rate: "30/1" }] };
+  assert.deepEqual(L.sourceFillActions("convert", video), {}); // no dimension/fps fields
+  const audioOnly = { streams: [{ codec_type: "audio", channels: 2 }] };
+  assert.deepEqual(L.sourceFillActions("crop", audioOnly), {}); // no video dims
+  assert.deepEqual(L.sourceFillActions("crop", null), {});
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';
