@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import tempfile
 from typing import Sequence
 
 from .errors import FfmpegError, FfmpegNotFoundError
@@ -112,22 +113,30 @@ class FfmpegRunner:
             return
         if self.verbose:
             print(f"+ {rendered}")
-        proc = subprocess.Popen(
-            list(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-        fields: dict[str, str] = {}
-        assert proc.stdout is not None
-        for line in proc.stdout:
-            line = line.strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            fields[key] = value
-            if key == "progress":
-                yield fields
-                fields = {}
-        proc.wait()
-        stderr = proc.stderr.read() if proc.stderr else ""
+        # Drain stderr to a temp file rather than a pipe: we read stdout
+        # incrementally for progress, so a pipe-buffered stderr could fill and
+        # deadlock ffmpeg (it blocks writing logs while we wait on stdout).
+        err_file = tempfile.TemporaryFile()
+        try:
+            proc = subprocess.Popen(
+                list(cmd), stdout=subprocess.PIPE, stderr=err_file, text=True
+            )
+            fields: dict[str, str] = {}
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                line = line.strip()
+                if "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                fields[key] = value
+                if key == "progress":
+                    yield fields
+                    fields = {}
+            proc.wait()
+            err_file.seek(0)
+            stderr = err_file.read().decode("utf-8", "replace")
+        finally:
+            err_file.close()
         if proc.returncode != 0:
             raise FfmpegError(
                 f"Command failed (exit {proc.returncode}): {rendered}",

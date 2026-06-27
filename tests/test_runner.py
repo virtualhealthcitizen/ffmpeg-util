@@ -1,10 +1,11 @@
 """Tests for binary discovery and the runner (no real ffmpeg needed)."""
 
 import os
+import shutil
 
 import pytest
 
-from ffmpeg_util.errors import FfmpegNotFoundError
+from ffmpeg_util.errors import FfmpegError, FfmpegNotFoundError
 from ffmpeg_util.runner import FfmpegRunner, find_binary
 
 
@@ -58,6 +59,18 @@ def test_verbose_sets_loglevel():
     r = FfmpegRunner(ffmpeg="ffmpeg", verbose=True)
     cmd = r.build_ffmpeg_args(["-i", "in.mp4", "out.mp4"])
     assert cmd[cmd.index("-loglevel") + 1] == "verbose"
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not on PATH")
+def test_iter_progress_captures_stderr_on_error(tmp_path):
+    # Exercises the real streaming path: a failing run must raise with stderr
+    # captured (proves stderr is drained, not lost to a pipe deadlock).
+    r = FfmpegRunner(overwrite=True)
+    args = [str(tmp_path / "does-not-exist.mp4"), str(tmp_path / "out.mp4")]
+    args = ["-i"] + args
+    with pytest.raises(FfmpegError) as excinfo:
+        list(r.iter_ffmpeg_progress(args))
+    assert excinfo.value.stderr.strip()  # non-empty stderr was captured
 
 
 def test_iter_progress_dry_run_emits_command_and_no_blocks(capsys):
