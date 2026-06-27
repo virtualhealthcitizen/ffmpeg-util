@@ -107,6 +107,27 @@ test("dropUpdate works for a generic single-input tab", () => {
   assert.deepEqual(L.dropUpdate(["a.mp4"], "eq"), { id: "eq-input", value: "a.mp4" });
 });
 
+test("reorderList moves an item and returns a new array", () => {
+  const src = ["a", "b", "c", "d"];
+  assert.deepEqual(L.reorderList(src, 0, 2), ["b", "c", "a", "d"]); // forward
+  assert.deepEqual(L.reorderList(src, 3, 1), ["a", "d", "b", "c"]); // backward
+  assert.deepEqual(L.reorderList(src, 1, 0), ["b", "a", "c", "d"]); // up one
+  assert.deepEqual(src, ["a", "b", "c", "d"]); // original untouched
+});
+
+test("reorderList is a no-op (copy) for equal or out-of-range indices", () => {
+  const src = ["a", "b", "c"];
+  assert.deepEqual(L.reorderList(src, 1, 1), src); // self-drop
+  assert.deepEqual(L.reorderList(src, 0, 5), src); // target off the end
+  assert.deepEqual(L.reorderList(src, -1, 1), src); // from off the start
+  assert.notEqual(L.reorderList(src, 1, 1), src); // but a fresh array, not the same ref
+});
+
+test("reorderList tolerates non-arrays", () => {
+  assert.deepEqual(L.reorderList(null, 0, 1), []);
+  assert.deepEqual(L.reorderList(undefined, 0, 1), []);
+});
+
 test("filterTools returns every tab for an empty/whitespace query", () => {
   const tools = [
     { tab: "convert", label: "Convert", keywords: "" },

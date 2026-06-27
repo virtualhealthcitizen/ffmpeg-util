@@ -12,7 +12,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
-  addRecentFile, recentFileLabel, recentDir,
+  addRecentFile, recentFileLabel, recentDir, reorderList,
   resolveTheme, nextTheme, themeToggleLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -604,7 +604,82 @@ function refreshInputs() {
   refreshCompat();
   maybeFillOutput(currentTab()); // auto-suggest an output path when one isn't set yet
   refreshDimWarning(); // flag odd W/H on size-sensitive tabs
+  renderConcatList(); // draggable reorder rows mirroring the concat textarea
 }
+
+// --- Concat: drag-to-reorder rows ---
+// The textarea (#concat-inputs) stays the canonical store; this list is a
+// visual mirror of it. Dragging a row reorders the lines and writes them back,
+// so every existing reader (run-concat, drop/append, compat banner) is unchanged.
+let concatDragIndex = null;
+function renderConcatList() {
+  const ul = $("#concat-list");
+  if (!ul) return;
+  const items = parseLines($("#concat-inputs").value);
+  ul.innerHTML = "";
+  // Reordering only makes sense with two or more files.
+  if (items.length < 2) {
+    ul.classList.add("hidden");
+    return;
+  }
+  ul.classList.remove("hidden");
+  items.forEach((path, i) => {
+    const li = document.createElement("li");
+    li.className = "reorder-row";
+    li.draggable = true;
+    li.dataset.index = String(i);
+    const handle = document.createElement("span");
+    handle.className = "reorder-handle";
+    handle.textContent = "⠿";
+    const label = document.createElement("span");
+    label.className = "reorder-name";
+    label.textContent = `${i + 1}. ${recentFileLabel(path)}`;
+    label.title = path; // full path on hover
+    li.append(handle, label);
+    ul.appendChild(li);
+  });
+}
+
+// Write a reordered path list back to the textarea and re-render everything.
+function applyConcatOrder(items) {
+  $("#concat-inputs").value = items.join("\n");
+  refreshInputs();
+}
+
+(function setupConcatReorder() {
+  const ul = $("#concat-list");
+  if (!ul) return;
+  const rowIndex = (el) => {
+    const li = el && el.closest && el.closest(".reorder-row");
+    return li ? Number(li.dataset.index) : null;
+  };
+  ul.addEventListener("dragstart", (e) => {
+    concatDragIndex = rowIndex(e.target);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    const li = e.target.closest && e.target.closest(".reorder-row");
+    if (li) li.classList.add("dragging");
+  });
+  ul.addEventListener("dragover", (e) => {
+    e.preventDefault(); // allow the drop
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    ul.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
+    const li = e.target.closest && e.target.closest(".reorder-row");
+    if (li) li.classList.add("drop-target");
+  });
+  ul.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const to = rowIndex(e.target);
+    const from = concatDragIndex;
+    if (from === null || to === null || from === to) return;
+    applyConcatOrder(reorderList(parseLines($("#concat-inputs").value), from, to));
+  });
+  ul.addEventListener("dragend", () => {
+    concatDragIndex = null;
+    ul.querySelectorAll(".dragging, .drop-target").forEach((el) =>
+      el.classList.remove("dragging", "drop-target")
+    );
+  });
+})();
 
 // Today as YYYY-MM-DD, for the {date} name-template token.
 function todayStr() {

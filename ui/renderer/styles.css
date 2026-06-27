@@ -334,6 +334,24 @@ select {
 }
 textarea { width: 100%; resize: vertical; }
 
+/* Concat: drag-to-reorder rows mirroring the inputs textarea. */
+.reorder-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.reorder-list.hidden { display: none; }
+.reorder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--inset);
+  cursor: grab;
+}
+.reorder-row .reorder-handle { color: var(--muted); cursor: grab; user-select: none; }
+.reorder-row .reorder-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reorder-row.dragging { opacity: 0.5; cursor: grabbing; }
+.reorder-row.drop-target { border-color: var(--accent); }
+
 label.inline {
   display: inline-flex;
   flex-direction: column;

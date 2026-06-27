@@ -227,6 +227,19 @@
     return splitPath(arr[0]).dir.replace(/[\\/]+$/, "");
   }
 
+  // Move the item at index `from` to index `to`, returning a NEW array (the
+  // input is untouched). Out-of-range or equal indices yield a plain copy, so a
+  // drag that lands on itself or off the ends can never corrupt the list. Used
+  // by the concat tab's drag-to-reorder rows (the textarea stays the store).
+  function reorderList(list, from, to) {
+    const arr = Array.isArray(list) ? list.slice() : [];
+    const n = arr.length;
+    if (from < 0 || from >= n || to < 0 || to >= n || from === to) return arr;
+    const [item] = arr.splice(from, 1);
+    arr.splice(to, 0, item);
+    return arr;
+  }
+
   // Search aliases per tab — extra keywords so the tool filter finds a tool by
   // what it *does*, not just its visible label ("rotate" -> Transform, etc.).
   const TOOL_ALIASES = {
@@ -1112,6 +1125,7 @@
     addRecentFile,
     recentFileLabel,
     recentDir,
+    reorderList,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
