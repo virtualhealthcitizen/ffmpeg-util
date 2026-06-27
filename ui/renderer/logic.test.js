@@ -687,3 +687,106 @@ test("oddDimensionWarning only applies to re-encoding, size-sensitive tabs", () 
   // the guarded set is exactly the H.264-re-encode tabs with W+H fields
   assert.deepEqual(L.EVEN_DIM_TABS, ["compress", "crop", "pad", "blur_pad"]);
 });
+
+test("buildCliCommand maps a simple input/output op with --flags and -y", () => {
+  assert.equal(
+    L.buildCliCommand("convert", {
+      input: "in.mov",
+      output: "out.mp4",
+      vcodec: "libx264",
+      acodec: "aac",
+      overwrite: true,
+    }),
+    "ffmpeg-util convert in.mov out.mp4 --vcodec libx264 --acodec aac -y"
+  );
+});
+
+test("buildCliCommand emits boolean flags bare and drops null/empty/false", () => {
+  assert.equal(
+    L.buildCliCommand("convert", {
+      input: "in.mov",
+      output: "out.mp4",
+      vcodec: null,
+      acodec: "",
+      extract_audio: true,
+      overwrite: true,
+    }),
+    "ffmpeg-util convert in.mov out.mp4 --extract-audio -y"
+  );
+  // a false boolean is omitted entirely
+  assert.equal(
+    L.buildCliCommand("trim", { input: "a.mp4", output: "b.mp4", reencode: false, overwrite: true }),
+    "ffmpeg-util trim a.mp4 b.mp4 -y"
+  );
+});
+
+test("buildCliCommand kebab-cases the subcommand and multi-word flags", () => {
+  assert.equal(
+    L.buildCliCommand("blur_pad", { input: "i.mp4", output: "o.mp4", width: 480, height: 480, sigma: 20, overwrite: true }),
+    "ffmpeg-util blur-pad i.mp4 o.mp4 --width 480 --height 480 --sigma 20 -y"
+  );
+  assert.equal(
+    L.buildCliCommand("compress", { input: "i.mp4", output: "o.mp4", crf: 28, target_size: 8, overwrite: true }),
+    "ffmpeg-util compress i.mp4 o.mp4 --crf 28 --target-size 8 -y"
+  );
+});
+
+test("buildCliCommand renames the diverging sidecar fields to their CLI flags", () => {
+  // Fade tab body key `fade` -> --duration
+  assert.equal(
+    L.buildCliCommand("fade", { input: "i.mp4", output: "o.mp4", fade: 1.5, overwrite: true }),
+    "ffmpeg-util fade i.mp4 o.mp4 --duration 1.5 -y"
+  );
+  // Transform tab body key `transform` -> --op
+  assert.equal(
+    L.buildCliCommand("transform", { input: "i.mp4", output: "o.mp4", transform: "rotate-cw", overwrite: true }),
+    "ffmpeg-util transform i.mp4 o.mp4 --op rotate-cw -y"
+  );
+  // Loudnorm body key `target_i` -> --target
+  assert.equal(
+    L.buildCliCommand("loudnorm", { input: "i.mp4", output: "o.mp4", target_i: -16, overwrite: true }),
+    "ffmpeg-util loudnorm i.mp4 o.mp4 --target=-16 -y"
+  );
+});
+
+test("buildCliCommand uses --flag=value for negative numbers", () => {
+  assert.equal(
+    L.buildCliCommand("volume", { input: "i.mp4", output: "o.mp4", gain: -6, overwrite: true }),
+    "ffmpeg-util volume i.mp4 o.mp4 --gain=-6 -y"
+  );
+  // a positive gain stays in the spaced form
+  assert.equal(
+    L.buildCliCommand("volume", { input: "i.mp4", output: "o.mp4", gain: 3, overwrite: true }),
+    "ffmpeg-util volume i.mp4 o.mp4 --gain 3 -y"
+  );
+});
+
+test("buildCliCommand quotes paths/values with spaces and empty strings", () => {
+  assert.equal(
+    L.buildCliCommand("convert", { input: "my clip.mov", output: "out dir/v.mp4", overwrite: true }),
+    'ffmpeg-util convert "my clip.mov" "out dir/v.mp4" -y'
+  );
+});
+
+test("buildCliCommand handles inputs-list ops with -o output", () => {
+  assert.equal(
+    L.buildCliCommand("concat", { inputs: ["a.mp4", "b.mp4"], output: "joined.mp4", overwrite: true }),
+    "ffmpeg-util concat a.mp4 b.mp4 -o joined.mp4 -y"
+  );
+  assert.equal(
+    L.buildCliCommand("hstack", { inputs: ["left.mp4", "right.mp4"], output: "o.mp4", overwrite: true }),
+    "ffmpeg-util hstack left.mp4 right.mp4 -o o.mp4 -y"
+  );
+});
+
+test("buildCliCommand places --audio after positionals for replace_audio", () => {
+  assert.equal(
+    L.buildCliCommand("replace_audio", {
+      input: "v.mp4",
+      audio: "track.mp3",
+      output: "o.mp4",
+      overwrite: true,
+    }),
+    "ffmpeg-util replace-audio v.mp4 o.mp4 --audio track.mp3 -y"
+  );
+});
