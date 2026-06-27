@@ -82,16 +82,14 @@ class ConvertReq(BaseModel):
 @app.post("/convert")
 def convert(req: ConvertReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
-    args = commands.build_convert_args(
-        req.input,
-        req.output,
-        vcodec=req.vcodec,
-        acodec=req.acodec,
-        extract_audio=req.extract_audio,
-    )
     try:
-        runner.run_ffmpeg(args)
-    except FfmpegError as exc:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_convert_args(
+            req.input, req.output, vcodec=req.vcodec, acodec=req.acodec,
+            extract_audio=req.extract_audio,
+        ))
+    except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
 
@@ -110,6 +108,8 @@ class TrimReq(BaseModel):
 def trim(req: TrimReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         args = commands.build_trim_args(
             req.input,
             req.output,
@@ -134,6 +134,8 @@ class ConcatReq(BaseModel):
 def concat(req: ConcatReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.concat(runner, req.inputs, req.output)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -153,6 +155,8 @@ class ThumbnailReq(BaseModel):
 def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         args = commands.build_thumbnail_args(
             req.input, req.output, time=req.time, count=req.count, width=req.width
         )
@@ -172,6 +176,8 @@ class BoomerangReq(BaseModel):
 def boomerang(req: BoomerangReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_boomerang_args(req.input, req.output))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -188,6 +194,8 @@ class GrayscaleReq(BaseModel):
 def grayscale(req: GrayscaleReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_grayscale_args(req.input, req.output))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -205,6 +213,8 @@ class FadeReq(BaseModel):
 def fade(req: FadeReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.fade(runner, req.input, req.output, req.duration)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -222,6 +232,8 @@ class LoudnormReq(BaseModel):
 def loudnorm(req: LoudnormReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_loudnorm_args(req.input, req.output, req.target_i))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -239,6 +251,8 @@ class VolumeReq(BaseModel):
 def volume(req: VolumeReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_volume_args(req.input, req.output, req.gain))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -255,6 +269,8 @@ class ReverseReq(BaseModel):
 def reverse(req: ReverseReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.reverse_media(runner, req.input, req.output)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -272,6 +288,8 @@ class FramesReq(BaseModel):
 def frames(req: FramesReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_extract_frames_args(req.input, req.output, req.every))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -289,6 +307,8 @@ class LoopReq(BaseModel):
 def loop(req: LoopReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_loop_args(req.input, req.output, req.count))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -307,6 +327,8 @@ class PadReq(BaseModel):
 def pad(req: PadReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_pad_args(req.input, req.output, req.width, req.height))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -323,6 +345,8 @@ class MuteReq(BaseModel):
 def mute(req: MuteReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_mute_args(req.input, req.output))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -343,6 +367,8 @@ class CropReq(BaseModel):
 def crop(req: CropReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(
             commands.build_crop_args(req.input, req.output, req.width, req.height, req.x, req.y)
         )
@@ -362,6 +388,8 @@ class TransformReq(BaseModel):
 def transform(req: TransformReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_transform_args(req.input, req.output, req.op))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -379,6 +407,8 @@ class SpeedReq(BaseModel):
 def speed(req: SpeedReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.change_speed(runner, req.input, req.output, req.factor)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -399,6 +429,8 @@ class GifReq(BaseModel):
 def gif(req: GifReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.make_gif(
             runner, req.input, req.output,
             fps=req.fps, width=req.width, start=req.start, duration=req.duration,
@@ -421,6 +453,8 @@ class ContactSheetReq(BaseModel):
 def contact_sheet(req: ContactSheetReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         commands.contact_sheet(
             runner, req.input, req.output, cols=req.cols, rows=req.rows, width=req.width
         )
@@ -446,6 +480,8 @@ class CompressReq(BaseModel):
 def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
     runner = FfmpegRunner(overwrite=req.overwrite)
     try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
         if req.target_size is not None:
             if req.crf is not None or req.bitrate is not None:
                 raise ValueError("Pass only one of target_size / crf / bitrate.")
@@ -603,6 +639,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
         cleanup = None
         try:
             commands.require_output_extension(req.output)
+            commands.require_output_dir(req.output)
             probe_target = req.input or (req.inputs[0] if req.inputs else None)
             total = commands.probe_duration(runner, probe_target) if probe_target else None
             # Two-pass target-size encoding doesn't map to a single streamed pass;
