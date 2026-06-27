@@ -578,6 +578,19 @@ def _sse(obj: dict) -> str:
     return f"data: {json.dumps(obj)}\n\n"
 
 
+def _expected_output_duration(op: str, total: float | None, *, factor: float = 1.0, count: int = 1) -> float | None:
+    """Output duration for progress %, since some ops change length vs the input."""
+    if not total:
+        return total
+    if op == "speed" and factor:
+        return total / factor
+    if op == "loop":
+        return total * max(1, count)
+    if op == "boomerang":
+        return total * 2
+    return total
+
+
 @app.post("/run/stream")
 def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingResponse:
     """Run an operation and stream Server-Sent progress events.
@@ -623,14 +636,17 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 cleanup = None
             else:
                 args, cleanup = _build_op_args(req, total)
+            expected = _expected_output_duration(
+                req.op, total, factor=req.factor, count=req.count
+            )
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
                 out_us = fields.get("out_time_us") or fields.get("out_time_ms")
                 percent = None
-                if total and out_us:
+                if expected and out_us:
                     try:
                         secs = int(out_us) / 1_000_000
-                        percent = max(0.0, min(100.0, round(secs / total * 100, 1)))
+                        percent = max(0.0, min(100.0, round(secs / expected * 100, 1)))
                     except ValueError:
                         percent = None
                 yield _sse({

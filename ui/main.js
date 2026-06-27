@@ -3,7 +3,7 @@
 // loopback HTTP using a per-launch bearer token (so no other local process can use it).
 
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const path = require("path");
 const net = require("net");
@@ -109,7 +109,18 @@ ipcMain.handle("settings:set", (_e, data) => {
 });
 
 function killSidecar() {
-  if (sidecar && !sidecar.killed) sidecar.kill();
+  if (!sidecar || sidecar.killed || sidecar.pid == null) return;
+  // Kill the whole tree so any ffmpeg child the sidecar spawned dies too —
+  // sidecar.kill() alone would orphan an in-progress ffmpeg on Windows.
+  if (process.platform === "win32") {
+    try {
+      execFileSync("taskkill", ["/pid", String(sidecar.pid), "/T", "/F"], { stdio: "ignore" });
+    } catch (_) {
+      sidecar.kill();
+    }
+  } else {
+    sidecar.kill();
+  }
 }
 
 app.whenReady().then(createWindow);

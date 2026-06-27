@@ -117,10 +117,10 @@ class FfmpegRunner:
         # incrementally for progress, so a pipe-buffered stderr could fill and
         # deadlock ffmpeg (it blocks writing logs while we wait on stdout).
         err_file = tempfile.TemporaryFile()
+        proc = subprocess.Popen(
+            list(cmd), stdout=subprocess.PIPE, stderr=err_file, text=True
+        )
         try:
-            proc = subprocess.Popen(
-                list(cmd), stdout=subprocess.PIPE, stderr=err_file, text=True
-            )
             fields: dict[str, str] = {}
             assert proc.stdout is not None
             for line in proc.stdout:
@@ -135,14 +135,19 @@ class FfmpegRunner:
             proc.wait()
             err_file.seek(0)
             stderr = err_file.read().decode("utf-8", "replace")
+            if proc.returncode != 0:
+                raise FfmpegError(
+                    f"Command failed (exit {proc.returncode}): {rendered}",
+                    returncode=proc.returncode,
+                    stderr=stderr,
+                )
         finally:
+            # If the consumer stopped early (cancel / client disconnect), don't
+            # leave ffmpeg running.
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
             err_file.close()
-        if proc.returncode != 0:
-            raise FfmpegError(
-                f"Command failed (exit {proc.returncode}): {rendered}",
-                returncode=proc.returncode,
-                stderr=stderr,
-            )
 
     def _run(self, cmd: Sequence[str]) -> subprocess.CompletedProcess | None:
         rendered = self.format_command(cmd)
