@@ -863,6 +863,27 @@ test("keyboardAction ignores keys without a Ctrl/Cmd modifier", () => {
   assert.equal(L.keyboardAction(null), null);
 });
 
+test("resolveTheme normalizes to a known theme, defaulting to dark", () => {
+  assert.equal(L.resolveTheme("light"), "light");
+  assert.equal(L.resolveTheme("dark"), "dark");
+  assert.equal(L.resolveTheme("neon"), "dark");
+  assert.equal(L.resolveTheme(undefined), "dark");
+  assert.equal(L.resolveTheme(null), "dark");
+});
+
+test("nextTheme cycles dark <-> light (tolerant of bad input)", () => {
+  assert.equal(L.nextTheme("dark"), "light");
+  assert.equal(L.nextTheme("light"), "dark");
+  assert.equal(L.nextTheme("bogus"), "light"); // treated as dark -> light
+  assert.equal(L.nextTheme(undefined), "light");
+});
+
+test("themeToggleLabel advertises the theme a click switches to", () => {
+  assert.equal(L.themeToggleLabel("dark"), "☀ Light");
+  assert.equal(L.themeToggleLabel("light"), "☾ Dark");
+  assert.equal(L.themeToggleLabel("bogus"), "☀ Light"); // bad value reads as dark
+});
+
 test("nextVisibleTab wraps forward and backward over visible tabs", () => {
   const tabs = ["convert", "trim", "compress"];
   assert.equal(L.nextVisibleTab(tabs, "convert", 1), "trim");

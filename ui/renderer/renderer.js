@@ -11,7 +11,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
-  groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites } = window.FfuLogic;
+  groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
+  resolveTheme, nextTheme, themeToggleLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -73,6 +74,29 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
 function currentTab() {
   const btn = document.querySelector(".tabs button.active");
   return btn ? btn.dataset.tab : "convert";
+}
+
+// --- Light/dark theme toggle ---
+// Dark is the default (the bare :root palette); "light" sets data-theme on <html>
+// so styles.css swaps the palette variables. The choice is persisted in
+// settings.json (shallow-merged, so it coexists with sticky fields / window bounds).
+let currentTheme = "dark";
+
+function applyTheme(theme) {
+  currentTheme = resolveTheme(theme);
+  // Dark = no attribute (default palette); light = data-theme="light".
+  if (currentTheme === "dark") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", currentTheme);
+  const btn = $("#theme-toggle");
+  if (btn) btn.textContent = themeToggleLabel(currentTheme); // advertise the next theme
+}
+
+const themeToggleBtn = $("#theme-toggle");
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener("click", () => {
+    applyTheme(nextTheme(currentTheme));
+    setSettings({ theme: currentTheme }).catch(() => {}); // sticky across launches
+  });
 }
 
 // Pinned tools (tab ids) shown in a leading "★ Favorites" row; persisted in
@@ -850,6 +874,7 @@ const STICKY = [
 async function loadSettings() {
   try {
     const s = (await getSettings()) || {};
+    applyTheme(s.theme); // restore the saved light/dark choice (defaults to dark)
     for (const id of STICKY) {
       const el = $("#" + id);
       if (el && s[id] != null && s[id] !== "") el.value = s[id];

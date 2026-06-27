@@ -989,7 +989,33 @@
     return visibleTabs[n];
   }
 
+  // --- Light/dark theme toggle ---
+  // The renderer carries a `data-theme` attribute on <html>; styles.css supplies a
+  // `:root[data-theme="light"]` palette override (dark is the default :root). Pure
+  // helpers so the renderer just resolves, cycles, and labels — no logic in the DOM.
+  const THEMES = ["dark", "light"];
+
+  // Normalize any stored value to a known theme; anything unknown falls back to dark.
+  function resolveTheme(value) {
+    return THEMES.includes(value) ? value : "dark";
+  }
+
+  // Cycle to the next theme (dark <-> light), tolerant of a bad current value.
+  function nextTheme(current) {
+    const i = THEMES.indexOf(resolveTheme(current));
+    return THEMES[(i + 1) % THEMES.length];
+  }
+
+  // Label for the toggle button: it advertises the theme a click switches *to*.
+  function themeToggleLabel(current) {
+    return resolveTheme(current) === "dark" ? "☀ Light" : "☾ Dark";
+  }
+
   const api = {
+    THEMES,
+    resolveTheme,
+    nextTheme,
+    themeToggleLabel,
     keyboardAction,
     nextVisibleTab,
     IMAGE_EXTS,

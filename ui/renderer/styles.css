@@ -7,9 +7,32 @@
   --ok: #4caf50;
   --err: #ef5350;
   --border: #3a3c41;
+  --inset: #1b1c1f; /* sunken fields/tracks (inputs, progress, code) */
+  --btn: #3a3c41;   /* default (non-primary) button face */
+  --chip-hover: #20242c;
   /* Render native UI (incl. the window scrollbar) in dark mode. */
   color-scheme: dark;
 }
+
+/* Light theme — toggled via data-theme="light" on <html>. Overrides only the
+   palette variables (every color elsewhere reads var(--…)) plus the hardcoded
+   scrollbar thumb and native color-scheme. */
+:root[data-theme="light"] {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1e1f22;
+  --muted: #5f636a;
+  --accent: #2563eb;
+  --ok: #2e7d32;
+  --err: #c62828;
+  --border: #d4d7dd;
+  --inset: #eceef2;
+  --btn: #e6e8ec;
+  --chip-hover: #e8edf6;
+  color-scheme: light;
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c2c6cd; }
+:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #aeb3bb; }
 
 * { box-sizing: border-box; }
 
@@ -33,6 +56,16 @@ body {
 }
 
 h1 { margin: 0 0 4px; font-size: 22px; }
+
+/* Light/dark theme toggle — pinned to the top-right corner of the window. */
+.theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  padding: 6px 12px;
+  font-size: 12px;
+}
 .sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
 .hint-drop { margin-top: -14px; font-size: 12px; opacity: 0.75; }
 .hint-keys { margin: -8px 0 16px; font-size: 12px; opacity: 0.75; }
@@ -77,7 +110,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .toolsearch input {
   flex: 1;
   padding: 9px 12px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -144,7 +177,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
   max-height: 170px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #1b1c1f;
+  background: var(--inset);
   display: block;
 }
 #source-img.hidden,
@@ -178,7 +211,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
   flex-direction: column;
   gap: 2px;
   padding: 6px 10px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   min-width: 64px;
@@ -191,7 +224,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 }
 .chip .chip-value { font-size: 13px; color: var(--text); }
 .chip.clickable { cursor: pointer; }
-.chip.clickable:hover { border-color: var(--accent); background: #20242c; }
+.chip.clickable:hover { border-color: var(--accent); background: var(--chip-hover); }
 .chip.clickable .chip-value { color: var(--accent); }
 .chips .chips-msg { color: var(--muted); font-size: 12px; align-self: center; }
 
@@ -267,7 +300,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .cli-command {
   flex: 1;
   padding: 9px 11px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -282,7 +315,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 input[type="text"], input[type="number"], textarea {
   flex: 1;
   padding: 9px 11px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -292,7 +325,7 @@ input[type="text"], input[type="number"], textarea {
 input[type="number"] { max-width: 120px; }
 select {
   padding: 9px 11px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -311,13 +344,13 @@ label.inline {
 label.inline input { flex: none; }
 
 .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
-.hint code { background: #1b1c1f; padding: 1px 4px; border-radius: 3px; }
+.hint code { background: var(--inset); padding: 1px 4px; border-radius: 3px; }
 
 button {
   padding: 9px 14px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #3a3c41;
+  background: var(--btn);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
@@ -328,7 +361,7 @@ button.secondary { background: transparent; }
 
 .progress {
   height: 8px;
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 5px;
   overflow: hidden;
@@ -404,14 +437,14 @@ button.danger:hover { background: var(--err); color: #fff; }
   max-height: 360px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #1b1c1f;
+  background: var(--inset);
   display: block;
 }
 #preview-img.hidden,
 #preview-video.hidden { display: none; }
 
 .probe {
-  background: #1b1c1f;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 12px;

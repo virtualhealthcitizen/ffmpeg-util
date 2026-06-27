@@ -119,8 +119,16 @@ Packaging / tests:
 - [x] Before/after size + duration summary on completion — see round 8 below.
 
 ### UI / UX
-- [ ] Recent files list / remembered last input dir
-- [ ] Light/dark theme toggle
+- [ ] Recent files list / remembered last input dir ← next
+- [x] Light/dark theme toggle — a top-right ☀/☾ button swaps the palette via
+      `data-theme="light"` on `<html>`; styles.css gains a `:root[data-theme="light"]`
+      override (added `--inset`/`--btn`/`--chip-hover` vars so hardcoded sunken
+      fields/buttons follow the theme). Pure `resolveTheme`/`nextTheme`/
+      `themeToggleLabel` in `logic.js`; renderer applies + persists `theme` in
+      `settings.json` (shallow-merge → coexists with sticky fields/window bounds).
+      Verified: node:test (3 new, 106 total) + headless Electron E2E vs the real
+      sidecar (default dark; toggle → light palette/label/data-theme; persisted +
+      restored across two launches; toggle back to dark; real compress still runs).
 - [ ] Drag-to-reorder the concat list
 - [x] Keyboard shortcuts (run, switch tabs) — Ctrl/Cmd+Enter runs the active tab's
       primary action; Ctrl/Cmd+]/[ (or ./,) cycle the *visible* tabs (search-aware,
