@@ -631,6 +631,31 @@ def test_mute_removes_audio(client, media, auth):
     assert _audio_stream_count(out) == 0
 
 
+def test_replace_audio_swaps_track(client, media, auth):
+    import subprocess
+    from conftest import FFMPEG
+    d, src = media  # 320x240 video, 44100 Hz audio
+    # A distinct new audio track at 22050 Hz so we can prove the swap happened.
+    new_audio = d / "newtrack.wav"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=22050:duration=2",
+         str(new_audio)],
+        check=True,
+    )
+    out = d / "redubbed.mp4"
+    r = client.post(
+        "/replace-audio",
+        json={"input": str(src), "audio": str(new_audio), "output": str(out),
+              "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _audio_stream_count(out) == 1
+    assert _sample_rate(out) == 22050  # the new track (source was 44100)
+    assert _dims(out) == _dims(src)    # video stream-copied unchanged
+
+
 def test_dedicated_endpoint_rejects_missing_extension(client, media, auth):
     d, src = media
     r = client.post(

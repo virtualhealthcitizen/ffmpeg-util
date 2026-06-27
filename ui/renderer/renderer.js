@@ -921,6 +921,16 @@ $("#run-mute").addEventListener("click", () => {
   });
 });
 
+$("#run-replace_audio").addEventListener("click", () => {
+  if (!requireFields("replace_audio-input", "replace_audio-audio", "replace_audio-output")) return;
+  run("Replacing audio", "replace_audio", {
+    input: val("replace_audio-input"),
+    audio: val("replace_audio-audio"),
+    output: val("replace_audio-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-crop").addEventListener("click", () => {
   if (!requireFields("crop-input", "crop-output", "crop-width", "crop-height")) return;
   run("Cropping", "crop", {

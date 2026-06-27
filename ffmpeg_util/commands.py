@@ -634,6 +634,23 @@ def build_mute_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-c", "copy", "-an", output_path]
 
 
+def build_replace_audio_args(
+    video_path: str, audio_path: str, output_path: str, *, audio_codec: str = "aac"
+) -> list[str]:
+    """Replace a video's audio with the track from an external audio file.
+
+    Keeps the original video stream untouched (``-c:v copy``) and takes the audio
+    from the second input, re-encoding it to ``audio_codec`` for broad container
+    compatibility. ``-shortest`` trims the result to whichever stream ends first
+    so a longer music bed doesn't leave a frozen tail."""
+    return [
+        "-i", video_path, "-i", audio_path,
+        "-map", "0:v:0", "-map", "1:a:0",
+        "-c:v", "copy", "-c:a", audio_codec, "-shortest",
+        output_path,
+    ]
+
+
 def parse_aspect(s: str) -> tuple[int, int]:
     """Parse an aspect string like '16:9' into (16, 9)."""
     try:

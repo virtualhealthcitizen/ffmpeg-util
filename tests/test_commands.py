@@ -390,6 +390,21 @@ def test_mute_args_strip_audio():
     assert args[-1] == "out.mp4"
 
 
+def test_replace_audio_args_map_and_copy():
+    args = c.build_replace_audio_args("vid.mp4", "music.mp3", "out.mp4")
+    # both inputs, in order
+    first_i = args.index("-i")
+    assert args[first_i + 1] == "vid.mp4"
+    assert args[args.index("-i", first_i + 1) + 1] == "music.mp3"
+    # video from input 0, audio from input 1
+    maps = [args[i + 1] for i, a in enumerate(args) if a == "-map"]
+    assert maps == ["0:v:0", "1:a:0"]
+    assert args[args.index("-c:v") + 1] == "copy"
+    assert args[args.index("-c:a") + 1] == "aac"
+    assert "-shortest" in args
+    assert args[-1] == "out.mp4"
+
+
 def test_crop_args_build_filter():
     args = c.build_crop_args("in.mp4", "o.mp4", 160, 120, 10, 20)
     assert args[args.index("-vf") + 1] == "crop=160:120:10:20"

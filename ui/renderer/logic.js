@@ -100,6 +100,7 @@
     transform: "rotate flip mirror turn orientation cw ccw",
     crop: "cut rectangle trim edges region",
     mute: "silent remove strip audio no sound",
+    replace_audio: "swap dub soundtrack music bed external audio track add sound voiceover",
     pad: "letterbox bars frame fit border",
     loop: "repeat times duplicate",
     frames: "extract images sequence export png every nth",

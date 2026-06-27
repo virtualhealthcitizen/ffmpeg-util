@@ -223,6 +223,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output")
     _add_global_flags(p)
 
+    # replace-audio
+    p = sub.add_parser("replace-audio", help="Replace a video's audio with an external file.")
+    p.add_argument("input", help="Input video.")
+    p.add_argument("output")
+    p.add_argument("--audio", required=True, help="Audio file to use as the new track.")
+    _add_global_flags(p)
+
     # crop
     p = sub.add_parser("crop", help="Crop a rectangle from the video.")
     p.add_argument("input")
@@ -435,6 +442,11 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "mute":
         runner.run_ffmpeg(commands.build_mute_args(args.input, args.output))
+        return 0
+
+    if args.command == "replace-audio":
+        runner.run_ffmpeg(commands.build_replace_audio_args(
+            args.input, args.audio, args.output))
         return 0
 
     if args.command == "crop":

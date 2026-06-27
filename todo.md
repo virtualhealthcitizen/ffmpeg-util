@@ -95,7 +95,11 @@ Packaging / tests:
 - [x] Loudness normalization (EBU R128 `loudnorm`) — core `build_loudnorm_args`,
       CLI `loudnorm --target`, sidecar (`/loudnorm` + `/run/stream`), Loudness tab.
       Verified E2E: output integrated loudness hits target (-16 LUFS, measured via ebur128).
-- [ ] Audio: replace/mux an audio track; mix or strip tracks
+- [x] Audio: replace an audio track — core `build_replace_audio_args` (map 0:v + 1:a,
+      `-c:v copy -c:a aac -shortest`), CLI `replace-audio --audio`, sidecar
+      (`/replace-audio` + `/run/stream` op `replace_audio`), Replace audio tab.
+      Verified E2E: swap in a 22050 Hz track -> output audio is 22050 Hz, video
+      stream-copied unchanged (320x240 h264). (mix/strip still open; strip = `mute`.)
 - [ ] Subtitles: burn-in (hardsub) or mux soft subs; extract subtitles
 - [ ] Watermark / text overlay (drawtext, image overlay with position)
 - [x] Image → video: loop a still image into a fixed-length clip — core
@@ -184,7 +188,7 @@ Packaging / tests:
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
 - [ ] Picture-in-picture overlay
 - [ ] Still image → video (image + duration, optional audio)
-- [ ] Replace the audio track with an external audio file
+- [x] Replace the audio track with an external audio file (see `replace-audio` above)
 - [ ] Set / clear metadata title
 
 ### More ideas (round 5)

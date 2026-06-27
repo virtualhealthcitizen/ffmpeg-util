@@ -601,6 +601,25 @@ def mute(req: MuteReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ReplaceAudioReq(BaseModel):
+    input: str
+    audio: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/replace-audio")
+def replace_audio(req: ReplaceAudioReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_replace_audio_args(req.input, req.audio, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class CropReq(BaseModel):
     input: str
     output: str
@@ -753,6 +772,8 @@ class RunReq(BaseModel):
     overwrite: bool = True
     input: str | None = None
     inputs: list[str] | None = None
+    # replace-audio
+    audio: str | None = None
     # convert
     vcodec: str | None = None
     acodec: str | None = None
@@ -856,6 +877,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         ), None
     if op == "mute":
         return commands.build_mute_args(req.input, req.output), None
+    if op == "replace_audio":
+        if not req.audio:
+            raise ValueError("replace-audio requires an audio file")
+        return commands.build_replace_audio_args(req.input, req.audio, req.output), None
     if op == "mono":
         return commands.build_mono_args(req.input, req.output), None
     if op == "sample_rate":
