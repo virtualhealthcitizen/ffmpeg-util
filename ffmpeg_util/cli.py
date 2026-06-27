@@ -81,6 +81,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--duration", type=float, default=1.0, help="Fade length in seconds (each end).")
     _add_global_flags(p)
 
+    # loudnorm
+    p = sub.add_parser("loudnorm", help="Normalize loudness to a target (EBU R128).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--target", type=float, default=-16.0, help="Integrated loudness target in LUFS (default -16).")
+    _add_global_flags(p)
+
     # volume
     p = sub.add_parser("volume", help="Adjust audio loudness by a dB gain.")
     p.add_argument("input")
@@ -243,6 +250,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "fade":
         commands.fade(runner, args.input, args.output, args.duration)
+        return 0
+
+    if args.command == "loudnorm":
+        runner.run_ffmpeg(commands.build_loudnorm_args(args.input, args.output, args.target))
         return 0
 
     if args.command == "volume":

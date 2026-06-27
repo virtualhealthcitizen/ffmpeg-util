@@ -328,6 +328,16 @@ $("#run-fade").addEventListener("click", () => {
   });
 });
 
+$("#run-loudnorm").addEventListener("click", () => {
+  if (!requireFields("loudnorm-input", "loudnorm-output")) return;
+  run("Normalizing loudness", "loudnorm", {
+    input: val("loudnorm-input"),
+    output: val("loudnorm-output"),
+    target_i: numOrNull("loudnorm-target") != null ? numOrNull("loudnorm-target") : -16,
+    overwrite: true,
+  });
+});
+
 $("#run-volume").addEventListener("click", () => {
   if (!requireFields("volume-input", "volume-output", "volume-gain")) return;
   run("Adjusting volume", "volume", {

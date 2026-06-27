@@ -152,6 +152,14 @@ def test_fade_args_without_audio_and_validation():
         c.build_fade_args("in.mp4", "out.mp4", 1.0, 0)
 
 
+def test_loudnorm_args_build_filter():
+    args = c.build_loudnorm_args("in.mp4", "out.mp4", -14.0)
+    af = args[args.index("-af") + 1]
+    assert af.startswith("loudnorm=I=-14.0:")
+    assert "TP=-1.5" in af and "LRA=11" in af
+    assert args[args.index("-c:v") + 1] == "copy"
+
+
 def test_volume_args_build_filter():
     args = c.build_volume_args("in.mp4", "out.mp4", -6.0)
     assert args[args.index("-af") + 1] == "volume=-6.0dB"

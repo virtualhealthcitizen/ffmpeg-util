@@ -195,6 +195,23 @@ def fade(req: FadeReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class LoudnormReq(BaseModel):
+    input: str
+    output: str
+    target_i: float = -16.0
+    overwrite: bool = True
+
+
+@app.post("/loudnorm")
+def loudnorm(req: LoudnormReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_loudnorm_args(req.input, req.output, req.target_i))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class VolumeReq(BaseModel):
     input: str
     output: str
@@ -460,6 +477,8 @@ class RunReq(BaseModel):
     every: int = 1
     # volume
     gain: float = 0.0
+    # loudnorm
+    target_i: float = -16.0
     # fade (seconds, each end)
     fade: float = 1.0
     # transform
@@ -478,6 +497,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "loudnorm":
+        return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":
         return commands.build_grayscale_args(req.input, req.output), None
     if op == "volume":

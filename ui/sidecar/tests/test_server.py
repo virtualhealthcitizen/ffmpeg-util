@@ -245,6 +245,32 @@ def test_fade_makes_first_frame_dark(client, media, auth):
     assert faded < 40, f"faded first-frame YAVG should be dark, got {faded}"
 
 
+def _integrated_loudness(path):
+    import re
+    import subprocess
+    from conftest import FFMPEG
+    out = subprocess.run(
+        [FFMPEG, "-hide_banner", "-i", str(path), "-af", "ebur128", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    matches = re.findall(r"I:\s*(-?[\d.]+)\s*LUFS", out.stderr)
+    return float(matches[-1]) if matches else None
+
+
+def test_loudnorm_hits_target(client, media, auth):
+    d, src = media
+    out = d / "normalized.mp4"
+    r = client.post(
+        "/loudnorm",
+        json={"input": str(src), "output": str(out), "target_i": -16.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    measured = _integrated_loudness(out)
+    assert measured is not None, "no ebur128 reading"
+    assert abs(measured - (-16.0)) < 1.5, f"target -16, measured {measured}"
+
+
 def test_volume_attenuates_by_gain(client, media, auth):
     d, src = media
     out = d / "quieter.mp4"

@@ -422,6 +422,18 @@ def fade(
     runner.run_ffmpeg(build_fade_args(input_path, output_path, fade_s, total_s, audio=audio))
 
 
+def build_loudnorm_args(
+    input_path: str, output_path: str, target_i: float = -16.0, tp: float = -1.5, lra: float = 11.0
+) -> list[str]:
+    """Build args to normalize loudness to ``target_i`` LUFS (EBU R128), copying
+    the video. ``tp`` is the true-peak ceiling (dBTP), ``lra`` the loudness range."""
+    return [
+        "-i", input_path, "-c:v", "copy",
+        "-af", f"loudnorm=I={target_i}:TP={tp}:LRA={lra}",
+        output_path,
+    ]
+
+
 def build_volume_args(input_path: str, output_path: str, gain_db: float) -> list[str]:
     """Build args to adjust audio loudness by ``gain_db`` decibels (video copied)."""
     return ["-i", input_path, "-c:v", "copy", "-af", f"volume={gain_db}dB", output_path]
