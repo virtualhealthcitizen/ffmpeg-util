@@ -437,6 +437,25 @@ def title(req: TitleReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class SampleRateReq(BaseModel):
+    input: str
+    output: str
+    rate: int
+    overwrite: bool = True
+
+
+@app.post("/sample-rate")
+def sample_rate(req: SampleRateReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_sample_rate_args(req.input, req.output, req.rate))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class MonoReq(BaseModel):
     input: str
     output: str
@@ -663,6 +682,8 @@ class RunReq(BaseModel):
     aspect: str = "16:9"
     # title (metadata)
     title: str = ""
+    # sample-rate
+    rate: int = 44100
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -708,6 +729,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_mute_args(req.input, req.output), None
     if op == "mono":
         return commands.build_mono_args(req.input, req.output), None
+    if op == "sample_rate":
+        return commands.build_sample_rate_args(req.input, req.output, req.rate), None
     if op == "title":
         return commands.build_title_args(req.input, req.output, req.title), None
     if op == "crop":

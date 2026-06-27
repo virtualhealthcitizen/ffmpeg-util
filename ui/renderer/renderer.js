@@ -318,6 +318,16 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-sample_rate").addEventListener("click", () => {
+  if (!requireFields("sample_rate-input", "sample_rate-output")) return;
+  run("Resampling audio", "sample_rate", {
+    input: val("sample_rate-input"),
+    output: val("sample_rate-output"),
+    rate: Number($("#sample_rate-rate").value),
+    overwrite: true,
+  });
+});
+
 $("#run-waveform").addEventListener("click", () => {
   if (!requireFields("waveform-input", "waveform-output")) return;
   run("Rendering waveform", "waveform", {

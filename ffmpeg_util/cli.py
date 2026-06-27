@@ -167,6 +167,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--title", default="", help="Title text (empty clears it).")
     _add_global_flags(p)
 
+    # sample-rate
+    p = sub.add_parser("sample-rate", help="Resample audio to a sample rate (Hz).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--rate", type=int, required=True, help="Target sample rate, e.g. 44100.")
+    _add_global_flags(p)
+
     # mono
     p = sub.add_parser("mono", help="Downmix audio to a single (mono) channel.")
     p.add_argument("input")
@@ -354,6 +361,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "title":
         runner.run_ffmpeg(commands.build_title_args(args.input, args.output, args.title))
+        return 0
+
+    if args.command == "sample-rate":
+        runner.run_ffmpeg(commands.build_sample_rate_args(args.input, args.output, args.rate))
         return 0
 
     if args.command == "mono":

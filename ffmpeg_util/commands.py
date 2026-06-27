@@ -558,6 +558,13 @@ def build_title_args(input_path: str, output_path: str, title: str) -> list[str]
     return ["-i", input_path, "-c", "copy", "-metadata", f"title={title}", output_path]
 
 
+def build_sample_rate_args(input_path: str, output_path: str, rate: int) -> list[str]:
+    """Build args to resample audio to ``rate`` Hz; the video is stream-copied."""
+    if rate < 1:
+        raise ValueError("sample rate must be >= 1")
+    return ["-i", input_path, "-c:v", "copy", "-ar", str(rate), output_path]
+
+
 def build_mono_args(input_path: str, output_path: str) -> list[str]:
     """Downmix audio to a single (mono) channel; the video is stream-copied."""
     return ["-i", input_path, "-c:v", "copy", "-ac", "1", output_path]
