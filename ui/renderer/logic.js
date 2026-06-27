@@ -504,6 +504,84 @@
     return `~${formatDuration(out)}`;
   }
 
+  // --- Visual crop selector: drag a rectangle over the source frame ---
+
+  // Clamp a point {x,y} to the [0,w]×[0,h] box (displayed-pixel coords). Pure.
+  function clampPoint(pt, size) {
+    const w = Number(size && size.width) || 0;
+    const h = Number(size && size.height) || 0;
+    const x = Math.max(0, Math.min(Number(pt && pt.x) || 0, w));
+    const y = Math.max(0, Math.min(Number(pt && pt.y) || 0, h));
+    return { x, y };
+  }
+
+  // Two drag points -> a normalized rectangle {left,top,width,height} (handles a
+  // drag in any direction). Pure.
+  function normalizeDragRect(a, b) {
+    const ax = Number(a && a.x) || 0, ay = Number(a && a.y) || 0;
+    const bx = Number(b && b.x) || 0, by = Number(b && b.y) || 0;
+    return {
+      left: Math.min(ax, bx),
+      top: Math.min(ay, by),
+      width: Math.abs(ax - bx),
+      height: Math.abs(ay - by),
+    };
+  }
+
+  // Round to the nearest even integer toward zero-safe bounds (helper).
+  function even(n) {
+    return 2 * Math.round((Number(n) || 0) / 2);
+  }
+
+  // Convert a selection rectangle drawn over the displayed media (in displayed CSS
+  // pixels, origin at the media's top-left) into source-pixel crop values. Scales
+  // by sourceSize/displaySize, clamps to the source frame, and rounds to even
+  // numbers (x264 needs even W/H; even offsets keep 4:2:0 chroma happy). Returns
+  // {x,y,width,height} or null when the rect is degenerate or inputs are missing.
+  function rectToCrop(rect, displaySize, sourceSize) {
+    const dw = Number(displaySize && displaySize.width);
+    const dh = Number(displaySize && displaySize.height);
+    const sw = Number(sourceSize && sourceSize.width);
+    const sh = Number(sourceSize && sourceSize.height);
+    if (!(dw > 0 && dh > 0 && sw > 0 && sh > 0)) return null;
+    if (!rect || !(Number(rect.width) > 0) || !(Number(rect.height) > 0)) return null;
+    const sx = sw / dw, sy = sh / dh;
+    // displayed px -> source px
+    let x = Math.max(0, Math.min(rect.left * sx, sw));
+    let y = Math.max(0, Math.min(rect.top * sy, sh));
+    let w = Math.min(rect.width * sx, sw - x);
+    let h = Math.min(rect.height * sy, sh - y);
+    // floor offsets to even, round sizes to even, then re-clamp in-bounds
+    x = Math.max(0, 2 * Math.floor(x / 2));
+    y = Math.max(0, 2 * Math.floor(y / 2));
+    w = even(w);
+    h = even(h);
+    if (x + w > sw) w = 2 * Math.floor((sw - x) / 2);
+    if (y + h > sh) h = 2 * Math.floor((sh - y) / 2);
+    if (w < 2 || h < 2) return null;
+    return { x, y, width: w, height: h };
+  }
+
+  // The inverse: position an overlay rectangle (displayed CSS px) from crop field
+  // values, so the drawn box reflects what's typed/filled. Returns
+  // {left,top,width,height} clamped to the display box, or null when not drawable.
+  function cropToRect(crop, displaySize, sourceSize) {
+    const dw = Number(displaySize && displaySize.width);
+    const dh = Number(displaySize && displaySize.height);
+    const sw = Number(sourceSize && sourceSize.width);
+    const sh = Number(sourceSize && sourceSize.height);
+    if (!(dw > 0 && dh > 0 && sw > 0 && sh > 0)) return null;
+    const w = Number(crop && crop.width), h = Number(crop && crop.height);
+    if (!(w > 0 && h > 0)) return null;
+    const x = Number(crop && crop.x) || 0, y = Number(crop && crop.y) || 0;
+    const sx = dw / sw, sy = dh / sh;
+    let left = Math.max(0, Math.min(x * sx, dw));
+    let top = Math.max(0, Math.min(y * sy, dh));
+    let width = Math.min(w * sx, dw - left);
+    let height = Math.min(h * sy, dh - top);
+    return { left, top, width, height };
+  }
+
   // --- Friendly error hints: map common ffmpeg stderr to a one-line explanation ---
 
   // Ordered [pattern, hint] rules; the first whose regex matches the raw error
@@ -565,6 +643,10 @@
     compatReport,
     formatTimecode,
     timeTargetsForTab,
+    clampPoint,
+    normalizeDragRect,
+    rectToCrop,
+    cropToRect,
     overwriteMessage,
     isPathFieldId,
     presetNames,

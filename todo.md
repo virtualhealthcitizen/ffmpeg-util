@@ -236,8 +236,14 @@ Navigation (cross-cutting — the 30-tab wall):
 - [ ] Favorites / recently-used tools pinned to the top of the nav.
 
 Direct-manipulation (visual instead of typed numbers):
-- [ ] **Visual crop selector** — draggable rectangle over a source frame; fills the
-      Crop x/y/w/h (and Aspect) instead of typing pixels.
+- [x] **Visual crop selector** — drag a rectangle over the source preview on the
+      Crop tab to fill x/y/w/h (scaled to source px, even-rounded). Pure
+      `rectToCrop`/`cropToRect`/`normalizeDragRect`/`clampPoint` in `logic.js`; a
+      `#crop-overlay` marquee in the renderer (pointer-capture drag, hidden off the
+      Crop tab, redraws from typed/chip/preset values). Verified: node:test (7 new,
+      65 total) + headless Electron E2E vs the real sidecar (320×240 clip →
+      full-frame drag fills 0,0,320×240; quarter drag fills even ~160×120; real
+      crop output ffprobes to the selected 160×120; overlay hidden on Convert).
 - [ ] Trim/GIF timeline scrubber — load the video, drag in/out handles to set
       start/end/duration visually (trim, gif, thumbnail time, poster frame).
 - [ ] Before/after compare slider on the output preview (drag a divider over input↔output).
@@ -277,8 +283,8 @@ Workflow / feedback components:
 **Priority for this round (highest first):**
 1. ~~Tool search / command palette~~ — DONE (round 7).
 2. ~~Auto source-preview + friendly probe card~~ — DONE (round 7).
-3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts — **← next.**
-4. Sliders with live readouts; 5. Visual crop selector; 6. the rest.
+3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts (in flight, `feat/sliders`).
+5. ~~Visual crop selector~~ — DONE. 6. the rest — **← next.**
 
 - [x] **Tool search / command palette** — filter box above the tabs (pure
       `filterTools`/`TOOL_ALIASES` in `logic.js`), live-narrows the 30 buttons by
@@ -324,7 +330,8 @@ Direct manipulation on the embedded source player (it's already there):
       `logic.js`. Verified: node:test (2 new, 37 total) + headless Electron E2E vs
       the real sidecar (playhead 1.5s → trim-start "00:00:01.500"; GIF/Thumbnail
       fill; hidden on Convert + image; shot).
-- [ ] Draw-a-rectangle crop overlay on the source frame → fills Crop x/y/w/h.
+- [x] Draw-a-rectangle crop overlay on the source frame → fills Crop x/y/w/h.
+      (Shipped as the round-7 "Visual crop selector" above.)
 - [ ] In/out range handles on the player's scrub bar for Trim/GIF duration.
 
 Workflow / re-use:

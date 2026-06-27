@@ -498,3 +498,85 @@ test("friendlyError returns null for unrecognized / empty text", () => {
   assert.equal(L.friendlyError(""), null);
   assert.equal(L.friendlyError(null), null);
 });
+
+test("normalizeDragRect normalizes points dragged in any direction", () => {
+  // top-left -> bottom-right
+  assert.deepEqual(L.normalizeDragRect({ x: 10, y: 20 }, { x: 110, y: 80 }), {
+    left: 10, top: 20, width: 100, height: 60,
+  });
+  // bottom-right -> top-left (drag back up) yields the same rect
+  assert.deepEqual(L.normalizeDragRect({ x: 110, y: 80 }, { x: 10, y: 20 }), {
+    left: 10, top: 20, width: 100, height: 60,
+  });
+  // a zero-area click
+  assert.deepEqual(L.normalizeDragRect({ x: 5, y: 5 }, { x: 5, y: 5 }), {
+    left: 5, top: 5, width: 0, height: 0,
+  });
+});
+
+test("clampPoint clamps to the displayed media box", () => {
+  const size = { width: 280, height: 170 };
+  assert.deepEqual(L.clampPoint({ x: 100, y: 50 }, size), { x: 100, y: 50 });
+  assert.deepEqual(L.clampPoint({ x: -10, y: 200 }, size), { x: 0, y: 170 });
+  assert.deepEqual(L.clampPoint({ x: 999, y: -5 }, size), { x: 280, y: 0 });
+});
+
+test("rectToCrop scales display px to even source-px crop values", () => {
+  // 280×140 display maps a 1280×640 source: scale ×4.571 / ×4.571
+  const display = { width: 280, height: 140 };
+  const source = { width: 1280, height: 640 };
+  // a full-frame drag covers the whole source
+  assert.deepEqual(L.rectToCrop({ left: 0, top: 0, width: 280, height: 140 }, display, source), {
+    x: 0, y: 0, width: 1280, height: 640,
+  });
+  // a centered quarter-ish rect scales up and rounds to even
+  const c = L.rectToCrop({ left: 70, top: 35, width: 140, height: 70 }, display, source);
+  assert.equal(c.x % 2, 0);
+  assert.equal(c.width % 2, 0);
+  assert.equal(c.x, 320);
+  assert.equal(c.y, 160);
+  assert.equal(c.width, 640);
+  assert.equal(c.height, 320);
+});
+
+test("rectToCrop clamps to the source frame and never overflows", () => {
+  const display = { width: 200, height: 100 };
+  const source = { width: 400, height: 200 };
+  // a rect that runs off the right/bottom edge stays in-bounds (x+w ≤ sw)
+  const c = L.rectToCrop({ left: 150, top: 80, width: 100, height: 50 }, display, source);
+  assert.ok(c.x + c.width <= source.width, `${c.x}+${c.width} ≤ ${source.width}`);
+  assert.ok(c.y + c.height <= source.height, `${c.y}+${c.height} ≤ ${source.height}`);
+});
+
+test("rectToCrop returns null for degenerate rects or missing sizes", () => {
+  const display = { width: 200, height: 100 }, source = { width: 400, height: 200 };
+  assert.equal(L.rectToCrop({ left: 0, top: 0, width: 0, height: 50 }, display, source), null);
+  assert.equal(L.rectToCrop({ left: 0, top: 0, width: 1, height: 1 }, { width: 0, height: 0 }, source), null);
+  assert.equal(L.rectToCrop({ left: 0, top: 0, width: 10, height: 10 }, display, null), null);
+});
+
+test("cropToRect is the inverse — source-px crop -> display-px overlay box", () => {
+  const display = { width: 280, height: 140 };
+  const source = { width: 1280, height: 640 };
+  assert.deepEqual(L.cropToRect({ x: 320, y: 160, width: 640, height: 320 }, display, source), {
+    left: 70, top: 35, width: 140, height: 70,
+  });
+  // clamps an over-large crop to the display box
+  const r = L.cropToRect({ x: 0, y: 0, width: 99999, height: 99999 }, display, source);
+  assert.deepEqual(r, { left: 0, top: 0, width: 280, height: 140 });
+  // not drawable without positive dims
+  assert.equal(L.cropToRect({ x: 0, y: 0, width: 0, height: 0 }, display, source), null);
+  assert.equal(L.cropToRect({ width: 10, height: 10 }, display, null), null);
+});
+
+test("rectToCrop and cropToRect round-trip within even-rounding tolerance", () => {
+  const display = { width: 300, height: 200 };
+  const source = { width: 600, height: 400 };
+  const crop = L.rectToCrop({ left: 30, top: 20, width: 150, height: 100 }, display, source);
+  const back = L.cropToRect(crop, display, source);
+  // back-projected box lands within a pixel of the drawn rectangle
+  assert.ok(Math.abs(back.left - 30) <= 1);
+  assert.ok(Math.abs(back.top - 20) <= 1);
+  assert.ok(Math.abs(back.width - 150) <= 1);
+  assert.ok(Math.abs(back.height - 100) <= 1);
+});

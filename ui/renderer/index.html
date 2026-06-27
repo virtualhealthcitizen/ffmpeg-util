@@ -62,6 +62,8 @@
         <div class="source-media">
           <img id="source-img" class="hidden" alt="source preview" />
           <video id="source-video" class="hidden" muted controls></video>
+          <!-- Visual crop selector: drag a rectangle over the frame (Crop tab) -->
+          <div id="crop-overlay" class="hidden"><div id="crop-rect" class="hidden"></div></div>
         </div>
         <div id="source-chips" class="chips"></div>
       </div>
@@ -288,7 +290,7 @@
         <label class="inline">X <input id="crop-x" type="number" min="0" placeholder="0" /></label>
         <label class="inline">Y <input id="crop-y" type="number" min="0" placeholder="0" /></label>
       </div>
-      <p class="hint">Crops a Width×Height rectangle with its top-left at (X, Y). Use Probe to see source size.</p>
+      <p class="hint">Crops a Width×Height rectangle with its top-left at (X, Y). Drag a box directly on the Source preview above to fill these fields, or use Probe to see source size.</p>
       <div class="row"><button class="primary" id="run-crop">Crop</button></div>
     </section>
 
