@@ -40,6 +40,7 @@
       <button data-tab="waveform">Waveform</button>
       <button data-tab="sample_rate">Sample rate</button>
       <button data-tab="hstack">Side by side</button>
+      <button data-tab="vstack">Stacked</button>
     </nav>
 
     <!-- Convert -->
@@ -610,6 +611,28 @@
       </div>
       <p class="hint">Both videos must be the same height. Output width is the sum; the left video's audio is kept.</p>
       <div class="row"><button class="primary" id="run-hstack">Combine side by side</button></div>
+    </section>
+
+    <!-- Stacked (vstack) -->
+    <section class="card panel" id="panel-vstack">
+      <label>Top video</label>
+      <div class="row">
+        <input id="vstack-input-a" type="text" placeholder="Choose the top file…" />
+        <button class="pick-file" data-target="vstack-input-a">Browse…</button>
+        <button class="secondary probe-btn" data-source="vstack-input-a">Probe</button>
+      </div>
+      <label>Bottom video</label>
+      <div class="row">
+        <input id="vstack-input-b" type="text" placeholder="Choose the bottom file…" />
+        <button class="pick-file" data-target="vstack-input-b">Browse…</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="vstack-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="vstack-output">Save as…</button>
+      </div>
+      <p class="hint">Both videos must be the same width. Output height is the sum; the top video's audio is kept.</p>
+      <div class="row"><button class="primary" id="run-vstack">Stack vertically</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>

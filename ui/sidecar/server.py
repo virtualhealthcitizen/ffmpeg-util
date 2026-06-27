@@ -267,6 +267,18 @@ def hstack(req: HstackReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+@app.post("/vstack")
+def vstack(req: HstackReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_vstack_args(req.inputs, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class BoomerangReq(BaseModel):
     input: str
     output: str
@@ -735,6 +747,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_boomerang_args(req.input, req.output), None
     if op == "hstack":
         return commands.build_hstack_args(req.inputs or [], req.output), None
+    if op == "vstack":
+        return commands.build_vstack_args(req.inputs or [], req.output), None
     if op == "volume":
         return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":

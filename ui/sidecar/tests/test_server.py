@@ -368,6 +368,18 @@ def test_volume_attenuates_by_gain(client, media, auth):
     assert abs((before - 6.0) - after) < 1.5, f"before={before} after={after}"
 
 
+def test_vstack_doubles_height(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "stacked.mp4"
+    r = client.post(
+        "/vstack",
+        json={"inputs": [str(src), str(src)], "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 480)  # two 240-tall videos stacked
+
+
 def test_hstack_doubles_width(client, media, auth):
     d, src = media  # 320x240
     out = d / "sbs.mp4"
