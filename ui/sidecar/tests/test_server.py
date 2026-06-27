@@ -18,6 +18,17 @@ def test_expected_output_duration():
     assert server._expected_output_duration("loop", 10, count=3) == 30
     assert server._expected_output_duration("boomerang", 10) == 20
     assert server._expected_output_duration("convert", None) is None
+    # trim: output length comes from duration / end-start / remaining-after-start
+    assert server._expected_output_duration("trim", 30, duration="5") == 5
+    assert server._expected_output_duration("trim", 30, start="10", end="00:00:25") == 15
+    assert server._expected_output_duration("trim", 30, start="20") == 10
+
+
+def test_parse_time():
+    import server
+    assert server._parse_time("5") == 5
+    assert server._parse_time("01:30") == 90
+    assert server._parse_time("01:00:00") == 3600
 
 
 def test_health(client):
