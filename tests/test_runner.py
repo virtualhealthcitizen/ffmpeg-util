@@ -73,6 +73,33 @@ def test_iter_progress_captures_stderr_on_error(tmp_path):
     assert excinfo.value.stderr.strip()  # non-empty stderr was captured
 
 
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not on PATH")
+def test_iter_progress_kills_process_on_early_close(monkeypatch):
+    # Cancelling a run closes the generator early; the finally must kill ffmpeg so
+    # nothing lingers. Spy on Popen to grab the spawned process, then assert it's
+    # gone after close(). This is the mechanism the UI's Cancel button relies on.
+    import subprocess
+
+    spawned = []
+    real_popen = subprocess.Popen
+
+    def spy(*args, **kwargs):
+        proc = real_popen(*args, **kwargs)
+        spawned.append(proc)
+        return proc
+
+    monkeypatch.setattr("ffmpeg_util.runner.subprocess.Popen", spy)
+    r = FfmpegRunner(overwrite=True)
+    gen = r.iter_ffmpeg_progress(
+        ["-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=30",
+         "-f", "null", "-"]
+    )
+    next(gen)        # spawn ffmpeg and read the first progress block
+    gen.close()      # simulate cancel/disconnect -> finally -> kill + wait
+    assert spawned, "ffmpeg process was never spawned"
+    assert spawned[0].poll() is not None  # terminated, not left running
+
+
 def test_iter_progress_dry_run_emits_command_and_no_blocks(capsys):
     r = FfmpegRunner(ffmpeg=_FAKE_FFMPEG, dry_run=True)
     blocks = list(r.iter_ffmpeg_progress(["-i", "in.mp4", "out.mp4"]))

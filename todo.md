@@ -106,7 +106,8 @@ Packaging / tests:
 - [ ] Hardware-accelerated encoding option (NVENC/QSV) when available
 
 ### Workflow
-- [ ] Cancel a running operation (kill the ffmpeg process mid-run)
+- [x] Cancel a running operation (kill the ffmpeg process mid-run) — Cancel button
+      aborts the stream; sidecar kills ffmpeg on disconnect. (See round 9.)
 - [ ] Batch mode: apply one operation to many files / a whole folder
 - [ ] Job queue + history (recent runs, re-run, clear)
 - [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
@@ -347,7 +348,13 @@ Safety / correctness (latent gaps in the current UI):
 - [ ] Pre-run validation — verify the input exists and the output dir is writable
       before launching ffmpeg; highlight the offending field instead of a late error.
 - [ ] Warn on odd width/height for x264 (must be even) before the run fails.
-- [ ] Cancel a running op (kill the ffmpeg process) and reset the UI.
+- [x] Cancel a running op (kill the ffmpeg process) and reset the UI — a Cancel
+      button aborts the `/run/stream` fetch; the disconnect makes the sidecar stop
+      consuming progress, firing `iter_ffmpeg_progress`'s `finally` to kill ffmpeg
+      (no new endpoint needed). The renderer shows "Cancelled — operation stopped."
+      and re-enables the buttons. Verified: core pytest (kill-on-early-close spy
+      test, 95) + headless Electron E2E (ffmpeg proc count 1→0 on Cancel, status +
+      UI reset confirmed).
 
 Persistence / memory:
 - [ ] Remember the active tab + window size/position across launches.
@@ -365,7 +372,7 @@ Help / discoverability:
 
 **Priority for round 9 (highest first):**
 1. ~~Overwrite confirmation + Run-button-disabled-while-running~~ — DONE.
-2. Cancel a running op — **← next.** 3. remember tab + window; 4. presets; 5. the rest.
+2. ~~Cancel a running op~~ — DONE. 3. remember tab + window — **← next.** 4. presets; 5. the rest.
 
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
