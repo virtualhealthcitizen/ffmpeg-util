@@ -113,7 +113,7 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 /* Source card: input preview + friendly probe summary, auto-filled per tab. */
 .source.hidden { display: none; }
 .source-body { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-.source-media { flex: 0 0 auto; }
+.source-media { flex: 0 0 auto; position: relative; }
 #source-img,
 #source-video {
   max-width: 280px;
@@ -127,6 +127,26 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 #source-video.hidden { display: none; }
 .source-media:empty,
 .source-media.hidden { display: none; }
+
+/* Visual crop selector: a draggable rectangle layered over the source frame
+   (Crop tab only). The overlay matches the media box; the rect shows the marquee. */
+#crop-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+#crop-overlay.hidden { display: none; }
+/* dim everything outside the selection via a big translucent border on the rect */
+#crop-rect {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--accent);
+  background: rgba(90, 160, 255, 0.18);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+#crop-rect.hidden { display: none; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 200px; }
 .chip {

@@ -6,6 +6,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
+  clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, friendlyError } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
@@ -61,6 +62,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     refreshInputs(); // show the new tab's input + multi-input compat (if any)
     refreshPresetSelect(); // show this tab's saved presets
     refreshDimPresets(); // show frame-size presets when the tab has W/H fields
+    renderCropOverlay(); // show/hide the visual crop selector for this tab
     setSettings({ activeTab: tab }).catch(() => {}); // remember across launches
   });
 });
@@ -146,6 +148,8 @@ function hideSource() {
   img.removeAttribute("src");
   vid.removeAttribute("src");
   $("#source-actions").classList.add("hidden");
+  $("#crop-overlay").classList.add("hidden");
+  $("#crop-rect").classList.add("hidden");
   if (sourceUrl) {
     URL.revokeObjectURL(sourceUrl);
     sourceUrl = null;
@@ -248,6 +252,7 @@ function renderChips(chips, actions = {}) {
         }
         const names = targets.map((t) => fieldLabel(t.id)).join(" & ");
         setStatus(`Filled ${names} from source ${label.toLowerCase()}.`);
+        renderCropOverlay(); // reflect a Size-chip fill in the crop marquee
       });
     }
     box.appendChild(chip);
@@ -257,12 +262,13 @@ function renderChips(chips, actions = {}) {
 async function refreshSource() {
   const path = activeInputPath();
   if (!path) return hideSource();
-  if (path === lastSourcePath) { renderSourceActions(); return refreshEstimate(); } // re-target for this tab
+  if (path === lastSourcePath) { renderSourceActions(); renderCropOverlay(); return refreshEstimate(); } // re-target for this tab
   lastSourcePath = path;
   $("#source").classList.remove("hidden");
   renderChips([]); // clear stale chips while loading
   await showSourceMedia(path);
   renderSourceActions();
+  renderCropOverlay();
   try {
     const { result } = await api("/probe", { input: path, as_json: true });
     if (path !== lastSourcePath) return; // a newer input superseded this one
@@ -399,6 +405,7 @@ function refreshDimPresets() {
       $("#" + fields.w).value = dims.width;
       $("#" + fields.h).value = dims.height;
       setStatus(`Set frame size to ${dims.width}×${dims.height} (${preset.label}).`);
+      renderCropOverlay(); // reflect a frame-size preset in the crop marquee
     });
     box.appendChild(btn);
   }
@@ -420,6 +427,126 @@ function maybeFillOutput(tab) {
   const suggestion = suggestOutputForTab(activeInputPath(), tab);
   if (suggestion) outEl.value = suggestion;
 }
+
+// --- Visual crop selector: drag a rectangle over the source frame (Crop tab) ---
+// The selection lives on the shared source preview; on the Crop tab an overlay
+// captures a drag and fills crop-x/y/width/height (scaled up to source pixels).
+
+// The currently visible source media element (image or video), or null.
+function visibleSourceMedia() {
+  const vid = $("#source-video");
+  const img = $("#source-img");
+  if (!vid.classList.contains("hidden") && vid.getAttribute("src")) return vid;
+  if (!img.classList.contains("hidden") && img.getAttribute("src")) return img;
+  return null;
+}
+
+// Intrinsic (source) pixel size of a media element, or null until it's known.
+function mediaSourceSize(el) {
+  if (!el) return null;
+  const w = el.tagName === "VIDEO" ? el.videoWidth : el.naturalWidth;
+  const h = el.tagName === "VIDEO" ? el.videoHeight : el.naturalHeight;
+  return w > 0 && h > 0 ? { width: w, height: h } : null;
+}
+
+function positionCropRect(rectEl, r) {
+  rectEl.style.left = r.left + "px";
+  rectEl.style.top = r.top + "px";
+  rectEl.style.width = r.width + "px";
+  rectEl.style.height = r.height + "px";
+  rectEl.classList.remove("hidden");
+}
+
+// Project the current crop-x/y/width/height fields back onto the overlay as a
+// marquee, so the box reflects what's typed or filled from a chip/preset.
+function drawCropRectFromFields() {
+  const rectEl = $("#crop-rect");
+  const el = visibleSourceMedia();
+  const source = mediaSourceSize(el);
+  if (!el || !source) { rectEl.classList.add("hidden"); return; }
+  const box = el.getBoundingClientRect();
+  const crop = {
+    x: numOrNull("crop-x") || 0,
+    y: numOrNull("crop-y") || 0,
+    width: numOrNull("crop-width"),
+    height: numOrNull("crop-height"),
+  };
+  const r = cropToRect(crop, { width: box.width, height: box.height }, source);
+  if (!r) { rectEl.classList.add("hidden"); return; }
+  positionCropRect(rectEl, r);
+}
+
+// Show the crop overlay (Crop tab + a loaded media with known source size) and
+// draw the marquee from the current crop fields; hidden everywhere else so it
+// never blocks the video controls on other tabs.
+function renderCropOverlay() {
+  const overlay = $("#crop-overlay");
+  const rectEl = $("#crop-rect");
+  const source = mediaSourceSize(visibleSourceMedia());
+  if (currentTab() !== "crop" || !source) {
+    overlay.classList.add("hidden");
+    rectEl.classList.add("hidden");
+    return;
+  }
+  overlay.classList.remove("hidden");
+  drawCropRectFromFields();
+}
+
+(function setupCropDrag() {
+  const overlay = $("#crop-overlay");
+  const rectEl = $("#crop-rect");
+  let dragging = false, startPt = null, originRect = null, sourceSize = null;
+
+  function localPoint(e) {
+    return clampPoint(
+      { x: e.clientX - originRect.left, y: e.clientY - originRect.top },
+      { width: originRect.width, height: originRect.height }
+    );
+  }
+
+  overlay.addEventListener("pointerdown", (e) => {
+    const el = visibleSourceMedia();
+    sourceSize = mediaSourceSize(el);
+    if (!el || !sourceSize) return;
+    originRect = el.getBoundingClientRect();
+    dragging = true;
+    try { overlay.setPointerCapture(e.pointerId); } catch (_) {}
+    startPt = localPoint(e);
+    positionCropRect(rectEl, { left: startPt.x, top: startPt.y, width: 0, height: 0 });
+    e.preventDefault();
+  });
+
+  overlay.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    positionCropRect(rectEl, normalizeDragRect(startPt, localPoint(e)));
+  });
+
+  function finishDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    try { overlay.releasePointerCapture(e.pointerId); } catch (_) {}
+    const rect = normalizeDragRect(startPt, localPoint(e));
+    const crop = rectToCrop(rect, { width: originRect.width, height: originRect.height }, sourceSize);
+    if (!crop) { drawCropRectFromFields(); return; } // tiny / edge click → restore
+    $("#crop-x").value = crop.x;
+    $("#crop-y").value = crop.y;
+    $("#crop-width").value = crop.width;
+    $("#crop-height").value = crop.height;
+    setStatus(`Crop set to ${crop.width}×${crop.height} at (${crop.x}, ${crop.y}) from the preview.`);
+    drawCropRectFromFields(); // snap the marquee to the even-rounded result
+  }
+  overlay.addEventListener("pointerup", finishDrag);
+  overlay.addEventListener("pointercancel", finishDrag);
+})();
+
+// Keep the marquee in sync when the crop fields are edited or filled by chip/preset.
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id && /^crop-(x|y|width|height)$/.test(id)) drawCropRectFromFields();
+});
+// The source <video>/<img> only knows its intrinsic size once metadata loads.
+$("#source-video").addEventListener("loadedmetadata", renderCropOverlay);
+$("#source-img").addEventListener("load", renderCropOverlay);
 
 // --- Drag & drop: drop files anywhere to load them into the active tab ---
 (function setupDragDrop() {
