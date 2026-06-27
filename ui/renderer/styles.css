@@ -119,6 +119,17 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
   border-bottom-color: var(--accent);
   background: var(--card);
 }
+/* Favorites: a ☆ pin toggle on each tab; pinned tools lead the nav in a row. */
+.tabs button .fav-star {
+  cursor: pointer;
+  margin-right: 5px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.4;
+}
+.tabs button:hover .fav-star { opacity: 0.85; }
+.tabs button.favorited .fav-star { color: var(--accent); opacity: 1; }
 
 .panel { display: none; }
 .panel.active { display: block; }

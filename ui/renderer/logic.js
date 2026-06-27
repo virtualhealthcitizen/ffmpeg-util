@@ -273,6 +273,57 @@
     return groups;
   }
 
+  // --- Favorites: pin tools into a leading quick-access row, persisted ---
+
+  // The label of the synthetic group that leads the nav with the pinned tabs.
+  const FAVORITES_GROUP = "★ Favorites";
+
+  // Normalize a stored favorites value into a clean ordered list of unique,
+  // truthy tab ids (drops blanks + duplicates; a non-array yields []). Pure, so a
+  // corrupt/missing settings value can't break the nav layout.
+  function normalizeFavorites(favorites) {
+    if (!Array.isArray(favorites)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const t of favorites) {
+      const id = String(t == null ? "" : t);
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        out.push(id);
+      }
+    }
+    return out;
+  }
+
+  // Whether a tab is currently pinned. Pure.
+  function isFavorite(favorites, tab) {
+    return normalizeFavorites(favorites).includes(tab);
+  }
+
+  // Toggle a tab's pinned state, returning a new ordered list (immutable). A newly
+  // pinned tab appends to the end so the favorites row order stays stable; the
+  // input list is never mutated. A blank tab is a no-op.
+  function toggleFavorite(favorites, tab) {
+    const list = normalizeFavorites(favorites);
+    if (!tab) return list;
+    return list.includes(tab) ? list.filter((t) => t !== tab) : [...list, tab];
+  }
+
+  // Like groupTabs, but pulls the pinned tabs into a leading "★ Favorites" group
+  // and removes them from their normal category, so frequently-used tools sit in
+  // one quick-access row at the top. `favorites` is the ordered favorite tab-id
+  // list; only favorites that are also `present` appear, in favorites order. The
+  // remaining present tabs group by category exactly as groupTabs does, so every
+  // present tab still appears exactly once.
+  function groupTabsWithFavorites(present, favorites, categories) {
+    const show = present instanceof Set ? present : new Set(present || []);
+    const favs = normalizeFavorites(favorites).filter((t) => show.has(t));
+    const favSet = new Set(favs);
+    const rest = [...show].filter((t) => !favSet.has(t));
+    const groups = groupTabs(rest, categories);
+    return favs.length ? [{ name: FAVORITES_GROUP, tabs: favs }].concat(groups) : groups;
+  }
+
   // Filter a list of tools by a search query. Pure & order-preserving.
   // tools: [{ tab, label, keywords }]. Returns the matching `tab` ids in order.
   // Empty/whitespace query returns every tab. Multi-word queries are AND-matched:
@@ -956,6 +1007,11 @@
     filterTools,
     TOOL_CATEGORIES,
     groupTabs,
+    FAVORITES_GROUP,
+    normalizeFavorites,
+    isFavorite,
+    toggleFavorite,
+    groupTabsWithFavorites,
     DIMENSION_FIELDS,
     FPS_FIELDS,
     sourceFillActions,

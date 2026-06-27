@@ -10,7 +10,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
-  TOOL_CATEGORIES, groupTabs, templatedOutputForTab } = window.FfuLogic;
+  TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
+  groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -74,18 +75,26 @@ function currentTab() {
   return btn ? btn.dataset.tab : "convert";
 }
 
+// Pinned tools (tab ids) shown in a leading "★ Favorites" row; persisted in
+// settings.json. Populated from settings on load and updated by the star toggles.
+let favoritesData = [];
+let reapplyToolSearch = null; // set by setupToolSearch, lets a re-layout re-filter
+
 // Lay the flat list of tab buttons out into labeled category rows so the ~30-tab
 // nav scans in seconds. The order comes straight from the (unit-tested) data in
 // logic.js: each label is a full-width divider that wraps the buttons after it
-// onto their own rows. Buttons are moved (not cloned), so the click/search/
-// keyboard wiring queried elsewhere keeps working on the same nodes.
+// onto their own rows. Pinned tabs lead in a "★ Favorites" row. Buttons are moved
+// (not cloned), so the click/search/keyboard wiring queried elsewhere keeps
+// working on the same nodes. Re-callable: existing labels are cleared first so a
+// favorite toggle just re-runs this.
 function layoutNavGroups() {
   const nav = document.querySelector(".tabs");
   if (!nav) return;
+  nav.querySelectorAll(".tab-group-label").forEach((l) => l.remove());
   const byTab = new Map(
     Array.from(nav.querySelectorAll("button")).map((b) => [b.dataset.tab, b])
   );
-  const groups = groupTabs(Array.from(byTab.keys()), TOOL_CATEGORIES);
+  const groups = groupTabsWithFavorites(Array.from(byTab.keys()), favoritesData, TOOL_CATEGORIES);
   for (const g of groups) {
     const label = document.createElement("span");
     label.className = "tab-group-label";
@@ -95,17 +104,60 @@ function layoutNavGroups() {
     for (const tab of g.tabs) nav.appendChild(byTab.get(tab));
   }
 }
-layoutNavGroups();
 
 // Hide a category label when search has filtered away every tool under it, so an
 // empty heading never floats over a blank row. `visible` is the set of tab ids
-// the search currently shows.
+// the search currently shows (favorites-aware so the Favorites label hides too).
 function updateNavGroupLabels(visible) {
-  const present = new Set(groupTabs(visible, TOOL_CATEGORIES).map((g) => g.name));
+  const present = new Set(
+    groupTabsWithFavorites(visible, favoritesData, TOOL_CATEGORIES).map((g) => g.name)
+  );
   document.querySelectorAll(".tabs .tab-group-label").forEach((label) => {
     label.classList.toggle("hidden", !present.has(label.dataset.group));
   });
 }
+
+// --- Favorites: a ☆/★ pin toggle on each tab moves it to the top Favorites row ---
+// Toggle a tab's pinned state, persist it, and re-lay-out the nav (re-applying the
+// active search so hidden/labels stay correct).
+function toggleFav(tab) {
+  favoritesData = toggleFavorite(favoritesData, tab);
+  setSettings({ favorites: favoritesData }).catch(() => {}); // sticky across launches
+  layoutNavGroups();
+  refreshFavoriteStars();
+  if (reapplyToolSearch) reapplyToolSearch();
+}
+
+// Reflect the current favorites in each button's star glyph + state class.
+function refreshFavoriteStars() {
+  document.querySelectorAll(".tabs button").forEach((btn) => {
+    const star = btn.querySelector(".fav-star");
+    if (!star) return;
+    const fav = isFavorite(favoritesData, btn.dataset.tab);
+    star.textContent = fav ? "★" : "☆";
+    star.title = fav ? "Unpin from favorites" : "Pin to favorites";
+    btn.classList.toggle("favorited", fav);
+  });
+}
+
+// Inject the pin toggle into each tab button once. Run after the tool-search setup
+// so the search's captured labels don't include the star glyph.
+function setupFavoriteStars() {
+  document.querySelectorAll(".tabs button").forEach((btn) => {
+    const star = document.createElement("span");
+    star.className = "fav-star";
+    star.setAttribute("role", "button");
+    star.setAttribute("aria-label", "Pin tool to favorites");
+    star.addEventListener("click", (e) => {
+      e.stopPropagation(); // toggling the pin must not switch tabs
+      toggleFav(btn.dataset.tab);
+    });
+    btn.insertBefore(star, btn.firstChild);
+  });
+  refreshFavoriteStars();
+}
+
+layoutNavGroups();
 
 // --- Tool search / command palette: narrow the 30 tabs by name + alias ---
 (function setupToolSearch() {
@@ -128,6 +180,7 @@ function updateNavGroupLabels(visible) {
     noTools.classList.toggle("hidden", matches.size > 0);
     clearBtn.hidden = q.trim() === "";
   }
+  reapplyToolSearch = applyFilter; // let a favorites re-layout re-run the filter
 
   search.addEventListener("input", applyFilter);
   search.addEventListener("keydown", (e) => {
@@ -153,6 +206,9 @@ function updateNavGroupLabels(visible) {
     }
   });
 })();
+
+// Add the ☆ pin toggles after the search has captured each tab's clean label.
+setupFavoriteStars();
 
 // --- Keyboard shortcuts: run the active tab, cycle between (visible) tabs ---
 // Ctrl/Cmd+Enter runs the active tab's primary action; Ctrl/Cmd+]/[ (or ./,)
@@ -799,6 +855,10 @@ async function loadSettings() {
       if (el && s[id] != null && s[id] !== "") el.value = s[id];
     }
     presetsData = s.presets && typeof s.presets === "object" ? s.presets : {};
+    favoritesData = normalizeFavorites(s.favorites);
+    layoutNavGroups(); // re-lay-out so pinned tools lead the nav
+    refreshFavoriteStars();
+    if (reapplyToolSearch) reapplyToolSearch();
     if (s.activeTab) {
       const tb = document.querySelector('.tabs button[data-tab="' + s.activeTab + '"]');
       if (tb && !tb.classList.contains("active")) tb.click(); // restore last tab

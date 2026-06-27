@@ -246,7 +246,8 @@ Navigation (cross-cutting — the 30-tab wall):
       node:test (3 new, 92 total) + headless Electron E2E vs the real sidecar (nav
       lays out into 8 ordered category rows; "rotate" → only Transform + the Video FX
       label; clear restores all 8 labels; real compress still runs → output produced).
-- [ ] Favorites / recently-used tools pinned to the top of the nav.
+- [x] Favorites / recently-used tools pinned to the top of the nav — DONE (see
+      round 8 "Favorites: pin frequently-used tools to a top row").
 
 Direct-manipulation (visual instead of typed numbers):
 - [x] **Visual crop selector** — drag a rectangle over the source preview on the
@@ -389,7 +390,16 @@ Workflow / re-use:
 Navigation / layout polish (the 30-tab nav is still a wall when search is empty):
 - [x] Group tabs into labeled categories (carried from round 7) — DONE (see round 7
       "Group the tabs into labeled categories": `TOOL_CATEGORIES`/`groupTabs`). ← next
-- [ ] Favorites: pin frequently-used tools to a top row; persist across launches.
+- [x] **Favorites: pin frequently-used tools to a top row; persist across launches.**
+      A ☆/★ toggle on every tab pins it into a leading "★ Favorites" nav row
+      (pinned tabs move out of their category, not cloned). Pure
+      `normalizeFavorites`/`isFavorite`/`toggleFavorite`/`groupTabsWithFavorites`
+      in `logic.js`; renderer injects the star, re-lays-out the nav, and persists
+      `favorites` in `settings.json` (shallow-merge → coexists with sticky fields).
+      Verified: node:test (5 new, 103 total) + headless Electron E2E vs the real
+      sidecar (pin Crop+GIF → "★ Favorites" row leads in pin order, star click
+      doesn't switch tabs, moved-not-cloned, persisted + restored across two
+      launches, unpin updates settings, real compress still runs). ← next
 - [ ] Collapse/expand the Source and Probe cards to reclaim vertical space.
 - [x] Keyboard: run the active tab + cycle tabs — DONE (see "Keyboard shortcuts"
       under UI/UX above: Ctrl/Cmd+Enter runs, Ctrl/Cmd+]/[ cycle visible tabs).
