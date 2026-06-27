@@ -291,6 +291,12 @@ def test_pad_args_reject_bad_values():
         c.build_pad_args("in.mp4", "o.mp4", 0, 480)
 
 
+def test_title_args_set_metadata():
+    args = c.build_title_args("in.mp4", "out.mp4", "My Clip")
+    assert args[args.index("-metadata") + 1] == "title=My Clip"
+    assert args[args.index("-c") + 1] == "copy"
+
+
 def test_mono_args_downmix():
     args = c.build_mono_args("in.mp4", "out.mp4")
     assert args[args.index("-ac") + 1] == "1"

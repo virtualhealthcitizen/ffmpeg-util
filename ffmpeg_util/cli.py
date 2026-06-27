@@ -152,6 +152,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--height", type=int, required=True, help="Target frame height.")
     _add_global_flags(p)
 
+    # title (set metadata title)
+    p = sub.add_parser("title", help="Set (or clear) the title metadata tag.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--title", default="", help="Title text (empty clears it).")
+    _add_global_flags(p)
+
     # mono
     p = sub.add_parser("mono", help="Downmix audio to a single (mono) channel.")
     p.add_argument("input")
@@ -330,6 +337,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "pad":
         runner.run_ffmpeg(commands.build_pad_args(args.input, args.output, args.width, args.height))
+        return 0
+
+    if args.command == "title":
+        runner.run_ffmpeg(commands.build_title_args(args.input, args.output, args.title))
         return 0
 
     if args.command == "mono":

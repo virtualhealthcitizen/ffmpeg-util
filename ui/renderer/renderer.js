@@ -432,6 +432,16 @@ $("#run-pad").addEventListener("click", () => {
   });
 });
 
+$("#run-title").addEventListener("click", () => {
+  if (!requireFields("title-input", "title-output")) return;
+  run("Setting title", "title", {
+    input: val("title-input"),
+    output: val("title-output"),
+    title: val("title-title"),
+    overwrite: true,
+  });
+});
+
 $("#run-mono").addEventListener("click", () => {
   if (!requireFields("mono-input", "mono-output")) return;
   run("Downmixing to mono", "mono", {

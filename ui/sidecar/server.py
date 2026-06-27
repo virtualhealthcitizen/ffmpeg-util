@@ -398,6 +398,25 @@ def pad(req: PadReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class TitleReq(BaseModel):
+    input: str
+    output: str
+    title: str = ""
+    overwrite: bool = True
+
+
+@app.post("/title")
+def title(req: TitleReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_title_args(req.input, req.output, req.title))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class MonoReq(BaseModel):
     input: str
     output: str
@@ -622,6 +641,8 @@ class RunReq(BaseModel):
     saturation: float = 1.0
     # crop-aspect
     aspect: str = "16:9"
+    # title (metadata)
+    title: str = ""
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -663,6 +684,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_mute_args(req.input, req.output), None
     if op == "mono":
         return commands.build_mono_args(req.input, req.output), None
+    if op == "title":
+        return commands.build_title_args(req.input, req.output, req.title), None
     if op == "crop":
         if not req.width or not req.height:
             raise ValueError("crop requires width and height")

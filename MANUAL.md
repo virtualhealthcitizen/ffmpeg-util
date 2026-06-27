@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq, fps, crop-aspect, mono**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq, fps, crop-aspect, mono, title**.
 
 ---
 
@@ -133,6 +133,12 @@ Crops a `--width`×`--height` region with its top-left at (`--x`, `--y`).
 ffmpeg-util crop in.mp4 out.mp4 --width 1280 --height 720 --x 0 --y 140
 ```
 
+### title — set the metadata title
+Sets (or clears, with empty) the title tag; streams are copied.
+```bash
+ffmpeg-util title in.mp4 out.mp4 --title "My Video"
+```
+
 ### mono — downmix audio to one channel
 Collapses the audio to mono; the video is stream-copied.
 ```bash
@@ -243,7 +249,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust, FPS, Aspect, Mono), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust, FPS, Aspect, Mono, Title), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

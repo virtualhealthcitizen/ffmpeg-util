@@ -542,6 +542,11 @@ def build_pad_args(input_path: str, output_path: str, width: int, height: int) -
     return ["-i", input_path, "-vf", vf, output_path]
 
 
+def build_title_args(input_path: str, output_path: str, title: str) -> list[str]:
+    """Build args to set (or clear, with '') the title metadata tag; streams copy."""
+    return ["-i", input_path, "-c", "copy", "-metadata", f"title={title}", output_path]
+
+
 def build_mono_args(input_path: str, output_path: str) -> list[str]:
     """Downmix audio to a single (mono) channel; the video is stream-copied."""
     return ["-i", input_path, "-c:v", "copy", "-ac", "1", output_path]
