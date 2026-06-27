@@ -268,6 +268,29 @@ def test_crop_aspect_produces_target_ratio(client, media, auth):
     assert _dims(out) == (320, 180)  # 16:9 crop of 320x240
 
 
+def test_autocrop_removes_black_bars(client, media, auth):
+    import subprocess
+    from conftest import FFMPEG
+    d, src = media  # 320x240
+    # Letterbox it: 320x180 content centered in a 320x240 black frame.
+    boxed = d / "letterboxed.mp4"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
+         "-vf", "scale=320:180,pad=320:240:0:30:black", "-pix_fmt", "yuv420p",
+         str(boxed)],
+        check=True,
+    )
+    assert _dims(boxed) == (320, 240)
+    out = d / "autocropped.mp4"
+    r = client.post(
+        "/autocrop",
+        json={"input": str(boxed), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 180)  # black bars detected and cropped off
+
+
 def test_fps_resamples_frame_rate(client, media, auth):
     d, src = media  # 30 fps source
     out = d / "fps15.mp4"

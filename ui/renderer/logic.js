@@ -271,6 +271,48 @@
     return actions;
   }
 
+  // --- Multi-input compatibility (hstack/vstack/concat) ---
+
+  // Pull {w,h} of the first video stream from parsed ffprobe data, or null.
+  function videoDims(data) {
+    const streams = data && Array.isArray(data.streams) ? data.streams : [];
+    const v = streams.find((s) => s.codec_type === "video");
+    if (!v || !v.width || !v.height) return null;
+    const w = Number(v.width);
+    const h = Number(v.height);
+    return w > 0 && h > 0 ? { w, h } : null;
+  }
+
+  // Check whether the inputs for a multi-input op are compatible, given each
+  // input's dims ({w,h}|null) in order. Returns { ok, message } or null when the
+  // check doesn't apply (not a multi-input tab, or fewer than two probed inputs).
+  // hstack needs equal heights, vstack equal widths, concat matching size.
+  function compatReport(tab, dimsList) {
+    if (tab !== "hstack" && tab !== "vstack" && tab !== "concat") return null;
+    const valid = (dimsList || []).filter(Boolean);
+    if (valid.length < 2) return null;
+    if (tab === "hstack") {
+      const hs = valid.map((d) => d.h);
+      if (new Set(hs).size > 1) {
+        return { ok: false, message: `Heights differ (${hs.join(" vs ")}px). Side-by-side needs equal heights — pad or scale one first.` };
+      }
+      return { ok: true, message: `Heights match (${hs[0]}px) — ready to combine.` };
+    }
+    if (tab === "vstack") {
+      const ws = valid.map((d) => d.w);
+      if (new Set(ws).size > 1) {
+        return { ok: false, message: `Widths differ (${ws.join(" vs ")}px). Stacking needs equal widths — pad or scale one first.` };
+      }
+      return { ok: true, message: `Widths match (${ws[0]}px) — ready to stack.` };
+    }
+    const sizes = valid.map((d) => `${d.w}×${d.h}`);
+    const uniq = [...new Set(sizes)];
+    if (uniq.length > 1) {
+      return { ok: false, message: `Inputs differ in size (${uniq.join(", ")}). Concat needs matching size/codecs — re-encode first.` };
+    }
+    return { ok: true, message: `All inputs are ${uniq[0]} — ready to concat.` };
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -279,6 +321,8 @@
     DIMENSION_FIELDS,
     FPS_FIELDS,
     sourceFillActions,
+    videoDims,
+    compatReport,
     formatBytes,
     formatDuration,
     parseFrameRate,

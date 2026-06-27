@@ -128,7 +128,11 @@ Packaging / tests:
 ### More ideas (round 2)
 - [x] Playback speed change (setpts + atempo chain) — core `change_speed`/`build_speed_args`,
       CLI `speed`, sidecar (`/speed` + `/run/stream`), Speed tab. Verified E2E: 2× -> ~half duration.
-- [ ] Auto-crop black bars (`cropdetect` → `crop`)
+- [x] Auto-crop black bars (`cropdetect` → `crop`) — core `parse_cropdetect`/
+      `detect_crop`/`autocrop` + `runner.run_ffmpeg_capture` (info-loglevel capture),
+      CLI `autocrop --limit`, sidecar (`/autocrop` + `/run/stream`), Auto-crop tab.
+      Verified E2E: a 320×240 letterboxed clip → 320×180 (bars removed), via CLI and
+      the sidecar TestClient. Unit tests for the pure `parse_cropdetect` parser.
 - [ ] Scene-change thumbnails (`select='gt(scene,…)'`)
 - [ ] Trim multiple segments and join them in one go
 - [ ] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`)
@@ -283,9 +287,13 @@ Make the probe data actionable (the source card is read-only today):
       pad → width/height = 320/240; click FPS → 30; non-fillable on Convert; shot).
       Folds in the "Match source" idea below — the chip *is* the match-source action.
 - [~] "Match source" buttons — subsumed by clickable chips above.
-- [ ] Multi-input probe + mismatch guard for hstack/vstack/concat — show *both*
-      sources' chips and warn before running when heights/widths/codecs differ
-      (pre-empts the "must be the same height/width" ffmpeg failure).
+- [x] **Multi-input probe + mismatch guard** for hstack/vstack/concat — a compat
+      banner probes all inputs and warns before running when they're incompatible
+      (hstack=equal heights, vstack=equal widths, concat=matching size), green-OK
+      otherwise. Pure `videoDims`/`compatReport` in `logic.js`; `refreshCompat()` in
+      the renderer (debounced, supersede-safe). Verified: node:test (4 new, 35 total)
+      + headless Electron E2E vs the real sidecar (320×240 + 320×360 → hstack warns
+      "Heights differ", vstack OK, concat warns; hidden on single-input tabs; shot).
 - [ ] Estimated-output readout — live size/duration estimate from the probed input
       + current settings (compress CRF, gif fps/width, speed factor, trim range).
 
@@ -311,8 +319,8 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 
 **Priority for round 8 (highest first):**
 1. ~~Clickable probe chips + "Match source"~~ — DONE.
-2. Multi-input probe + mismatch guard — prevents the most common stack/concat failure. **← next.**
-3. Scrub-to-set-time — high-value, reuses the player we just shipped.
+2. ~~Multi-input probe + mismatch guard~~ — DONE.
+3. Scrub-to-set-time — high-value, reuses the player we just shipped. **← next.**
 4. Estimated-output readout; 5. friendlier errors; 6. the rest.
 
 ### UI/UX components (round 9) — safety, persistence, power-user flow

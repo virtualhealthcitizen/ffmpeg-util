@@ -97,6 +97,25 @@ class FfmpegRunner:
         cmd = [self.ffprobe, "-hide_banner"] + list(args)
         return self._run(cmd)
 
+    def run_ffmpeg_capture(
+        self, args: Sequence[str], *, loglevel: str = "info"
+    ) -> subprocess.CompletedProcess | None:
+        """Run ffmpeg at a chosen loglevel, capturing output without raising.
+
+        Detection passes (e.g. ``cropdetect``) write their results to stderr at
+        the ``info`` level, which the normal ``error`` loglevel would suppress;
+        and they exit non-zero in benign cases, so we don't treat that as fatal.
+        Returns the CompletedProcess (None in dry-run mode).
+        """
+        cmd = [self.ffmpeg, "-hide_banner", "-loglevel", loglevel, *args]
+        rendered = self.format_command(cmd)
+        if self.dry_run:
+            print(rendered)
+            return None
+        if self.verbose:
+            print(f"+ {rendered}")
+        return subprocess.run(list(cmd), capture_output=True, text=True)
+
     def iter_ffmpeg_progress(self, args: Sequence[str]):
         """Run ffmpeg with ``-progress`` and yield each progress block as a dict.
 

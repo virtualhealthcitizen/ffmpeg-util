@@ -37,3 +37,12 @@ def test_thumbnail_dry_run(capsys):
                "--ffmpeg", "ffmpeg", "--dry-run"])
     assert rc == 0
     assert "out.png" in capsys.readouterr().out
+
+
+def test_autocrop_dry_run(capsys):
+    # Dry-run only emits the cropdetect analysis pass (the crop pass depends on
+    # its result); it must exit 0 without treating "no crop detected" as failure.
+    rc = main(["autocrop", "in.mp4", "out.mp4", "--limit", "16",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    assert "cropdetect=limit=16" in capsys.readouterr().out
