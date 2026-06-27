@@ -567,6 +567,23 @@ def build_loop_args(input_path: str, output_path: str, count: int) -> list[str]:
     return ["-stream_loop", str(count - 1), "-i", input_path, "-c", "copy", output_path]
 
 
+def build_blur_pad_args(
+    input_path: str, output_path: str, width: int, height: int, sigma: float = 20
+) -> list[str]:
+    """Build args to fit the video into a ``width``x``height`` frame over a blurred,
+    zoomed copy of itself (instead of black bars). Keeps audio."""
+    if width < 1 or height < 1:
+        raise ValueError("blur-pad width and height must be >= 1")
+    fc = (
+        f"[0:v]split=2[bg][fg];"
+        f"[bg]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},gblur=sigma={sigma}[bg2];"
+        f"[fg]scale={width}:{height}:force_original_aspect_ratio=decrease[fg2];"
+        f"[bg2][fg2]overlay=(W-w)/2:(H-h)/2[v]"
+    )
+    return ["-i", input_path, "-filter_complex", fc, "-map", "[v]", "-map", "0:a?", output_path]
+
+
 def build_pad_args(input_path: str, output_path: str, width: int, height: int) -> list[str]:
     """Build args to letterbox into a ``width``x``height`` frame: scale to fit
     (preserving aspect), then pad with black bars, centered."""

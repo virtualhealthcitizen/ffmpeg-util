@@ -459,6 +459,18 @@ def test_loop_multiplies_duration(client, media, auth):
     assert 2.6 <= ratio <= 3.4, f"ratio={ratio:.2f}"  # ~3x, generous tolerance
 
 
+def test_blur_pad_produces_target_frame(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "blurpad.mp4"
+    r = client.post(
+        "/blur-pad",
+        json={"input": str(src), "output": str(out), "width": 480, "height": 480, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (480, 480)
+
+
 def test_pad_produces_target_frame(client, media, auth):
     d, src = media  # 320x240
     out = d / "padded.mp4"

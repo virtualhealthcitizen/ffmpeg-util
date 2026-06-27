@@ -318,6 +318,18 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-blur_pad").addEventListener("click", () => {
+  if (!requireFields("blur_pad-input", "blur_pad-output", "blur_pad-width", "blur_pad-height")) return;
+  run("Blur padding", "blur_pad", {
+    input: val("blur_pad-input"),
+    output: val("blur_pad-output"),
+    width: numOrNull("blur_pad-width"),
+    height: numOrNull("blur_pad-height"),
+    sigma: numOrNull("blur_pad-sigma") != null ? numOrNull("blur_pad-sigma") : 20,
+    overwrite: true,
+  });
+});
+
 $("#run-vstack").addEventListener("click", () => {
   if (!requireFields("vstack-input-a", "vstack-input-b", "vstack-output")) return;
   run("Stacking vertically", "vstack", {

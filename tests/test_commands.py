@@ -315,6 +315,20 @@ def test_loop_args_reject_zero():
         c.build_loop_args("in.mp4", "out.mp4", 0)
 
 
+def test_blur_pad_args_build_filter():
+    args = c.build_blur_pad_args("in.mp4", "out.mp4", 1080, 1920, sigma=15)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "split=2[bg][fg]" in fc
+    assert "gblur=sigma=15" in fc
+    assert "overlay=(W-w)/2:(H-h)/2[v]" in fc
+    assert args[args.index("-map") + 1] == "[v]"
+
+
+def test_blur_pad_args_reject_bad_size():
+    with pytest.raises(ValueError):
+        c.build_blur_pad_args("in.mp4", "out.mp4", 0, 100)
+
+
 def test_pad_args_build_filter():
     args = c.build_pad_args("in.mp4", "o.mp4", 640, 480)
     vf = args[args.index("-vf") + 1]

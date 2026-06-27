@@ -186,7 +186,7 @@ Packaging / tests:
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)
 - [ ] Timestamp / timecode overlay (`drawtext`)
-- [ ] Blurred-fill pad (blurred background instead of black bars)
+- [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
 - [ ] Stabilize shaky video (`vidstab`, two-pass)
 - [ ] Convert to a specific pixel format / 10-bit
 - [x] Generate a waveform PNG from audio (`showwavespic`) — core `build_waveform_args`, CLI `waveform`, sidecar (`/waveform` + `/run/stream`), Waveform tab. Verified E2E: 640x120 image.
