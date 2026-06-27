@@ -326,6 +326,43 @@ test("overwriteMessage names the path and asks to overwrite", () => {
   assert.match(msg, /[Oo]verwrite/);
 });
 
+test("isPathFieldId flags input/output path fields, not option fields", () => {
+  assert.equal(L.isPathFieldId("compress-input"), true);
+  assert.equal(L.isPathFieldId("compress-output"), true);
+  assert.equal(L.isPathFieldId("concat-inputs"), true);
+  assert.equal(L.isPathFieldId("hstack-input-a"), true);
+  assert.equal(L.isPathFieldId("hstack-input-b"), true);
+  assert.equal(L.isPathFieldId("compress-crf"), false);
+  assert.equal(L.isPathFieldId("gif-fps"), false);
+});
+
+test("preset helpers store/list/get/remove per tab immutably", () => {
+  let p = {};
+  p = L.withPreset(p, "compress", "web", { "compress-crf": "28" });
+  p = L.withPreset(p, "compress", "hq", { "compress-crf": "18" });
+  p = L.withPreset(p, "gif", "small", { "gif-fps": "10" });
+  // sorted names, scoped per tab
+  assert.deepEqual(L.presetNames(p, "compress"), ["hq", "web"]);
+  assert.deepEqual(L.presetNames(p, "gif"), ["small"]);
+  assert.deepEqual(L.presetNames(p, "trim"), []);
+  // get returns stored values, or null when absent
+  assert.deepEqual(L.getPreset(p, "compress", "web"), { "compress-crf": "28" });
+  assert.equal(L.getPreset(p, "compress", "nope"), null);
+  // remove is scoped and leaves siblings intact
+  const before = JSON.stringify(p);
+  const p2 = L.withoutPreset(p, "compress", "web");
+  assert.deepEqual(L.presetNames(p2, "compress"), ["hq"]);
+  assert.deepEqual(L.presetNames(p2, "gif"), ["small"]);
+  assert.equal(JSON.stringify(p), before, "withoutPreset must not mutate input");
+});
+
+test("withPreset overwrites a same-named preset", () => {
+  let p = L.withPreset({}, "eq", "warm", { "eq-brightness": "0.1" });
+  p = L.withPreset(p, "eq", "warm", { "eq-brightness": "0.3" });
+  assert.deepEqual(L.getPreset(p, "eq", "warm"), { "eq-brightness": "0.3" });
+  assert.deepEqual(L.presetNames(p, "eq"), ["warm"]);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

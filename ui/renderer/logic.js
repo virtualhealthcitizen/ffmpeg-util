@@ -344,6 +344,40 @@
     return `"${path}" already exists.\n\nOverwrite it with the new output?`;
   }
 
+  // --- Presets: save/load named option-field profiles per tool ---
+
+  // A field id is a per-file path (input/output) rather than a reusable option,
+  // so presets skip it — a preset captures settings, not which file you picked.
+  function isPathFieldId(id) {
+    return /-(input|output|inputs|input-a|input-b)$/.test(String(id));
+  }
+
+  // Saved preset names for a tab, sorted for stable display. Pure.
+  function presetNames(presets, tab) {
+    const t = (presets && presets[tab]) || {};
+    return Object.keys(t).sort((a, b) => a.localeCompare(b));
+  }
+
+  // The stored values for one preset, or null if absent. Pure.
+  function getPreset(presets, tab, name) {
+    const t = (presets && presets[tab]) || {};
+    return Object.prototype.hasOwnProperty.call(t, name) ? t[name] : null;
+  }
+
+  // Return a new presets object with presets[tab][name] = values (immutable).
+  function withPreset(presets, tab, name, values) {
+    const base = presets && typeof presets === "object" ? presets : {};
+    return { ...base, [tab]: { ...(base[tab] || {}), [name]: values } };
+  }
+
+  // Return a new presets object without presets[tab][name] (immutable).
+  function withoutPreset(presets, tab, name) {
+    const base = presets && typeof presets === "object" ? presets : {};
+    const t = { ...(base[tab] || {}) };
+    delete t[name];
+    return { ...base, [tab]: t };
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -357,6 +391,11 @@
     formatTimecode,
     timeTargetsForTab,
     overwriteMessage,
+    isPathFieldId,
+    presetNames,
+    getPreset,
+    withPreset,
+    withoutPreset,
     formatBytes,
     formatDuration,
     parseFrameRate,

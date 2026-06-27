@@ -5,7 +5,8 @@ const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathFor
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
-  overwriteMessage } = window.FfuLogic;
+  overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
+  withoutPreset } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -35,6 +36,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
     refreshInputs(); // show the new tab's input + multi-input compat (if any)
+    refreshPresetSelect(); // show this tab's saved presets
     setSettings({ activeTab: tab }).catch(() => {}); // remember across launches
   });
 });
@@ -380,10 +382,12 @@ async function loadSettings() {
       const el = $("#" + id);
       if (el && s[id] != null && s[id] !== "") el.value = s[id];
     }
+    presetsData = s.presets && typeof s.presets === "object" ? s.presets : {};
     if (s.activeTab) {
       const tb = document.querySelector('.tabs button[data-tab="' + s.activeTab + '"]');
       if (tb && !tb.classList.contains("active")) tb.click(); // restore last tab
     }
+    refreshPresetSelect();
   } catch (_) {
     // first run / no store yet — ignore
   }
@@ -402,7 +406,77 @@ async function saveSettings() {
   }
 }
 
+let presetsData = {}; // { [tab]: { [name]: { fieldId: value } } }, persisted
 loadSettings();
+
+// --- Presets: save/load named option-field profiles per tool ---
+
+// The option fields for a tab (everything in its panel except file-path inputs).
+function presetFieldEls(tab) {
+  const panel = $("#panel-" + tab);
+  if (!panel) return [];
+  return Array.from(panel.querySelectorAll("input, select, textarea"))
+    .filter((el) => el.id && !isPathFieldId(el.id));
+}
+function collectOptionValues(tab) {
+  const out = {};
+  for (const el of presetFieldEls(tab)) {
+    out[el.id] = el.type === "checkbox" ? el.checked : el.value;
+  }
+  return out;
+}
+function applyOptionValues(tab, values) {
+  for (const el of presetFieldEls(tab)) {
+    if (!Object.prototype.hasOwnProperty.call(values, el.id)) continue;
+    if (el.type === "checkbox") el.checked = !!values[el.id];
+    else el.value = values[el.id];
+  }
+}
+
+// Rebuild the dropdown to list the active tab's presets.
+function refreshPresetSelect() {
+  const sel = $("#preset-select");
+  if (!sel) return;
+  const names = presetNames(presetsData, currentTab());
+  sel.innerHTML = '<option value="">— saved —</option>' +
+    names.map((n) => `<option>${n.replace(/[&<>"]/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</option>`).join("");
+}
+
+async function persistPresets() {
+  try { await setSettings({ presets: presetsData }); } catch (_) { /* non-fatal */ }
+}
+
+$("#preset-save").addEventListener("click", async () => {
+  const tab = currentTab();
+  const name = val("preset-name") || $("#preset-select").value;
+  if (!name) { setStatus("Enter a preset name to save.", true); return; }
+  presetsData = withPreset(presetsData, tab, name, collectOptionValues(tab));
+  await persistPresets();
+  refreshPresetSelect();
+  $("#preset-select").value = name;
+  $("#preset-name").value = "";
+  setStatus(`Saved preset "${name}".`);
+});
+
+$("#preset-load").addEventListener("click", () => {
+  const tab = currentTab();
+  const name = $("#preset-select").value;
+  const values = name ? getPreset(presetsData, tab, name) : null;
+  if (!values) { setStatus("Pick a saved preset to load.", true); return; }
+  applyOptionValues(tab, values);
+  setStatus(`Loaded preset "${name}".`);
+});
+
+$("#preset-delete").addEventListener("click", async () => {
+  const tab = currentTab();
+  const name = $("#preset-select").value;
+  if (!name) { setStatus("Pick a saved preset to delete.", true); return; }
+  presetsData = withoutPreset(presetsData, tab, name);
+  await persistPresets();
+  refreshPresetSelect();
+  setStatus(`Deleted preset "${name}".`);
+});
 
 // --- Output preview (images) ---
 let previewUrl = null;

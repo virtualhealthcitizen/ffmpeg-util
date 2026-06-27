@@ -232,6 +232,23 @@ button.secondary { background: transparent; }
   transition: width 0.15s ease;
 }
 
+/* Presets bar: save/load named option profiles for the active tool. */
+.presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.presets .presets-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.presets select { padding: 6px 8px; min-width: 130px; }
+.presets input { flex: 0 1 150px; padding: 6px 9px; }
+.presets button { padding: 6px 11px; }
+
 .run-actions { margin-top: 12px; }
 .run-actions.hidden { display: none; }
 button.danger { background: transparent; border-color: var(--err); color: var(--err); }

@@ -367,7 +367,13 @@ Persistence / memory:
       headless Electron E2E across two launches (1024×700 @120,90 + Compress tab →
       both restored).
 - [ ] Recent inputs/outputs per tab; remember the last-used directory for pickers.
-- [ ] Save/load named presets (profiles) per tool.
+- [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
+      Save, a dropdown + Load/Delete) captures the active tab's option fields
+      (path inputs excluded) under a name, scoped per tool, persisted in
+      `settings.json` under `presets`. Pure `isPathFieldId`/`presetNames`/
+      `getPreset`/`withPreset`/`withoutPreset` in `logic.js`. Verified: node:test
+      (3 new, 45 total) + headless Electron E2E (save "web" on Compress → load
+      after mutation restores CRF/width; survives relaunch; delete removes it).
 
 Power-user flow:
 - [ ] Operation queue — line up several ops and run them in sequence.
@@ -380,7 +386,7 @@ Help / discoverability:
 
 **Priority for round 9 (highest first):**
 1. ~~Overwrite confirmation + Run-button-disabled-while-running~~ — DONE.
-2. ~~Cancel a running op~~ — DONE. 3. ~~remember tab + window~~ — DONE. 4. presets — **← next.** 5. the rest.
+2. ~~Cancel a running op~~ — DONE. 3. ~~remember tab + window~~ — DONE. 4. ~~presets~~ — DONE. 5. the rest.
 
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)

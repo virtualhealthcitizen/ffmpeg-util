@@ -69,6 +69,18 @@
     <!-- Compatibility banner for multi-input ops (hstack/vstack/concat) -->
     <div id="compat" class="compat hidden"></div>
 
+    <!-- Presets: save/load named option-field profiles for the active tool -->
+    <div id="presets" class="presets">
+      <span class="presets-label">Presets</span>
+      <select id="preset-select" aria-label="Saved presets">
+        <option value="">— saved —</option>
+      </select>
+      <button id="preset-load" class="secondary" title="Load the selected preset">Load</button>
+      <button id="preset-delete" class="secondary" title="Delete the selected preset">Delete</button>
+      <input id="preset-name" type="text" placeholder="save as…" autocomplete="off" spellcheck="false" />
+      <button id="preset-save" class="secondary" title="Save the current fields as a preset">Save</button>
+    </div>
+
     <!-- Convert -->
     <section class="card panel active" id="panel-convert">
       <label>Input file</label>
