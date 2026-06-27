@@ -136,6 +136,32 @@ def test_require_output_extension():
         c.require_output_extension("C:\\path\\to\\output")
 
 
+def test_require_output_dir(tmp_path):
+    c.require_output_dir("out.mp4")  # no dir component -> ok
+    c.require_output_dir(str(tmp_path / "out.mp4"))  # existing dir -> ok
+    with pytest.raises(ValueError):
+        c.require_output_dir(str(tmp_path / "nope" / "out.mp4"))
+
+
+def test_require_sequence_pattern():
+    c.require_sequence_pattern("f_%04d.png")  # ok
+    c.require_sequence_pattern("f_%d.png")
+    with pytest.raises(ValueError):
+        c.require_sequence_pattern("frame.png")  # no token
+
+
+def test_extract_frames_requires_pattern():
+    with pytest.raises(ValueError):
+        c.build_extract_frames_args("in.mp4", "frames.png", every=10)  # no %d
+
+
+def test_thumbnail_multi_requires_pattern():
+    with pytest.raises(ValueError):
+        c.build_thumbnail_args("in.mp4", "thumb.png", count=4)  # needs %d
+    # single frame is fine without a pattern
+    c.build_thumbnail_args("in.mp4", "thumb.png", count=1)
+
+
 def test_grayscale_args_build_filter():
     args = c.build_grayscale_args("in.mp4", "out.mp4")
     assert args[args.index("-vf") + 1] == "hue=s=0"

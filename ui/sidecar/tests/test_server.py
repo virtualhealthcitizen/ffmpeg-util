@@ -376,6 +376,28 @@ def test_mute_removes_audio(client, media, auth):
     assert _audio_stream_count(out) == 0
 
 
+def test_dedicated_endpoint_rejects_missing_extension(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/mute",
+        json={"input": str(src), "output": str(d / "noext"), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "extension" in r.json()["detail"].lower()
+
+
+def test_dedicated_endpoint_rejects_missing_dir(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/mute",
+        json={"input": str(src), "output": str(d / "nope" / "out.mp4"), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "does not exist" in r.json()["detail"].lower()
+
+
 def test_crop_produces_requested_dimensions(client, media, auth):
     d, src = media  # 320x240
     out = d / "cropped.mp4"

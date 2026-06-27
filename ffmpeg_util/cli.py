@@ -215,6 +215,7 @@ def _dispatch(args: argparse.Namespace) -> int:
     out = getattr(args, "output", None)
     if out is not None:
         commands.require_output_extension(out)
+        commands.require_output_dir(out)
 
     if args.command == "probe":
         out = commands.probe(runner, args.input, as_json=args.json)

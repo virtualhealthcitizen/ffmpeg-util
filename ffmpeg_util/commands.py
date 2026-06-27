@@ -7,6 +7,7 @@ the runner handle dry-run/overwrite/verbose uniformly.
 
 import json
 import os
+import re
 import tempfile
 from typing import Sequence
 
@@ -26,6 +27,24 @@ def require_output_extension(path: str) -> None:
         raise ValueError(
             f"Output '{path}' has no file extension — add one "
             f"(e.g. .mp4, .gif, .png) so the format is clear."
+        )
+
+
+def require_output_dir(path: str) -> None:
+    """Raise a clear error if the output's parent directory doesn't exist
+    (ffmpeg won't create it, and fails with an opaque 'No such file' error)."""
+    parent = os.path.dirname(path)
+    if parent and not os.path.isdir(parent):
+        raise ValueError(f"Output folder '{parent}' does not exist — create it first.")
+
+
+def require_sequence_pattern(path: str) -> None:
+    """Raise a clear error if ``path`` lacks a printf frame token (e.g. %d, %04d),
+    which image-sequence outputs need so each frame gets a distinct filename."""
+    if not re.search(r"%\d*d", path):
+        raise ValueError(
+            f"Output '{path}' needs a frame-number token (e.g. %04d) so each "
+            f"frame is written to a distinct file."
         )
 
 
@@ -209,6 +228,7 @@ def build_thumbnail_args(
         if width:
             args += ["-vf", f"scale={width}:-1"]
     else:
+        require_sequence_pattern(output_path)  # multiple frames need %d to differ
         vf = f"thumbnail,scale={width}:-1" if width else "thumbnail"
         args += ["-i", input_path, "-vf", vf, "-frames:v", str(count)]
     args.append(output_path)
@@ -472,6 +492,7 @@ def build_extract_frames_args(input_path: str, output_pattern: str, every: int =
     frame. ``output_pattern`` should contain a printf token, e.g. ``frame_%04d.png``."""
     if every < 1:
         raise ValueError("every must be >= 1")
+    require_sequence_pattern(output_pattern)
     # The comma inside mod() must be escaped so it isn't read as a filter separator.
     return ["-i", input_path, "-vf", f"select=not(mod(n\\,{every}))", "-fps_mode", "vfr", output_pattern]
 
