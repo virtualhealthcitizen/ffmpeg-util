@@ -368,6 +368,28 @@ def test_volume_attenuates_by_gain(client, media, auth):
     assert abs((before - 6.0) - after) < 1.5, f"before={before} after={after}"
 
 
+def test_hstack_doubles_width(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "sbs.mp4"
+    r = client.post(
+        "/hstack",
+        json={"inputs": [str(src), str(src)], "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (640, 240)  # two 320-wide videos side by side
+
+
+def test_hstack_requires_two_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/hstack",
+        json={"inputs": [str(src)], "output": str(d / "x.mp4")},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def test_boomerang_doubles_duration(client, media, auth):
     d, src = media
     out = d / "boomerang.mp4"

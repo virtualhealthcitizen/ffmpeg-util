@@ -90,6 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fps", type=float, required=True, help="Target frames per second.")
     _add_global_flags(p)
 
+    # hstack (side by side)
+    p = sub.add_parser("hstack", help="Place two equal-height videos side by side.")
+    p.add_argument("inputs", nargs=2, help="Two input files (same height).")
+    p.add_argument("-o", "--output", required=True, help="Output file.")
+    _add_global_flags(p)
+
     # eq (color adjust)
     p = sub.add_parser("eq", help="Adjust brightness / contrast / saturation.")
     p.add_argument("input")
@@ -314,6 +320,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "fps":
         runner.run_ffmpeg(commands.build_fps_args(args.input, args.output, args.fps))
+        return 0
+
+    if args.command == "hstack":
+        runner.run_ffmpeg(commands.build_hstack_args(args.inputs, args.output))
         return 0
 
     if args.command == "eq":
