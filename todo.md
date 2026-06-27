@@ -179,7 +179,10 @@ Packaging / tests:
       Boomerang tab. Verified E2E: output duration ~= 2x input.
 - [x] Brightness / contrast / saturation adjust (`eq` filter) — core `build_eq_args`,
       CLI `eq`, sidecar (`/eq` + `/run/stream`), Adjust tab. Verified E2E: brightness +0.3 raises YAVG.
-- [ ] Invert colors (`negate`) / sepia tone
+- [x] Invert colors — core `build_invert_args` (`negate`), CLI `invert`, sidecar
+      (`/invert` + `/run/stream` op `invert`), Invert tab + search alias. Verified
+      E2E: first-frame YAVG_out ≈ 255 − YAVG_in (negate inverts each sample).
+      (sepia tone still open.)
 - [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
 - [ ] Deinterlace (`yadif`)
 - [x] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1) — core `compute_aspect_crop`/

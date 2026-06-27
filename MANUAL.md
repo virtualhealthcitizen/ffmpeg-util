@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq, fps, crop-aspect, mono, title, waveform, sample-rate, hstack, vstack, blur-pad, image-to-video, replace-audio**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, invert, loudnorm, boomerang, eq, fps, crop-aspect, mono, title, waveform, sample-rate, hstack, vstack, blur-pad, image-to-video, replace-audio**.
 
 ---
 
@@ -249,6 +249,12 @@ ffmpeg-util eq in.mp4 out.mp4 --brightness 0.1 --contrast 1.2 --saturation 1.3
 ffmpeg-util grayscale in.mp4 bw.mp4
 ```
 
+### invert — invert colors (photo-negative)
+Inverts every color to its opposite (the `negate` filter); audio is untouched.
+```bash
+ffmpeg-util invert in.mp4 negative.mp4
+```
+
 ### fade — fade in/out (black)
 Fades video and audio in from black at the start and out to black at the end;
 `--duration` is the fade length applied to each end.
@@ -293,7 +299,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust, FPS, Aspect, Mono, Title, Waveform, Sample rate, Side by side, Stacked, Blur pad, Image → video, Replace audio), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Invert, Loudness, Boomerang, Adjust, FPS, Aspect, Mono, Title, Waveform, Sample rate, Side by side, Stacked, Blur pad, Image → video, Replace audio), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

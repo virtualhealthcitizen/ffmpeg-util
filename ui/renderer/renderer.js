@@ -717,6 +717,15 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-invert").addEventListener("click", () => {
+  if (!requireFields("invert-input", "invert-output")) return;
+  run("Inverting colors", "invert", {
+    input: val("invert-input"),
+    output: val("invert-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-blur_pad").addEventListener("click", () => {
   if (!requireFields("blur_pad-input", "blur_pad-output", "blur_pad-width", "blur_pad-height")) return;
   run("Blur padding", "blur_pad", {

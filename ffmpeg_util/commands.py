@@ -433,6 +433,11 @@ def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "hue=s=0", output_path]
 
 
+def build_invert_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to invert the video's colors (photo-negative via ``negate``)."""
+    return ["-i", input_path, "-vf", "negate", output_path]
+
+
 def build_fps_args(input_path: str, output_path: str, fps: float) -> list[str]:
     """Build args to resample to ``fps`` frames/sec (drops/dupes frames; same
     duration and speed, unlike the ``speed`` op)."""

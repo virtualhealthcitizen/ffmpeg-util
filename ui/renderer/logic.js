@@ -108,6 +108,7 @@
     volume: "gain loud quiet db amplify boost attenuate",
     fade: "in out dissolve intro outro",
     grayscale: "black white desaturate mono color monochrome",
+    invert: "negate negative invert colors photo negative inverse opposite",
     loudnorm: "loudness normalize lufs ebu r128 level",
     boomerang: "forward back bounce pingpong instagram",
     eq: "adjust brightness contrast saturation color levels",

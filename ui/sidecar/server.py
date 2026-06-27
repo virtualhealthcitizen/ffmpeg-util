@@ -371,6 +371,24 @@ def grayscale(req: GrayscaleReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class InvertReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/invert")
+def invert(req: InvertReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_invert_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FadeReq(BaseModel):
     input: str
     output: str
@@ -849,6 +867,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":
         return commands.build_grayscale_args(req.input, req.output), None
+    if op == "invert":
+        return commands.build_invert_args(req.input, req.output), None
     if op == "boomerang":
         return commands.build_boomerang_args(req.input, req.output), None
     if op == "hstack":
