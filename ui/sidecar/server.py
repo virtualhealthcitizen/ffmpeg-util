@@ -166,6 +166,26 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class CropAspectReq(BaseModel):
+    input: str
+    output: str
+    aspect: str = "16:9"
+    overwrite: bool = True
+
+
+@app.post("/crop-aspect")
+def crop_aspect(req: CropAspectReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        aw, ah = commands.parse_aspect(req.aspect)
+        commands.crop_to_aspect(runner, req.input, req.output, aw, ah)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FpsReq(BaseModel):
     input: str
     output: str
@@ -582,6 +602,8 @@ class RunReq(BaseModel):
     brightness: float = 0.0
     contrast: float = 1.0
     saturation: float = 1.0
+    # crop-aspect
+    aspect: str = "16:9"
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -755,6 +777,14 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     args = commands.build_fade_args(req.input, req.output, req.fade, total, audio=audio)
                 else:
                     args = commands.build_reverse_args(req.input, req.output, audio=audio)
+                cleanup = None
+            elif req.op == "crop_aspect":
+                dims = commands.probe_dimensions(runner, req.input)
+                if not dims:
+                    raise ValueError("could not determine input dimensions for crop-to-aspect")
+                aw, ah = commands.parse_aspect(req.aspect)
+                cw, ch, x, y = commands.compute_aspect_crop(dims[0], dims[1], aw, ah)
+                args = commands.build_crop_args(req.input, req.output, cw, ch, x, y)
                 cleanup = None
             else:
                 args, cleanup = _build_op_args(req, total)

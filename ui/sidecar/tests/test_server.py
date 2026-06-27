@@ -244,6 +244,18 @@ def _avg_frame_rate(path):
     return float(num) / float(den)
 
 
+def test_crop_aspect_produces_target_ratio(client, media, auth):
+    d, src = media  # 320x240 (4:3)
+    out = d / "wide.mp4"
+    r = client.post(
+        "/crop-aspect",
+        json={"input": str(src), "output": str(out), "aspect": "16:9", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 180)  # 16:9 crop of 320x240
+
+
 def test_fps_resamples_frame_rate(client, media, auth):
     d, src = media  # 30 fps source
     out = d / "fps15.mp4"

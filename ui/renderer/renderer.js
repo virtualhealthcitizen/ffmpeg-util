@@ -318,6 +318,16 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-crop_aspect").addEventListener("click", () => {
+  if (!requireFields("crop_aspect-input", "crop_aspect-output")) return;
+  run("Cropping to aspect", "crop_aspect", {
+    input: val("crop_aspect-input"),
+    output: val("crop_aspect-output"),
+    aspect: $("#crop_aspect-aspect").value,
+    overwrite: true,
+  });
+});
+
 $("#run-fps").addEventListener("click", () => {
   if (!requireFields("fps-input", "fps-output", "fps-fps")) return;
   run("Resampling FPS", "fps", {
