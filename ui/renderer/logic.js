@@ -752,6 +752,67 @@
     return parts.length ? parts.join(" · ") : null;
   }
 
+  // --- "Copy as CLI": the equivalent ffmpeg-util command for an op + request body ---
+
+  // The renderer POSTs {op, ...body} to the sidecar's /run/stream; the same values
+  // map 1:1 to the CLI, so we can reconstruct the command the user could have typed.
+  // A few sidecar body fields carry a different name than their CLI flag — those are
+  // the only special cases; every other key becomes --kebab-case.
+  const CLI_FLAG_OVERRIDES = {
+    fade: "duration", // Fade tab sends `fade`; the CLI flag is --duration
+    transform: "op", // Transform tab sends `transform`; the CLI flag is --op
+    target_i: "target", // Loudnorm sends `target_i`; the CLI flag is --target
+  };
+  // Body keys that aren't CLI options (positionals or transport-only).
+  const CLI_SKIP_KEYS = new Set(["input", "output", "inputs", "overwrite", "op"]);
+
+  function cliSubcommand(op) {
+    return String(op || "").replace(/_/g, "-");
+  }
+
+  function cliFlagName(key) {
+    return "--" + (CLI_FLAG_OVERRIDES[key] || key.replace(/_/g, "-"));
+  }
+
+  // Quote a single shell token if it's empty or contains whitespace (paths with
+  // spaces are common); embedded double-quotes are backslash-escaped.
+  function cliQuote(value) {
+    const s = String(value);
+    if (s === "" || /\s/.test(s)) return '"' + s.replace(/"/g, '\\"') + '"';
+    return s;
+  }
+
+  // Build the `ffmpeg-util <subcommand> …` command equivalent to an op + body.
+  // Positionals: an `inputs` array (concat/hstack/vstack, joined with `-o output`)
+  // or `input` then `output`. Remaining keys become flags in body order: a `true`
+  // boolean is a bare flag, null/""/false are dropped, and negative numbers use the
+  // `--flag=value` form so argparse doesn't mistake them for another option.
+  function buildCliCommand(op, body) {
+    body = body || {};
+    const parts = ["ffmpeg-util", cliSubcommand(op)];
+    if (Array.isArray(body.inputs)) {
+      for (const f of body.inputs) parts.push(cliQuote(f));
+      if (body.output != null && body.output !== "") parts.push("-o", cliQuote(body.output));
+    } else {
+      if (body.input != null && body.input !== "") parts.push(cliQuote(body.input));
+      if (body.output != null && body.output !== "") parts.push(cliQuote(body.output));
+    }
+    for (const key of Object.keys(body)) {
+      if (CLI_SKIP_KEYS.has(key)) continue;
+      const v = body[key];
+      if (v == null || v === "" || v === false) continue;
+      if (v === true) {
+        parts.push(cliFlagName(key));
+        continue;
+      }
+      const s = String(v);
+      if (s[0] === "-") parts.push(cliFlagName(key) + "=" + cliQuote(s));
+      else parts.push(cliFlagName(key), cliQuote(s));
+    }
+    if (body.overwrite) parts.push("-y");
+    return parts.join(" ");
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -759,6 +820,7 @@
     ERROR_HINTS,
     friendlyError,
     summarizeBeforeAfter,
+    buildCliCommand,
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,

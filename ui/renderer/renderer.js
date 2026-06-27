@@ -9,7 +9,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
-  previewPath } = window.FfuLogic;
+  buildCliCommand, previewPath } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -861,6 +861,33 @@ async function showSummary(inputPath, outputPath) {
   }
 }
 
+// --- "Copy as CLI": show the equivalent ffmpeg-util command for the running op ---
+// Reconstructed from the op + request body, so the user can reproduce/script it.
+let lastCliCommand = "";
+function showCliCommand(op, body) {
+  lastCliCommand = buildCliCommand(op, body);
+  $("#cli-command").textContent = lastCliCommand;
+  $("#cli-command-row").classList.remove("hidden");
+}
+async function copyCliCommand() {
+  const btn = $("#copy-cli");
+  try {
+    await navigator.clipboard.writeText(lastCliCommand);
+    btn.textContent = "Copied!";
+  } catch (_) {
+    // Clipboard blocked (e.g. offscreen) — fall back to selecting the text so the
+    // user can copy manually.
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents($("#cli-command"));
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = "Selected — ⌘/Ctrl+C";
+  }
+  setTimeout(() => (btn.textContent = "Copy as CLI"), 1500);
+}
+$("#copy-cli").addEventListener("click", copyCliCommand);
+
 // --- Progress bar ---
 function showProgress(pct) {
   $("#progress").classList.remove("hidden");
@@ -922,6 +949,7 @@ async function run(label, op, body) {
   setStatus(label + "…");
   clearErrorHint();
   hideSummary();
+  showCliCommand(op, body); // surface the equivalent ffmpeg-util command
   showProgress(0);
   hidePreview();
   try {

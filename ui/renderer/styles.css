@@ -232,6 +232,29 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .summary.hidden { display: none; }
 .summary::before { content: "📊 "; }
 
+/* "Copy as CLI": the reconstructed ffmpeg-util command + a copy button */
+.cli-command-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.cli-command-row.hidden { display: none; }
+.cli-command {
+  flex: 1;
+  padding: 9px 11px;
+  background: #1b1c1f;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
+}
+.cli-command-row button { white-space: nowrap; }
+
 input[type="text"], input[type="number"], textarea {
   flex: 1;
   padding: 9px 11px;

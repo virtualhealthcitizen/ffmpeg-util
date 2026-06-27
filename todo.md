@@ -276,7 +276,8 @@ Input affordances (kill the typed-number friction — this is what bit "Blur pad
 
 Workflow / feedback components:
 - [ ] Cancel button — kill the running ffmpeg process mid-op.
-- [ ] "Show ffmpeg command" + copy-to-clipboard (surface the dry-run for any op).
+- [x] "Show ffmpeg command" + copy-to-clipboard — delivered by the round-9 "Copy as
+      CLI" component (`buildCliCommand` in `logic.js`, `#cli-command` row + Copy button).
 - [ ] Drag-to-reorder the concat list, with per-row thumbnails.
 - [ ] Output presets dropdown ("Web MP4", "Discord 8 MB", "GIF", …).
 - [ ] Job history strip — recent runs with re-run / reveal-in-Explorer.
@@ -430,7 +431,15 @@ Persistence / memory:
 Power-user flow:
 - [ ] Operation queue — line up several ops and run them in sequence.
 - [ ] Chain ops on one file (trim → compress …) without manual disk round-trips.
-- [ ] "Copy as CLI" — emit the equivalent `ffmpeg-util` command for any op.
+- [x] **"Copy as CLI"** — on each run, a `#cli-command` row shows the equivalent
+      `ffmpeg-util <op> …` command (reconstructed from the op + request body) with a
+      Copy button. Pure `buildCliCommand` in `logic.js` (kebab subcommand/flags,
+      positional input/output or `inputs … -o`, boolean flags, `--flag=value` for
+      negatives, shell-quoting; renames the three diverging body keys
+      fade→--duration, transform→--op, target_i→--target). Verified: node:test (8 new,
+      84 total) + headless Electron E2E vs the real sidecar (compress run →
+      `ffmpeg-util compress … --crf 28 --width 160 --vcodec libx264 --preset medium -y`;
+      row hidden before any run; Copy button feedback; real output produced). ← next
 
 Help / discoverability:
 - [ ] Per-tab one-line example + a "?" tooltip explaining each field.
