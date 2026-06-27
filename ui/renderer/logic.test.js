@@ -651,3 +651,39 @@ test("summarizeBeforeAfter falls back to output-only size, or null", () => {
   assert.equal(L.summarizeBeforeAfter(null, null), null);
   assert.equal(L.summarizeBeforeAfter({ format: {} }, { format: {} }), null);
 });
+
+test("oddDimensionWarning flags an odd typed width and/or height", () => {
+  // single odd field names just that dimension + its nearest even value
+  assert.match(
+    L.oddDimensionWarning("compress", { "compress-width": "321" }),
+    /Odd dimension.*even numbers.*width 321 → 322/
+  );
+  assert.match(
+    L.oddDimensionWarning("pad", { "pad-height": "1081" }),
+    /Round height 1081 → 1082/
+  );
+  // both odd → plural noun and both fields listed in width,height order
+  assert.equal(
+    L.oddDimensionWarning("crop", { "crop-width": "161", "crop-height": "121" }),
+    "Odd dimensions — most video codecs need even numbers. Round width 161 → 162 and height 121 → 122."
+  );
+});
+
+test("oddDimensionWarning stays quiet on even, blank, or non-integer dims", () => {
+  assert.equal(L.oddDimensionWarning("compress", { "compress-width": "320", "compress-height": "240" }), null);
+  assert.equal(L.oddDimensionWarning("blur_pad", { "blur_pad-width": "", "blur_pad-height": "  " }), null);
+  assert.equal(L.oddDimensionWarning("crop", {}), null);
+  // decimals / garbage can't reliably be "made even", so don't nag about them
+  assert.equal(L.oddDimensionWarning("compress", { "compress-width": "320.5" }), null);
+  assert.equal(L.oddDimensionWarning("compress", { "compress-width": "abc" }), null);
+  assert.equal(L.oddDimensionWarning("compress", { "compress-width": "0" }), null);
+});
+
+test("oddDimensionWarning only applies to re-encoding, size-sensitive tabs", () => {
+  // PNG/GIF outputs tolerate odd dims, and width-only tabs aren't size-locked here
+  assert.equal(L.oddDimensionWarning("waveform", { "waveform-width": "641", "waveform-height": "121" }), null);
+  assert.equal(L.oddDimensionWarning("gif", { "gif-width": "481" }), null);
+  assert.equal(L.oddDimensionWarning("convert", { "compress-width": "321" }), null);
+  // the guarded set is exactly the H.264-re-encode tabs with W+H fields
+  assert.deepEqual(L.EVEN_DIM_TABS, ["compress", "crop", "pad", "blur_pad"]);
+});

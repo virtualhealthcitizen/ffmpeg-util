@@ -8,7 +8,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
-  withoutPreset, estimateOutput, friendlyError, summarizeBeforeAfter,
+  withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
   previewPath } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -254,6 +254,7 @@ function renderChips(chips, actions = {}) {
         const names = targets.map((t) => fieldLabel(t.id)).join(" & ");
         setStatus(`Filled ${names} from source ${label.toLowerCase()}.`);
         renderCropOverlay(); // reflect a Size-chip fill in the crop marquee
+        refreshDimWarning(); // a filled source size could itself be odd
       });
     }
     box.appendChild(chip);
@@ -407,17 +408,54 @@ function refreshDimPresets() {
       $("#" + fields.h).value = dims.height;
       setStatus(`Set frame size to ${dims.width}×${dims.height} (${preset.label}).`);
       renderCropOverlay(); // reflect a frame-size preset in the crop marquee
+      refreshDimWarning(); // presets are even, but clear any stale warning
     });
     box.appendChild(btn);
   }
   box.classList.remove("hidden");
 }
 
+// --- Even-dimension warning: flag an odd typed W/H before the x264 encode fails ---
+// Read the active tab's width/height field values for the pure check.
+function dimWarnFields(tab) {
+  const dim = DIMENSION_FIELDS[tab] || {};
+  const out = {};
+  for (const key of ["w", "h"]) {
+    const id = dim[key];
+    if (!id) continue;
+    const el = $("#" + id);
+    if (el) out[id] = el.value;
+  }
+  return out;
+}
+
+// Show/hide the warning for the active tab from its current W/H field values.
+function refreshDimWarning() {
+  const el = $("#dim-warn");
+  if (!el) return;
+  const tab = currentTab();
+  const msg = oddDimensionWarning(tab, dimWarnFields(tab));
+  if (msg) {
+    el.textContent = "⚠ " + msg;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
+// Live-update the warning as the user edits any tab's width/height field.
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id && /-(width|height)$/.test(id)) refreshDimWarning();
+});
+
 // Refresh both the source card and the multi-input compatibility banner.
 function refreshInputs() {
   refreshSource();
   refreshCompat();
   maybeFillOutput(currentTab()); // auto-suggest an output path when one isn't set yet
+  refreshDimWarning(); // flag odd W/H on size-sensitive tabs
 }
 
 // Fill an empty output field from the chosen input + the tab's op suffix, so
