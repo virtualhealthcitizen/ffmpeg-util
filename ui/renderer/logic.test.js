@@ -984,3 +984,31 @@ test("groupTabsWithFavorites with no/absent favorites matches groupTabs", () => 
   const groups = L.groupTabsWithFavorites(["convert", "gif"], ["gif", "crop"], L.TOOL_CATEGORIES);
   assert.deepEqual(groups[0].tabs, ["gif"]); // crop isn't present → excluded
 });
+
+test("addRecentFile prepends, dedups case-insensitively, caps the list", () => {
+  // new path goes to the front
+  assert.deepEqual(L.addRecentFile(["a.mp4"], "b.mp4"), ["b.mp4", "a.mp4"]);
+  // re-loading an existing path moves it to the front (keeps the newest casing)
+  assert.deepEqual(L.addRecentFile(["a.mp4", "b.mp4"], "A.MP4"), ["A.MP4", "b.mp4"]);
+  // empty/whitespace paths are ignored (just sanitized list back)
+  assert.deepEqual(L.addRecentFile(["a.mp4"], "   "), ["a.mp4"]);
+  // non-array / junk entries are tolerated
+  assert.deepEqual(L.addRecentFile(null, "a.mp4"), ["a.mp4"]);
+  assert.deepEqual(L.addRecentFile([1, "", "a.mp4"], "b.mp4"), ["b.mp4", "a.mp4"]);
+  // capped at max, newest first
+  assert.deepEqual(L.addRecentFile(["a", "b", "c"], "d", 2), ["d", "a"]);
+});
+
+test("recentFileLabel returns the basename for Windows and POSIX paths", () => {
+  assert.equal(L.recentFileLabel("C:\\videos\\clip.mp4"), "clip.mp4");
+  assert.equal(L.recentFileLabel("/home/u/clip.mp4"), "clip.mp4");
+  assert.equal(L.recentFileLabel("clip.mp4"), "clip.mp4");
+  assert.equal(L.recentFileLabel(""), "");
+});
+
+test("recentDir returns the most-recent entry's directory without a trailing sep", () => {
+  assert.equal(L.recentDir(["C:\\videos\\clip.mp4", "C:\\other\\x.mp4"]), "C:\\videos");
+  assert.equal(L.recentDir(["/home/u/clip.mp4"]), "/home/u");
+  assert.equal(L.recentDir([]), "");
+  assert.equal(L.recentDir(["noslash.mp4"]), "");
+});

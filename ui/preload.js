@@ -13,7 +13,7 @@ function readArg(name) {
 contextBridge.exposeInMainWorld("sidecar", {
   baseUrl: `http://127.0.0.1:${readArg("sidecar-port")}`,
   token: readArg("sidecar-token"),
-  pickFile: () => ipcRenderer.invoke("dialog:openFile"),
+  pickFile: (defaultPath) => ipcRenderer.invoke("dialog:openFile", defaultPath),
   saveFile: (defaultPath) => ipcRenderer.invoke("dialog:saveFile", defaultPath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: (data) => ipcRenderer.invoke("settings:set", data),

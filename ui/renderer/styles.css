@@ -408,6 +408,18 @@ button.secondary { background: transparent; }
 .naming input { flex: 1 1 200px; padding: 6px 9px; font-family: var(--mono, monospace); }
 .naming .naming-hint { color: var(--muted); font-size: 11px; }
 
+/* Recent files: reload a recently-used input into the active tab. */
+.recent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.recent .recent-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.recent select { flex: 1 1 240px; padding: 6px 8px; max-width: 480px; }
+
 .run-actions { margin-top: 12px; }
 .run-actions.hidden { display: none; }
 button.danger { background: transparent; border-color: var(--err); color: var(--err); }

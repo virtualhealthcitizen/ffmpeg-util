@@ -119,7 +119,17 @@ Packaging / tests:
 - [x] Before/after size + duration summary on completion — see round 8 below.
 
 ### UI / UX
-- [ ] Recent files list / remembered last input dir ← next
+- [x] Recent files list / remembered last input dir — a "Recent" dropdown above
+      the tabs lists the most-recently-loaded inputs (newest first, deduped
+      case-insensitively, capped); picking one loads it into the active tab (reuses
+      `dropUpdate`). Recording hooks the picker/drop/typed-change paths; the picker's
+      `defaultPath` is seeded from the last-used dir. Pure `addRecentFile`/
+      `recentFileLabel`/`recentDir` in `logic.js`; persisted as `recentFiles` in
+      `settings.json` (shallow-merge → coexists with sticky fields/presets/favorites).
+      Verified: node:test (3 new, 109 total) + headless Electron E2E vs the real
+      sidecar across two launches (load A then B → dropdown [B,A] + persisted; pick A
+      → loads into input, moves to front; reorder persisted; restored on relaunch).
+- [ ] Drag-to-reorder the concat list ← next
 - [x] Light/dark theme toggle — a top-right ☀/☾ button swaps the palette via
       `data-theme="light"` on `<html>`; styles.css gains a `:root[data-theme="light"]`
       override (added `--inset`/`--btn`/`--chip-hover` vars so hardcoded sunken
@@ -364,7 +374,8 @@ Direct manipulation on the embedded source player (it's already there):
 - [ ] In/out range handles on the player's scrub bar for Trim/GIF duration.
 
 Workflow / re-use:
-- [ ] Recent files dropdown on inputs + remembered last-used input directory.
+- [x] Recent files dropdown on inputs + remembered last-used input directory —
+      DONE (see "Recent files list / remembered last input dir" under UI/UX above).
 - [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
 - [x] **Output filename templating with tokens** ({name}, {op}, {w}, {h}, {wxh},
       {date}) — a global "Name template" box fills the auto-suggested output
@@ -462,7 +473,9 @@ Persistence / memory:
       clobbering. Verified: node:test (4 new settings unit tests, 42 total) +
       headless Electron E2E across two launches (1024×700 @120,90 + Compress tab →
       both restored).
-- [ ] Recent inputs/outputs per tab; remember the last-used directory for pickers.
+- [~] Recent inputs/outputs per tab; remember the last-used directory for pickers —
+      recent inputs + last-used dir DONE (see UI/UX "Recent files list"); per-tab
+      output history still open.
 - [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
       Save, a dropdown + Load/Delete) captures the active tab's option fields
       (path inputs excluded) under a name, scoped per tool, persisted in

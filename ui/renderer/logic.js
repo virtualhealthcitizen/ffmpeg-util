@@ -198,6 +198,35 @@
     return { id: target.id, value: paths[0] };
   }
 
+  // --- Recent files: a most-recent-first list of input paths the user has loaded,
+  // persisted in settings.json so a dropdown/picker can offer them again next
+  // launch. Windows paths are case-insensitive, so dedup ignores case (keeping
+  // the newest casing) and the list is capped so it can't grow without bound.
+  function addRecentFile(list, path, max = 12) {
+    const arr = (Array.isArray(list) ? list : []).filter(
+      (x) => typeof x === "string" && x.trim()
+    );
+    const p = String(path || "").trim();
+    if (!p) return arr.slice(0, max);
+    const lower = p.toLowerCase();
+    return [p].concat(arr.filter((x) => x.toLowerCase() !== lower)).slice(0, max);
+  }
+
+  // The display label for a recent entry — its filename (with extension).
+  function recentFileLabel(path) {
+    const s = String(path || "");
+    const idx = Math.max(s.lastIndexOf("/"), s.lastIndexOf("\\"));
+    return idx >= 0 ? s.slice(idx + 1) : s;
+  }
+
+  // The directory of the most-recent input (no trailing separator), for seeding
+  // a file picker's defaultPath; "" when there's no history.
+  function recentDir(list) {
+    const arr = Array.isArray(list) ? list : [];
+    if (!arr.length) return "";
+    return splitPath(arr[0]).dir.replace(/[\\/]+$/, "");
+  }
+
   // Search aliases per tab — extra keywords so the tool filter finds a tool by
   // what it *does*, not just its visible label ("rotate" -> Transform, etc.).
   const TOOL_ALIASES = {
@@ -1080,6 +1109,9 @@
     parseSseBuffer,
     inputTargetForTab,
     dropUpdate,
+    addRecentFile,
+    recentFileLabel,
+    recentDir,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

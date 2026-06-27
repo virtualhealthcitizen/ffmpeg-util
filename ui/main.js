@@ -101,8 +101,11 @@ async function createWindow() {
   }
 }
 
-ipcMain.handle("dialog:openFile", async () => {
-  const res = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"] });
+ipcMain.handle("dialog:openFile", async (_e, defaultPath) => {
+  const res = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: defaultPath || undefined, // seed from the last-used input dir
+    properties: ["openFile"],
+  });
   return res.canceled ? null : res.filePaths[0];
 });
 
