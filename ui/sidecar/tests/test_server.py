@@ -467,6 +467,29 @@ def test_title_sets_metadata(client, media, auth):
     assert probe.stdout.strip() == "Hello Clip"
 
 
+def _sample_rate(path):
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "a:0",
+         "-show_entries", "stream=sample_rate", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    return int(out.stdout.strip())
+
+
+def test_sample_rate_resamples_audio(client, media, auth):
+    d, src = media  # 44100 Hz source
+    out = d / "sr.mp4"
+    r = client.post(
+        "/sample-rate",
+        json={"input": str(src), "output": str(out), "rate": 22050, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _sample_rate(out) == 22050
+
+
 def test_mono_downmixes_to_one_channel(client, media, auth):
     import subprocess
     from conftest import FFMPEG

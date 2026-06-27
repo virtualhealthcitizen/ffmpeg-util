@@ -200,7 +200,7 @@ Packaging / tests:
 - [ ] Burn a timestamp/elapsed overlay
 - [ ] Auto-orient from rotation metadata, then strip it
 - [ ] Export a short preview clip (first N seconds, downscaled)
-- [ ] Convert audio sample rate (e.g. 48k -> 44.1k)
+- [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [ ] Change container only (remux) with codec compatibility check
 
 ## Done

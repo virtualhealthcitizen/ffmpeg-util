@@ -309,6 +309,17 @@ def test_title_args_set_metadata():
     assert args[args.index("-c") + 1] == "copy"
 
 
+def test_sample_rate_args():
+    args = c.build_sample_rate_args("in.mp4", "out.mp4", 22050)
+    assert args[args.index("-ar") + 1] == "22050"
+    assert args[args.index("-c:v") + 1] == "copy"
+
+
+def test_sample_rate_args_reject_nonpositive():
+    with pytest.raises(ValueError):
+        c.build_sample_rate_args("in.mp4", "out.mp4", 0)
+
+
 def test_mono_args_downmix():
     args = c.build_mono_args("in.mp4", "out.mp4")
     assert args[args.index("-ac") + 1] == "1"
