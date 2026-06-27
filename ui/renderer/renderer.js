@@ -12,6 +12,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
+  addRecentFile, recentFileLabel, recentDir,
   resolveTheme, nextTheme, themeToggleLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -787,6 +788,55 @@ document.addEventListener("input", (e) => {
 $("#source-video").addEventListener("loadedmetadata", renderCropOverlay);
 $("#source-img").addEventListener("load", renderCropOverlay);
 
+// --- Recent files: remember inputs the user loaded and offer them again ---
+// A most-recent-first list (persisted in settings.json) drives the Recent
+// dropdown and seeds the file picker's defaultPath with the last-used dir.
+let recentData = [];
+
+function refreshRecentSelect() {
+  const sel = $("#recent-select");
+  const box = $("#recent");
+  if (!sel || !box) return;
+  if (!recentData.length) {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  const esc = (s) => s.replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  sel.innerHTML = '<option value="">— recent files —</option>' +
+    recentData.map((p) =>
+      `<option value="${esc(p)}" title="${esc(p)}">${esc(recentFileLabel(p))}</option>`
+    ).join("");
+}
+
+async function persistRecent() {
+  try { await setSettings({ recentFiles: recentData }); } catch (_) { /* non-fatal */ }
+}
+
+// Record a freshly-loaded input path. No-op when it's empty or already at the
+// front, so a mere tab switch doesn't churn the list.
+function recordRecent(path) {
+  const next = addRecentFile(recentData, path);
+  if (next.length === recentData.length && next.every((v, i) => v === recentData[i])) return;
+  recentData = next;
+  refreshRecentSelect();
+  persistRecent();
+}
+
+// Picking a recent entry loads it into the active tab (same path as a drop).
+$("#recent-select").addEventListener("change", (e) => {
+  const p = e.target.value;
+  e.target.value = ""; // snap back to the placeholder
+  if (!p) return;
+  const upd = dropUpdate([p], currentTab(), $("#concat-inputs").value);
+  if (!upd) return;
+  $("#" + upd.id).value = upd.value;
+  recordRecent(p); // move it back to the front
+  setStatus(`Loaded ${recentFileLabel(p)} into the ${currentTab()} tab.`);
+  refreshInputs();
+});
+
 // --- Drag & drop: drop files anywhere to load them into the active tab ---
 (function setupDragDrop() {
   const body = document.body;
@@ -806,6 +856,8 @@ $("#source-img").addEventListener("load", renderCropOverlay);
     const upd = dropUpdate(paths, currentTab(), $("#concat-inputs").value);
     if (upd) {
       $("#" + upd.id).value = upd.value;
+      // Record in reverse so the primary (first-dropped) file ends up front.
+      [...paths].reverse().forEach(recordRecent);
       setStatus(`Loaded ${paths.length} file(s) into the ${currentTab()} tab.`);
       refreshInputs();
     }
@@ -815,7 +867,7 @@ $("#source-img").addEventListener("load", renderCropOverlay);
 // --- File pickers (declarative via data attributes) ---
 document.querySelectorAll(".pick-file").forEach((btn) => {
   btn.addEventListener("click", async () => {
-    const p = await pickFile();
+    const p = await pickFile(recentDir(recentData)); // open in the last-used dir
     if (!p) return;
     if (btn.dataset.append) {
       const ta = $("#" + btn.dataset.append);
@@ -823,6 +875,7 @@ document.querySelectorAll(".pick-file").forEach((btn) => {
     } else {
       $("#" + btn.dataset.target).value = p;
     }
+    recordRecent(p);
     refreshInputs();
   });
 });
@@ -832,6 +885,8 @@ document.addEventListener("change", (e) => {
   const id = e.target && e.target.id;
   if (!id) return;
   if (id.endsWith("-input") || id.endsWith("-input-a") || id.endsWith("-input-b") || id === "concat-inputs") {
+    // A typed single-file path is recent-worthy; concat holds many, so skip it.
+    if (id !== "concat-inputs") recordRecent(e.target.value.trim());
     refreshInputs();
   }
 });
@@ -880,6 +935,8 @@ async function loadSettings() {
       if (el && s[id] != null && s[id] !== "") el.value = s[id];
     }
     presetsData = s.presets && typeof s.presets === "object" ? s.presets : {};
+    recentData = Array.isArray(s.recentFiles) ? s.recentFiles.filter((x) => typeof x === "string" && x.trim()) : [];
+    refreshRecentSelect();
     favoritesData = normalizeFavorites(s.favorites);
     layoutNavGroups(); // re-lay-out so pinned tools lead the nav
     refreshFavoriteStars();
