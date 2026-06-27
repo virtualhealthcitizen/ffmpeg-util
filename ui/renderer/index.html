@@ -41,6 +41,7 @@
       <button data-tab="sample_rate">Sample rate</button>
       <button data-tab="hstack">Side by side</button>
       <button data-tab="vstack">Stacked</button>
+      <button data-tab="blur_pad">Blur pad</button>
     </nav>
 
     <!-- Convert -->
@@ -633,6 +634,28 @@
       </div>
       <p class="hint">Both videos must be the same width. Output height is the sum; the top video's audio is kept.</p>
       <div class="row"><button class="primary" id="run-vstack">Stack vertically</button></div>
+    </section>
+
+    <!-- Blur pad -->
+    <section class="card panel" id="panel-blur_pad">
+      <label>Input file</label>
+      <div class="row">
+        <input id="blur_pad-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="blur_pad-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="blur_pad-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="blur_pad-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="blur_pad-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Width <input id="blur_pad-width" type="number" min="1" placeholder="e.g. 1080" /></label>
+        <label class="inline">Height <input id="blur_pad-height" type="number" min="1" placeholder="e.g. 1920" /></label>
+        <label class="inline">Blur <input id="blur_pad-sigma" type="number" step="1" placeholder="20" /></label>
+      </div>
+      <p class="hint">Fits the video into the frame over a blurred, zoomed copy of itself (no black bars).</p>
+      <div class="row"><button class="primary" id="run-blur_pad">Blur pad</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>
