@@ -157,6 +157,12 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .source-actions .sa-label { color: var(--muted); font-size: 12px; }
 .source-actions .sa-btn { padding: 5px 10px; font-size: 12px; }
 
+/* Dimension presets — one-click frame sizes for width/height fields. */
+.dim-presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.dim-presets.hidden { display: none; }
+.dim-presets .dim-presets-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.dim-presets .dim-chip { padding: 5px 11px; font-size: 12px; }
+
 /* Multi-input compatibility banner (hstack/vstack/concat). */
 .compat {
   padding: 10px 14px;
