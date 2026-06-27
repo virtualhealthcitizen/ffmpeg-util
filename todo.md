@@ -436,7 +436,7 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
       sidecar (pin Crop+GIF → "★ Favorites" row leads in pin order, star click
       doesn't switch tabs, moved-not-cloned, persisted + restored across two
       launches, unpin updates settings, real compress still runs). ← next
-- [ ] Collapse/expand the Source and Probe cards to reclaim vertical space.
+- [x] Collapse/expand the Source and Probe cards to reclaim vertical space — a ▲/▼ toggle in each card header collapses/expands the body; state persists in settings.json. Verified E2E: collapse/expand both cards, persisted across two launches, real compress still runs. ← next
 - [x] Keyboard: run the active tab + cycle tabs — DONE (see "Keyboard shortcuts"
       under UI/UX above: Ctrl/Cmd+Enter runs, Ctrl/Cmd+]/[ cycle visible tabs).
 

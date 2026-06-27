@@ -71,17 +71,22 @@
 
     <!-- Source preview + probe summary for the active tab's input (auto-filled) -->
     <section class="card source hidden" id="source">
-      <label>Source</label>
-      <div class="source-body">
-        <div class="source-media">
-          <img id="source-img" class="hidden" alt="source preview" />
-          <video id="source-video" class="hidden" muted controls></video>
-          <!-- Visual crop selector: drag a rectangle over the frame (Crop tab) -->
-          <div id="crop-overlay" class="hidden"><div id="crop-rect" class="hidden"></div></div>
-        </div>
-        <div id="source-chips" class="chips"></div>
+      <div class="card-header">
+        <label>Source</label>
+        <button class="secondary collapse-btn" id="source-collapse" title="Collapse source preview">▲</button>
       </div>
-      <div id="source-actions" class="source-actions hidden"></div>
+      <div id="source-card-body">
+        <div class="source-body">
+          <div class="source-media">
+            <img id="source-img" class="hidden" alt="source preview" />
+            <video id="source-video" class="hidden" muted controls></video>
+            <!-- Visual crop selector: drag a rectangle over the frame (Crop tab) -->
+            <div id="crop-overlay" class="hidden"><div id="crop-rect" class="hidden"></div></div>
+          </div>
+          <div id="source-chips" class="chips"></div>
+        </div>
+        <div id="source-actions" class="source-actions hidden"></div>
+      </div>
     </section>
 
     <!-- Compatibility banner for multi-input ops (hstack/vstack/concat) -->
@@ -831,8 +836,13 @@
     </section>
 
     <section class="card">
-      <label>Probe output</label>
-      <pre id="probe-out" class="probe"></pre>
+      <div class="card-header">
+        <label>Probe output</label>
+        <button class="secondary collapse-btn" id="probe-collapse" title="Collapse probe output">▲</button>
+      </div>
+      <div id="probe-card-body">
+        <pre id="probe-out" class="probe"></pre>
+      </div>
     </section>
 
     <script src="logic.js"></script>

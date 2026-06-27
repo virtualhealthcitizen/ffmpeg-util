@@ -180,6 +180,24 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* Collapsible card header: label left, collapse toggle right. */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.card-header label { margin: 0; }
+.collapse-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.65;
+}
+.collapse-btn:hover { opacity: 1; filter: none; }
+.card-body.collapsed { display: none; }
+
 /* Source card: input preview + friendly probe summary, auto-filled per tab. */
 .source.hidden { display: none; }
 .source-body { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
