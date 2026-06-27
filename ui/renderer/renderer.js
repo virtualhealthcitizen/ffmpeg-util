@@ -318,6 +318,15 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-hstack").addEventListener("click", () => {
+  if (!requireFields("hstack-input-a", "hstack-input-b", "hstack-output")) return;
+  run("Combining side by side", "hstack", {
+    inputs: [val("hstack-input-a"), val("hstack-input-b")],
+    output: val("hstack-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-sample_rate").addEventListener("click", () => {
   if (!requireFields("sample_rate-input", "sample_rate-output")) return;
   run("Resampling audio", "sample_rate", {

@@ -439,6 +439,19 @@ def build_eq_args(
     return ["-i", input_path, "-vf", vf, output_path]
 
 
+def build_hstack_args(inputs: Sequence[str], output_path: str) -> list[str]:
+    """Build args to place two equal-height videos side by side. Keeps the first
+    input's audio if present."""
+    if len(inputs) != 2:
+        raise ValueError("hstack needs exactly two input files")
+    return [
+        "-i", inputs[0], "-i", inputs[1],
+        "-filter_complex", "[0:v][1:v]hstack=inputs=2[v]",
+        "-map", "[v]", "-map", "0:a?",
+        output_path,
+    ]
+
+
 def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
     """Build args to boomerang a clip: play it forward then reversed (video only),
     so the output runs about twice the input duration."""

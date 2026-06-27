@@ -172,6 +172,18 @@ def test_eq_args_defaults_are_noop():
     assert args[args.index("-vf") + 1] == "eq=brightness=0.0:contrast=1.0:saturation=1.0"
 
 
+def test_hstack_args_two_inputs():
+    args = c.build_hstack_args(["a.mp4", "b.mp4"], "out.mp4")
+    assert args.count("-i") == 2
+    assert "[0:v][1:v]hstack=inputs=2[v]" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_hstack_args_requires_two():
+    with pytest.raises(ValueError):
+        c.build_hstack_args(["only.mp4"], "out.mp4")
+
+
 def test_boomerang_args_forward_then_reverse():
     args = c.build_boomerang_args("in.mp4", "out.mp4")
     fc = args[args.index("-filter_complex") + 1]
