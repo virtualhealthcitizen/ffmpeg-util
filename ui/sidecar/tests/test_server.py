@@ -436,6 +436,25 @@ def _audio_channels(path):
     return int(out.stdout.strip())
 
 
+def test_title_sets_metadata(client, media, auth):
+    import subprocess
+    from conftest import FFPROBE
+    d, src = media
+    out = d / "titled.mp4"
+    r = client.post(
+        "/title",
+        json={"input": str(src), "output": str(out), "title": "Hello Clip", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    probe = subprocess.run(
+        [FFPROBE, "-v", "error", "-show_entries", "format_tags=title",
+         "-of", "default=nw=1:nk=1", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    assert probe.stdout.strip() == "Hello Clip"
+
+
 def test_mono_downmixes_to_one_channel(client, media, auth):
     import subprocess
     from conftest import FFMPEG

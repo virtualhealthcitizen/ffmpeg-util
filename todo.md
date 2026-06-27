@@ -192,7 +192,7 @@ Packaging / tests:
 - [ ] Generate a waveform PNG from audio (`showwavespic`)
 
 ### More ideas (round 6)
-- [ ] Set / clear a metadata title tag
+- [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.
 - [ ] Extract a poster frame at a percentage of the duration
 - [ ] Two-up compare grid (input vs output, hstack)
 - [ ] Trim by percentage (e.g. middle 50%)
