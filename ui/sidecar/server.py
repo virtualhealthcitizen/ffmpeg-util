@@ -162,6 +162,22 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class BoomerangReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/boomerang")
+def boomerang(req: BoomerangReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_boomerang_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class GrayscaleReq(BaseModel):
     input: str
     output: str
@@ -501,6 +517,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":
         return commands.build_grayscale_args(req.input, req.output), None
+    if op == "boomerang":
+        return commands.build_boomerang_args(req.input, req.output), None
     if op == "volume":
         return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":

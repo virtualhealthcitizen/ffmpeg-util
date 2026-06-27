@@ -318,6 +318,15 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-boomerang").addEventListener("click", () => {
+  if (!requireFields("boomerang-input", "boomerang-output")) return;
+  run("Making boomerang", "boomerang", {
+    input: val("boomerang-input"),
+    output: val("boomerang-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-fade").addEventListener("click", () => {
   if (!requireFields("fade-input", "fade-output", "fade-duration")) return;
   run("Fading", "fade", {

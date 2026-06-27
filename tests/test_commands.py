@@ -119,6 +119,14 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_boomerang_args_forward_then_reverse():
+    args = c.build_boomerang_args("in.mp4", "out.mp4")
+    fc = args[args.index("-filter_complex") + 1]
+    assert "reverse" in fc and "concat=n=2:v=1" in fc
+    assert "-an" in args
+    assert args[args.index("-map") + 1] == "[v]"
+
+
 def test_require_output_extension():
     c.require_output_extension("out.mp4")  # ok, no raise
     c.require_output_extension("dir/clip.gif")
