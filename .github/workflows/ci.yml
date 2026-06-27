@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install core package
+        run: pip install -e ".[dev]"
+
+      - name: Core unit tests
+        run: pytest -q
+
+      - name: Install sidecar deps
+        run: pip install -r ui/sidecar/requirements-dev.txt
+
+      - name: Sidecar integration tests
+        run: pytest -q ui/sidecar/tests/
+
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install npm deps
+        run: npm ci
+        working-directory: ui
+
+      - name: Node unit tests
+        run: npm test
+        working-directory: ui
