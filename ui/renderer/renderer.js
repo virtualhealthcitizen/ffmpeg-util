@@ -318,6 +318,16 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-fps").addEventListener("click", () => {
+  if (!requireFields("fps-input", "fps-output", "fps-fps")) return;
+  run("Resampling FPS", "fps", {
+    input: val("fps-input"),
+    output: val("fps-output"),
+    fps: numOrNull("fps-fps"),
+    overwrite: true,
+  });
+});
+
 $("#run-eq").addEventListener("click", () => {
   if (!requireFields("eq-input", "eq-output")) return;
   const b = numOrNull("eq-brightness");

@@ -119,6 +119,17 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_fps_args_build_filter():
+    args = c.build_fps_args("in.mp4", "out.mp4", 15)
+    assert args[args.index("-vf") + 1] == "fps=15"
+    assert args[-1] == "out.mp4"
+
+
+def test_fps_args_reject_nonpositive():
+    with pytest.raises(ValueError):
+        c.build_fps_args("in.mp4", "out.mp4", 0)
+
+
 def test_eq_args_build_filter():
     args = c.build_eq_args("in.mp4", "out.mp4", brightness=0.3, contrast=1.2, saturation=0.5)
     vf = args[args.index("-vf") + 1]

@@ -406,6 +406,14 @@ def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "hue=s=0", output_path]
 
 
+def build_fps_args(input_path: str, output_path: str, fps: float) -> list[str]:
+    """Build args to resample to ``fps`` frames/sec (drops/dupes frames; same
+    duration and speed, unlike the ``speed`` op)."""
+    if fps <= 0:
+        raise ValueError("fps must be > 0")
+    return ["-i", input_path, "-vf", f"fps={fps}", output_path]
+
+
 def build_eq_args(
     input_path: str,
     output_path: str,
