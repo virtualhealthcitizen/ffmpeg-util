@@ -2,7 +2,7 @@
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
-const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
+const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
@@ -416,6 +416,16 @@ function refreshDimPresets() {
 function refreshInputs() {
   refreshSource();
   refreshCompat();
+  maybeFillOutput(currentTab()); // auto-suggest an output path when one isn't set yet
+}
+
+// Fill an empty output field from the chosen input + the tab's op suffix, so
+// "output required" stops being a manual step. Never clobbers a user-set output.
+function maybeFillOutput(tab) {
+  const outEl = document.getElementById(tab + "-output");
+  if (!outEl || outEl.value.trim() !== "") return;
+  const suggestion = suggestOutputForTab(activeInputPath(), tab);
+  if (suggestion) outEl.value = suggestion;
 }
 
 // --- Visual crop selector: drag a rectangle over the source frame (Crop tab) ---

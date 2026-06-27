@@ -499,6 +499,37 @@ test("friendlyError returns null for unrecognized / empty text", () => {
   assert.equal(L.friendlyError(null), null);
 });
 
+test("suggestOutputForTab adds an op suffix and keeps the input extension", () => {
+  assert.equal(L.suggestOutputForTab("C:\\v\\clip.mkv", "compress"), "C:\\v\\clip.small.mkv");
+  assert.equal(L.suggestOutputForTab("in.mp4", "trim"), "in.trim.mp4");
+  assert.equal(L.suggestOutputForTab("/a/b/movie.mov", "speed"), "/a/b/movie.speed.mov");
+});
+
+test("suggestOutputForTab overrides the extension for type-changing ops", () => {
+  assert.equal(L.suggestOutputForTab("clip.mp4", "gif"), "clip.anim.gif");
+  assert.equal(L.suggestOutputForTab("clip.mp4", "waveform"), "clip.wave.png");
+  assert.equal(L.suggestOutputForTab("clip.mp4", "thumbnail"), "clip.thumb.png");
+  assert.equal(L.suggestOutputForTab("clip.mp4", "frames"), "clip.frame_%04d.png");
+  assert.equal(L.suggestOutputForTab("still.png", "image_to_video"), "still.clip.mp4");
+});
+
+test("suggestOutputForTab falls back for unknown tabs and empty input", () => {
+  // unknown tab -> tag from the tab name (underscores stripped) + input ext
+  assert.equal(L.suggestOutputForTab("a.webm", "brand_new"), "a.brandnew.webm");
+  // no extension -> default .mp4
+  assert.equal(L.suggestOutputForTab("noext", "trim"), "noext.trim.mp4");
+  // no input -> empty string (nothing to suggest)
+  assert.equal(L.suggestOutputForTab("", "trim"), "");
+  assert.equal(L.suggestOutputForTab(null, "trim"), "");
+});
+
+test("extOf returns the lowercase extension or empty", () => {
+  assert.equal(L.extOf("a.MP4"), ".mp4");
+  assert.equal(L.extOf("/x/y.tar.gz"), ".gz");
+  assert.equal(L.extOf("noext"), "");
+  assert.equal(L.extOf("C:\\dir.with.dot\\file"), "");
+});
+
 test("normalizeDragRect normalizes points dragged in any direction", () => {
   // top-left -> bottom-right
   assert.deepEqual(L.normalizeDragRect({ x: 10, y: 20 }, { x: 110, y: 80 }), {
