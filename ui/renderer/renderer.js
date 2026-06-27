@@ -8,7 +8,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
-  withoutPreset, estimateOutput, friendlyError } = window.FfuLogic;
+  withoutPreset, estimateOutput, friendlyError, summarizeBeforeAfter,
+  previewPath } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -784,6 +785,44 @@ async function showPreview(outputPath) {
   }
 }
 
+// --- Before/after result summary (size + duration once an op completes) ---
+function hideSummary() {
+  const el = $("#summary");
+  if (el) {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
+// Probe parsed ffprobe data for a path, or null on any failure (best-effort).
+async function probeJson(path) {
+  try {
+    const { result } = await api("/probe", { input: path, as_json: true });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch (_) {
+    return null;
+  }
+}
+
+// After a completed op, show how the output compares to the input: a size delta
+// (and a duration delta when the duration changed). Best-effort — a failed probe
+// on either side just hides the line.
+async function showSummary(inputPath, outputPath) {
+  const el = $("#summary");
+  if (!el || !outputPath) return;
+  const [before, after] = await Promise.all([
+    inputPath ? probeJson(inputPath) : Promise.resolve(null),
+    probeJson(previewPath(outputPath)), // %d -> first frame for sequences
+  ]);
+  const text = summarizeBeforeAfter(before, after);
+  if (text) {
+    el.textContent = text;
+    el.classList.remove("hidden");
+  } else {
+    hideSummary();
+  }
+}
+
 // --- Progress bar ---
 function showProgress(pct) {
   $("#progress").classList.remove("hidden");
@@ -844,6 +883,7 @@ async function run(label, op, body) {
   setCancelVisible(true);
   setStatus(label + "…");
   clearErrorHint();
+  hideSummary();
   showProgress(0);
   hidePreview();
   try {
@@ -881,7 +921,11 @@ async function run(label, op, body) {
     hideProgress();
     setStatus(result ? "Done → " + result.output : "Done.");
     saveSettings();
-    if (result && result.output) showPreview(result.output);
+    if (result && result.output) {
+      showPreview(result.output);
+      // Compare the output back to the primary input (single-input ops, else first).
+      showSummary(body.input || (body.inputs && body.inputs[0]) || null, result.output);
+    }
   } catch (e) {
     hideProgress();
     if (abort.signal.aborted) {

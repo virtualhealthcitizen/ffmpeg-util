@@ -116,7 +116,7 @@ Packaging / tests:
 - [ ] Job queue + history (recent runs, re-run, clear)
 - [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
 - [ ] "Reveal in Explorer" / open output after completion
-- [ ] Before/after size + duration summary on completion
+- [x] Before/after size + duration summary on completion — see round 8 below.
 
 ### UI / UX
 - [ ] Recent files list / remembered last input dir
@@ -345,6 +345,15 @@ Workflow / re-use:
 - [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
 - [ ] Output filename templating with tokens ({name}, {op}, {w}x{h}, {date}).
 - [ ] Toast on completion with inline "Open" / "Reveal in Explorer" actions.
+- [x] **Before/after result summary** — once an op completes, a green readout
+      compares the output to the input: size delta with percent (e.g. "774 KB →
+      61 KB (−92%)") plus a duration segment when the length changed
+      ("… · 0:03 → 0:01"). Pure `summarizeBeforeAfter` in `logic.js` (probe
+      `format.size`/`duration` before vs after; %d resolves to frame 1 for
+      sequences); `#summary` rendered by the renderer, cleared on each run.
+      Verified: node:test (4 new, 73 total) + headless Electron E2E vs the real
+      sidecar (compress 320×240→160×120 shows "−92%"; trim to 1s adds
+      "0:03 → 0:01"; hidden before any run).
 - [x] **Friendlier error surface** — a friendly one-line hint now appears above the
       raw stderr when an op fails. Pure `friendlyError`/`ERROR_HINTS` in `logic.js`
       map common ffmpeg failures (no such file, codec not found, dims not divisible

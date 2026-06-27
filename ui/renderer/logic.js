@@ -680,12 +680,52 @@
     return null;
   }
 
+  // --- Result summary: before/after size + duration once an op finishes ---
+
+  // Pull {size, duration} (positive numbers, or null) from parsed ffprobe data.
+  function probeSizeDuration(data) {
+    const fmt = (data && data.format) || {};
+    const size = Number(fmt.size);
+    const duration = Number(fmt.duration);
+    return {
+      size: isFinite(size) && size > 0 ? size : null,
+      duration: isFinite(duration) && duration > 0 ? duration : null,
+    };
+  }
+
+  // Summarize an op's effect from the input vs output probe data: a short line
+  // like "12.3 MB → 4.1 MB (−67%) · 0:30 → 0:12". The size delta needs both
+  // sizes (input + output); the duration segment is shown only when both
+  // durations are known and differ (most ops preserve duration, and images have
+  // none). Returns null when there's nothing meaningful to report.
+  function summarizeBeforeAfter(before, after) {
+    const b = probeSizeDuration(before);
+    const a = probeSizeDuration(after);
+    const parts = [];
+    if (a.size != null) {
+      if (b.size != null) {
+        const pct = Math.round(((a.size - b.size) / b.size) * 100);
+        const sign = pct > 0 ? "+" : pct < 0 ? "−" : "±";
+        parts.push(`${formatBytes(b.size)} → ${formatBytes(a.size)} (${sign}${Math.abs(pct)}%)`);
+      } else {
+        parts.push(formatBytes(a.size));
+      }
+    }
+    if (a.duration != null && b.duration != null) {
+      const bd = formatDuration(b.duration);
+      const ad = formatDuration(a.duration);
+      if (bd !== ad) parts.push(`${bd} → ${ad}`);
+    }
+    return parts.length ? parts.join(" · ") : null;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,
     ERROR_HINTS,
     friendlyError,
+    summarizeBeforeAfter,
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,
