@@ -180,7 +180,8 @@ Packaging / tests:
 ### More ideas (round 5)
 - [x] Change frame rate without changing speed (`fps` filter) — core `build_fps_args`,
       CLI `fps`, sidecar (`/fps` + `/run/stream`), FPS tab. Verified E2E: 30fps -> 15fps.
-- [ ] Downmix audio to mono / pick a single channel
+- [x] Downmix audio to mono — core `build_mono_args` (`-ac 1`), CLI `mono`, sidecar
+      (`/mono` + `/run/stream`), Mono tab. Verified E2E: stereo source -> 1 channel out.
 - [ ] Trim silence from the ends (`silenceremove`)
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)

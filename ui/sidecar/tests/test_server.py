@@ -425,6 +425,39 @@ def test_pad_produces_target_frame(client, media, auth):
     assert _dims(out) == (640, 640)  # exact target frame, with bars
 
 
+def _audio_channels(path):
+    import subprocess
+    from conftest import FFPROBE
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "a:0",
+         "-show_entries", "stream=channels", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    return int(out.stdout.strip())
+
+
+def test_mono_downmixes_to_one_channel(client, media, auth):
+    import subprocess
+    from conftest import FFMPEG
+    d, src = media
+    # The fixture clip is mono; make a stereo source so the downmix is meaningful.
+    stereo = d / "stereo.mp4"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
+         "-ac", "2", "-c:v", "copy", str(stereo)],
+        check=True,
+    )
+    assert _audio_channels(stereo) == 2
+    out = d / "mono.mp4"
+    r = client.post(
+        "/mono",
+        json={"input": str(stereo), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _audio_channels(out) == 1
+
+
 def test_mute_removes_audio(client, media, auth):
     d, src = media  # has an audio track
     assert _audio_stream_count(src) >= 1

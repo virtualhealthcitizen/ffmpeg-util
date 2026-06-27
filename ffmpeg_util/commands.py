@@ -542,6 +542,11 @@ def build_pad_args(input_path: str, output_path: str, width: int, height: int) -
     return ["-i", input_path, "-vf", vf, output_path]
 
 
+def build_mono_args(input_path: str, output_path: str) -> list[str]:
+    """Downmix audio to a single (mono) channel; the video is stream-copied."""
+    return ["-i", input_path, "-c:v", "copy", "-ac", "1", output_path]
+
+
 def build_mute_args(input_path: str, output_path: str) -> list[str]:
     """Build args to strip the audio track (stream-copies video, drops audio)."""
     return ["-i", input_path, "-c", "copy", "-an", output_path]
