@@ -162,6 +162,23 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class VolumeReq(BaseModel):
+    input: str
+    output: str
+    gain: float
+    overwrite: bool = True
+
+
+@app.post("/volume")
+def volume(req: VolumeReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        runner.run_ffmpeg(commands.build_volume_args(req.input, req.output, req.gain))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class ReverseReq(BaseModel):
     input: str
     output: str
@@ -408,6 +425,8 @@ class RunReq(BaseModel):
     factor: float = 1.0
     # frames
     every: int = 1
+    # volume
+    gain: float = 0.0
     # transform
     transform: str | None = None
     # crop (uses width/height above for the rectangle size)
@@ -424,6 +443,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "volume":
+        return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":
         return commands.build_extract_frames_args(req.input, req.output, req.every), None
     if op == "loop":

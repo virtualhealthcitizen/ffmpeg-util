@@ -368,6 +368,11 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_volume_args(input_path: str, output_path: str, gain_db: float) -> list[str]:
+    """Build args to adjust audio loudness by ``gain_db`` decibels (video copied)."""
+    return ["-i", input_path, "-c:v", "copy", "-af", f"volume={gain_db}dB", output_path]
+
+
 def build_reverse_args(input_path: str, output_path: str, *, audio: bool = True) -> list[str]:
     """Build args to play a clip backwards (``reverse`` video, ``areverse`` audio).
 

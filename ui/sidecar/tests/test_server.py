@@ -171,6 +171,33 @@ def _audio_stream_count(path):
     return len([ln for ln in out.stdout.splitlines() if ln.strip()])
 
 
+def _mean_volume(path):
+    import re
+    import subprocess
+    from conftest import FFMPEG
+    out = subprocess.run(
+        [FFMPEG, "-hide_banner", "-i", str(path), "-af", "volumedetect", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    m = re.search(r"mean_volume:\s*(-?[\d.]+) dB", out.stderr)
+    assert m, out.stderr
+    return float(m.group(1))
+
+
+def test_volume_attenuates_by_gain(client, media, auth):
+    d, src = media
+    out = d / "quieter.mp4"
+    r = client.post(
+        "/volume",
+        json={"input": str(src), "output": str(out), "gain": -6.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    before, after = _mean_volume(src), _mean_volume(out)
+    # -6 dB gain should drop the measured mean volume by ~6 dB.
+    assert abs((before - 6.0) - after) < 1.5, f"before={before} after={after}"
+
+
 def test_reverse_preserves_duration(client, media, auth):
     d, src = media
     out = d / "reversed.mp4"

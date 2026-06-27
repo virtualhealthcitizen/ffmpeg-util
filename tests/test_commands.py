@@ -119,6 +119,12 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_volume_args_build_filter():
+    args = c.build_volume_args("in.mp4", "out.mp4", -6.0)
+    assert args[args.index("-af") + 1] == "volume=-6.0dB"
+    assert args[args.index("-c:v") + 1] == "copy"
+
+
 def test_reverse_args_with_audio():
     args = c.build_reverse_args("in.mp4", "out.mp4", audio=True)
     fc = args[args.index("-filter_complex") + 1]
