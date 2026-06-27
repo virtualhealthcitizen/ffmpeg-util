@@ -191,6 +191,18 @@ Packaging / tests:
 - [ ] Convert to a specific pixel format / 10-bit
 - [ ] Generate a waveform PNG from audio (`showwavespic`)
 
+### More ideas (round 6)
+- [ ] Set / clear a metadata title tag
+- [ ] Extract a poster frame at a percentage of the duration
+- [ ] Two-up compare grid (input vs output, hstack)
+- [ ] Trim by percentage (e.g. middle 50%)
+- [ ] Add chapters from a list
+- [ ] Burn a timestamp/elapsed overlay
+- [ ] Auto-orient from rotation metadata, then strip it
+- [ ] Export a short preview clip (first N seconds, downscaled)
+- [ ] Convert audio sample rate (e.g. 48k -> 44.1k)
+- [ ] Change container only (remux) with codec compatibility check
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
