@@ -146,6 +146,9 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
   letter-spacing: 0.04em;
 }
 .chip .chip-value { font-size: 13px; color: var(--text); }
+.chip.clickable { cursor: pointer; }
+.chip.clickable:hover { border-color: var(--accent); background: #20242c; }
+.chip.clickable .chip-value { color: var(--accent); }
 .chips .chips-msg { color: var(--muted); font-size: 12px; align-self: center; }
 
 input[type="text"], input[type="number"], textarea {

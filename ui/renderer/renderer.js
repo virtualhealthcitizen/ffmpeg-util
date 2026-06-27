@@ -3,7 +3,7 @@
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
-  filterTools, TOOL_ALIASES, summarizeProbe } = window.FfuLogic;
+  filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -147,7 +147,7 @@ async function showSourceMedia(path) {
   }
 }
 
-function renderChips(chips) {
+function renderChips(chips, actions = {}) {
   const box = $("#source-chips");
   box.textContent = "";
   if (!chips.length) {
@@ -167,6 +167,21 @@ function renderChips(chips) {
     v.className = "chip-value";
     v.textContent = value;
     chip.append(l, v);
+
+    const targets = actions[label];
+    if (targets && targets.length) {
+      chip.classList.add("clickable");
+      chip.title = `Use source ${label.toLowerCase()} →  ` +
+        targets.map((t) => fieldLabel(t.id)).join(", ");
+      chip.addEventListener("click", () => {
+        for (const { id, value: v2 } of targets) {
+          const field = $("#" + id);
+          if (field) field.value = v2;
+        }
+        const names = targets.map((t) => fieldLabel(t.id)).join(" & ");
+        setStatus(`Filled ${names} from source ${label.toLowerCase()}.`);
+      });
+    }
     box.appendChild(chip);
   }
 }
@@ -183,7 +198,7 @@ async function refreshSource() {
     const { result } = await api("/probe", { input: path, as_json: true });
     if (path !== lastSourcePath) return; // a newer input superseded this one
     const data = typeof result === "string" ? JSON.parse(result) : result;
-    renderChips(summarizeProbe(data));
+    renderChips(summarizeProbe(data), sourceFillActions(currentTab(), data));
   } catch (_) {
     renderChips([]); // shows the soft "couldn't read" message
   }

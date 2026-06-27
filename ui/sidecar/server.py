@@ -225,6 +225,28 @@ def fps(req: FpsReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ImageToVideoReq(BaseModel):
+    input: str
+    output: str
+    seconds: float
+    fps: int = 30
+    overwrite: bool = True
+
+
+@app.post("/image-to-video")
+def image_to_video(req: ImageToVideoReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(
+            commands.build_image_to_video_args(req.input, req.output, req.seconds, fps=req.fps)
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class EqReq(BaseModel):
     input: str
     output: str
@@ -735,6 +757,8 @@ class RunReq(BaseModel):
     aspect: str = "16:9"
     # blur-pad
     sigma: float = 20
+    # image-to-video
+    seconds: float = 5.0
     # title (metadata)
     title: str = ""
     # sample-rate

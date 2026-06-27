@@ -264,6 +264,87 @@ Workflow / feedback components:
       tools match" state. CLI/sidecar untouched. Verified: node:test unit tests +
       headless Electron E2E (typed "rotate" → only Transform visible, screenshot).
 
+### UI/UX components (round 8) — build on the source card + search
+> Now that there's an embedded source player + live probe data on every tab, a lot
+> of "type a number by hand" friction can become "click what you can already see."
+> These ideas mostly *consume* the round-7 source card rather than add ffmpeg ops.
+
+Make the probe data actionable (the source card is read-only today):
+- [x] **Clickable probe chips** — the Size chip fills Width/Height on
+      crop/pad/blur_pad/compress/thumbnail/gif/waveform; the FPS chip fills the FPS
+      tab (accent-highlighted + cursor when actionable). Pure `sourceFillActions`/
+      `DIMENSION_FIELDS`/`FPS_FIELDS` in `logic.js`. This finishes the Blur-pad story
+      (the card shows the size — now one click fills it). Verified: node:test (3 new,
+      31 total) + headless Electron E2E against the real sidecar (click Size on Blur
+      pad → width/height = 320/240; click FPS → 30; non-fillable on Convert; shot).
+      Folds in the "Match source" idea below — the chip *is* the match-source action.
+- [~] "Match source" buttons — subsumed by clickable chips above.
+- [ ] Multi-input probe + mismatch guard for hstack/vstack/concat — show *both*
+      sources' chips and warn before running when heights/widths/codecs differ
+      (pre-empts the "must be the same height/width" ffmpeg failure).
+- [ ] Estimated-output readout — live size/duration estimate from the probed input
+      + current settings (compress CRF, gif fps/width, speed factor, trim range).
+
+Direct manipulation on the embedded source player (it's already there):
+- [ ] **Scrub-to-set-time** — "Use current time" buttons that read the source
+      player's playhead into Trim start/end, GIF start, Thumbnail time, poster frame.
+- [ ] Draw-a-rectangle crop overlay on the source frame → fills Crop x/y/w/h.
+- [ ] In/out range handles on the player's scrub bar for Trim/GIF duration.
+
+Workflow / re-use:
+- [ ] Recent files dropdown on inputs + remembered last-used input directory.
+- [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
+- [ ] Output filename templating with tokens ({name}, {op}, {w}x{h}, {date}).
+- [ ] Toast on completion with inline "Open" / "Reveal in Explorer" actions.
+- [ ] Friendlier error surface — map common ffmpeg stderr (no such file, codec not
+      found, dimensions not divisible by 2) to a one-line hint above the raw text.
+
+Navigation / layout polish (the 30-tab nav is still a wall when search is empty):
+- [ ] Group tabs into labeled categories (carried from round 7) — pairs well with search.
+- [ ] Favorites: pin frequently-used tools to a top row; persist across launches.
+- [ ] Collapse/expand the Source and Probe cards to reclaim vertical space.
+- [ ] Keyboard: Enter runs the active tab's primary action; arrows cycle tabs.
+
+**Priority for round 8 (highest first):**
+1. ~~Clickable probe chips + "Match source"~~ — DONE.
+2. Multi-input probe + mismatch guard — prevents the most common stack/concat failure. **← next.**
+3. Scrub-to-set-time — high-value, reuses the player we just shipped.
+4. Estimated-output readout; 5. friendlier errors; 6. the rest.
+
+### UI/UX components (round 9) — safety, persistence, power-user flow
+> A different angle from rounds 7–8: not new affordances, but making the existing
+> flow safe, sticky, and faster for repeat use. Some of these are latent gaps in
+> the current renderer, not just nice-to-haves.
+
+Safety / correctness (latent gaps in the current UI):
+- [ ] **Overwrite confirmation** — every run sends `overwrite: true`, so the UI
+      silently clobbers existing outputs. Probe the output path and confirm first.
+- [ ] **Disable the Run button while an op is in flight** — today buttons stay live,
+      so a double-click fires the op twice against the same output.
+- [ ] Pre-run validation — verify the input exists and the output dir is writable
+      before launching ffmpeg; highlight the offending field instead of a late error.
+- [ ] Warn on odd width/height for x264 (must be even) before the run fails.
+- [ ] Cancel a running op (kill the ffmpeg process) and reset the UI.
+
+Persistence / memory:
+- [ ] Remember the active tab + window size/position across launches.
+- [ ] Recent inputs/outputs per tab; remember the last-used directory for pickers.
+- [ ] Save/load named presets (profiles) per tool.
+
+Power-user flow:
+- [ ] Operation queue — line up several ops and run them in sequence.
+- [ ] Chain ops on one file (trim → compress …) without manual disk round-trips.
+- [ ] "Copy as CLI" — emit the equivalent `ffmpeg-util` command for any op.
+
+Help / discoverability:
+- [ ] Per-tab one-line example + a "?" tooltip explaining each field.
+- [ ] Friendly error mapping (carried from round 8) surfaced above the raw stderr.
+
+**Priority for round 9 (highest first):**
+1. Overwrite confirmation + Run-button-disabled-while-running — the two real safety
+   gaps; small, high-confidence, E2E-verifiable.
+2. Cancel a running op; 3. remember tab + window; 4. presets; 5. the rest.
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`

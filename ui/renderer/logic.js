@@ -229,11 +229,55 @@
     return chips;
   }
 
+  // --- Clickable probe chips: map a chip to the active tab's fields ("use source") ---
+
+  // Tabs with width/height fields the Size chip can fill (h omitted = width-only).
+  const DIMENSION_FIELDS = {
+    crop: { w: "crop-width", h: "crop-height" },
+    pad: { w: "pad-width", h: "pad-height" },
+    blur_pad: { w: "blur_pad-width", h: "blur_pad-height" },
+    compress: { w: "compress-width", h: "compress-height" },
+    thumbnail: { w: "thumbnail-width" },
+    gif: { w: "gif-width" },
+    waveform: { w: "waveform-width", h: "waveform-height" },
+  };
+  // Tabs whose FPS field the FPS chip can fill.
+  const FPS_FIELDS = { fps: "fps-fps" };
+
+  // Given the active tab + parsed probe data, return which chips are clickable and
+  // what fields they fill: { [chipLabel]: [{ id, value }] }. Order-independent;
+  // only includes a chip when both the tab has the field(s) and the data exists.
+  function sourceFillActions(tab, data) {
+    const d = data || {};
+    const streams = Array.isArray(d.streams) ? d.streams : [];
+    const video = streams.find((s) => s.codec_type === "video") || {};
+    const w = Number(video.width);
+    const h = Number(video.height);
+    const fps = parseFrameRate(video.avg_frame_rate || video.r_frame_rate);
+    const actions = {};
+
+    const dim = DIMENSION_FIELDS[tab];
+    if (dim && w > 0 && h > 0) {
+      const targets = [{ id: dim.w, value: String(w) }];
+      if (dim.h) targets.push({ id: dim.h, value: String(h) });
+      actions.Size = targets;
+    }
+    const fpsField = FPS_FIELDS[tab];
+    if (fpsField && fps) {
+      const tidy = Math.round(fps * 100) / 100;
+      actions.FPS = [{ id: fpsField, value: String(tidy) }];
+    }
+    return actions;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,
     filterTools,
+    DIMENSION_FIELDS,
+    FPS_FIELDS,
+    sourceFillActions,
     formatBytes,
     formatDuration,
     parseFrameRate,

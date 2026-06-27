@@ -412,6 +412,22 @@ def build_waveform_args(input_path: str, output_path: str, width: int = 1000, he
     ]
 
 
+def build_image_to_video_args(
+    image_path: str, output_path: str, seconds: float, fps: int = 30
+) -> list[str]:
+    """Build args to turn a still image into a ``seconds``-long video at ``fps``."""
+    if seconds <= 0:
+        raise ValueError("seconds must be > 0")
+    if fps < 1:
+        raise ValueError("fps must be >= 1")
+    return [
+        "-loop", "1", "-i", image_path, "-t", str(seconds), "-r", str(fps),
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        output_path,
+    ]
+
+
 def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     """Build args to desaturate the video to grayscale (keeps the pixel format)."""
     return ["-i", input_path, "-vf", "hue=s=0", output_path]

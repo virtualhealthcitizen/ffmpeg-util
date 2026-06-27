@@ -235,6 +235,36 @@ test("summarizeProbe tolerates empty/garbage input", () => {
   assert.deepEqual(L.summarizeProbe({ streams: "nope" }), []);
 });
 
+test("sourceFillActions maps the Size chip to a tab's width/height fields", () => {
+  const data = { streams: [{ codec_type: "video", width: 1920, height: 1080, avg_frame_rate: "30/1" }] };
+  assert.deepEqual(L.sourceFillActions("blur_pad", data), {
+    Size: [
+      { id: "blur_pad-width", value: "1920" },
+      { id: "blur_pad-height", value: "1080" },
+    ],
+  });
+  assert.deepEqual(L.sourceFillActions("compress", data), {
+    Size: [
+      { id: "compress-width", value: "1920" },
+      { id: "compress-height", value: "1080" },
+    ],
+  });
+});
+
+test("sourceFillActions handles width-only tabs and the FPS tab", () => {
+  const data = { streams: [{ codec_type: "video", width: 640, height: 360, r_frame_rate: "25/1" }] };
+  assert.deepEqual(L.sourceFillActions("gif", data), { Size: [{ id: "gif-width", value: "640" }] });
+  assert.deepEqual(L.sourceFillActions("fps", data), { FPS: [{ id: "fps-fps", value: "25" }] });
+});
+
+test("sourceFillActions returns {} when the tab has no fillable fields or no video", () => {
+  const video = { streams: [{ codec_type: "video", width: 100, height: 50, avg_frame_rate: "30/1" }] };
+  assert.deepEqual(L.sourceFillActions("convert", video), {}); // no dimension/fps fields
+  const audioOnly = { streams: [{ codec_type: "audio", channels: 2 }] };
+  assert.deepEqual(L.sourceFillActions("crop", audioOnly), {}); // no video dims
+  assert.deepEqual(L.sourceFillActions("crop", null), {});
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';
