@@ -10,7 +10,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
-  TOOL_CATEGORIES, groupTabs } = window.FfuLogic;
+  TOOL_CATEGORIES, groupTabs, templatedOutputForTab } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -344,6 +344,7 @@ async function refreshSource() {
     renderChips(summarizeProbe(data), sourceFillActions(currentTab(), data));
     sourceDims = videoDims(data); // feeds the "Match source" frame-size preset
     refreshDimPresets();
+    maybeRefillTemplatedOutput(); // {w}/{h}/{wxh} are only known once probed
     lastSourceDuration = Number((data.format || {}).duration) || null;
     refreshEstimate();
   } catch (_) {
@@ -524,14 +525,67 @@ function refreshInputs() {
   refreshDimWarning(); // flag odd W/H on size-sensitive tabs
 }
 
-// Fill an empty output field from the chosen input + the tab's op suffix, so
-// "output required" stops being a manual step. Never clobbers a user-set output.
+// Today as YYYY-MM-DD, for the {date} name-template token.
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// The current output-name template (empty -> use the fixed op-suffix default).
+function nameTemplate() {
+  const el = $("#output-template");
+  return el ? el.value.trim() : "";
+}
+
+// Fill an empty output field from the chosen input — either a custom name
+// template (tokens) when one is set, or the tab's fixed op suffix otherwise, so
+// "output required" stops being a manual step. Never clobbers a user-set output;
+// the value it sets is tagged data-auto so a template change can refresh it.
 function maybeFillOutput(tab) {
   const outEl = document.getElementById(tab + "-output");
   if (!outEl || outEl.value.trim() !== "") return;
-  const suggestion = suggestOutputForTab(activeInputPath(), tab);
-  if (suggestion) outEl.value = suggestion;
+  const tmpl = nameTemplate();
+  const suggestion = tmpl
+    ? templatedOutputForTab(activeInputPath(), tab, tmpl, sourceDims, todayStr())
+    : suggestOutputForTab(activeInputPath(), tab);
+  if (suggestion) {
+    outEl.value = suggestion;
+    outEl.dataset.auto = "1";
+  }
 }
+
+// Re-fill the active tab's output from the template once the probe resolves, so
+// dimension tokens ({w}/{h}/{wxh}) — unknown when the input was first set — land.
+// Only touches an empty or still-auto-filled output; never clobbers a user path.
+function maybeRefillTemplatedOutput() {
+  if (!nameTemplate()) return; // the fixed-suffix default doesn't use probed dims
+  const tab = currentTab();
+  const outEl = document.getElementById(tab + "-output");
+  if (!outEl) return;
+  if (outEl.value.trim() === "" || outEl.dataset.auto) {
+    outEl.value = ""; // clear so maybeFillOutput regenerates with dims known
+    maybeFillOutput(tab);
+  }
+}
+
+// Editing an output field by hand clears the auto-fill tag so a later template
+// change won't overwrite the user's path. (Programmatic .value = fires no event.)
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id && /-output$/.test(id)) delete e.target.dataset.auto;
+});
+
+// Live-apply the name template: re-fill the active tab's output when it's empty
+// or still auto-filled, and persist the template across launches.
+document.addEventListener("input", (e) => {
+  if (!e.target || e.target.id !== "output-template") return;
+  const tab = currentTab();
+  const outEl = document.getElementById(tab + "-output");
+  if (outEl && (outEl.value.trim() === "" || outEl.dataset.auto)) {
+    outEl.value = ""; // clear so maybeFillOutput regenerates from the template
+    maybeFillOutput(tab);
+  }
+  saveSettings();
+});
 
 // --- Visual crop selector: drag a rectangle over the source frame (Crop tab) ---
 // The selection lives on the shared source preview; on the Crop tab an overlay
@@ -734,6 +788,7 @@ const STICKY = [
   "gif-fps", "gif-width",
   "image_to_video-seconds", "image_to_video-fps",
   "autocrop-limit",
+  "output-template",
 ];
 
 async function loadSettings() {

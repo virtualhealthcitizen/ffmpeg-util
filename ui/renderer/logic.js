@@ -90,6 +90,60 @@
     return spec.tag ? base + "." + spec.tag + ext : base + ext;
   }
 
+  // Split a path into { dir (incl. trailing separator), name (no extension) }.
+  // Handles both \ and / so it works on Windows and POSIX paths.
+  function splitPath(p) {
+    const s = String(p || "");
+    const idx = Math.max(s.lastIndexOf("/"), s.lastIndexOf("\\"));
+    const dir = idx >= 0 ? s.slice(0, idx + 1) : "";
+    const file = idx >= 0 ? s.slice(idx + 1) : s;
+    const dot = file.lastIndexOf(".");
+    const name = dot > 0 ? file.slice(0, dot) : file;
+    return { dir, name };
+  }
+
+  // Substitute output-name tokens into a template. Known tokens: {name} {op}
+  // {w} {h} {wxh} {date}. Missing values resolve to "" ({wxh} only when both
+  // w and h are present); unknown {tokens} are left literally in place.
+  function applyOutputTemplate(template, ctx) {
+    const c = ctx || {};
+    const has = (v) => v != null && v !== "";
+    const map = {
+      name: has(c.name) ? String(c.name) : "",
+      op: has(c.op) ? String(c.op) : "",
+      w: has(c.w) ? String(c.w) : "",
+      h: has(c.h) ? String(c.h) : "",
+      wxh: has(c.w) && has(c.h) ? String(c.w) + "x" + String(c.h) : "",
+      date: has(c.date) ? String(c.date) : "",
+    };
+    return String(template || "").replace(/\{(\w+)\}/g, (m, key) =>
+      Object.prototype.hasOwnProperty.call(map, key) ? map[key] : m
+    );
+  }
+
+  // Build an output path for a tab from a name template (the opt-in alternative
+  // to suggestOutputForTab's fixed op suffix). Keeps the input's directory and
+  // the op's extension; fills {name}/{op}/{w}/{h}/{wxh}/{date} from the input,
+  // tab, probed dims and date. `dims` may be {w,h} (videoDims) or {width,height}.
+  // Returns "" (caller falls back) without an input or template, or if the
+  // template resolves to an empty filename.
+  function templatedOutputForTab(inputPath, tab, template, dims, dateStr) {
+    const input = String(inputPath || "").trim();
+    const tmpl = String(template || "").trim();
+    if (!input || !tmpl) return "";
+    const { dir, name } = splitPath(input);
+    const spec = OUTPUT_SPECS[tab] || {};
+    const ext = spec.ext || extOf(input) || ".mp4";
+    const w = dims && (dims.width != null ? dims.width : dims.w);
+    const h = dims && (dims.height != null ? dims.height : dims.h);
+    let stem = applyOutputTemplate(tmpl, { name, op: tab, w, h, date: dateStr });
+    // Keep the result a single filename segment: drop path separators + chars
+    // that are illegal in Windows filenames, then tidy whitespace.
+    stem = stem.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ").trim();
+    if (!stem) return "";
+    return dir + stem + ext;
+  }
+
   // Split a textarea/blob of paths into a trimmed, non-empty list.
   function parseLines(text) {
     return String(text)
@@ -933,6 +987,9 @@
     previewKind,
     suggestOutput,
     suggestOutputForTab,
+    applyOutputTemplate,
+    templatedOutputForTab,
+    splitPath,
     OUTPUT_SPECS,
     extOf,
     previewPath,

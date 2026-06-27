@@ -523,6 +523,59 @@ test("suggestOutputForTab falls back for unknown tabs and empty input", () => {
   assert.equal(L.suggestOutputForTab(null, "trim"), "");
 });
 
+test("applyOutputTemplate substitutes known tokens and leaves unknown ones", () => {
+  const ctx = { name: "clip", op: "compress", w: 320, h: 240, date: "2026-06-27" };
+  assert.equal(L.applyOutputTemplate("{name}-{op}", ctx), "clip-compress");
+  assert.equal(L.applyOutputTemplate("{name}_{w}x{h}", ctx), "clip_320x240");
+  assert.equal(L.applyOutputTemplate("{name}.{wxh}", ctx), "clip.320x240");
+  assert.equal(L.applyOutputTemplate("{name}-{date}", ctx), "clip-2026-06-27");
+  // unknown tokens are kept literally
+  assert.equal(L.applyOutputTemplate("{name}-{bogus}", ctx), "clip-{bogus}");
+});
+
+test("applyOutputTemplate resolves missing values to empty (wxh needs both)", () => {
+  assert.equal(L.applyOutputTemplate("{name}{w}", { name: "c" }), "c");
+  assert.equal(L.applyOutputTemplate("a{wxh}b", { name: "c", w: 320 }), "ab");
+  assert.equal(L.applyOutputTemplate("a{wxh}b", { w: 320, h: 240 }), "a320x240b");
+  assert.equal(L.applyOutputTemplate("", { name: "c" }), "");
+});
+
+test("splitPath separates dir and extension-less name for both separators", () => {
+  assert.deepEqual(L.splitPath("C:\\v\\clip.mkv"), { dir: "C:\\v\\", name: "clip" });
+  assert.deepEqual(L.splitPath("/a/b/movie.mov"), { dir: "/a/b/", name: "movie" });
+  assert.deepEqual(L.splitPath("bare.mp4"), { dir: "", name: "bare" });
+  assert.deepEqual(L.splitPath("noext"), { dir: "", name: "noext" });
+});
+
+test("templatedOutputForTab keeps the dir + op extension and fills tokens", () => {
+  const dims = { w: 320, h: 240 }; // videoDims shape
+  assert.equal(
+    L.templatedOutputForTab("C:\\v\\clip.mkv", "compress", "{name}-{op}-{wxh}", dims, "2026-06-27"),
+    "C:\\v\\clip-compress-320x240.mkv"
+  );
+  // type-changing op overrides the extension (gif), and {width,height} shape works
+  assert.equal(
+    L.templatedOutputForTab("/a/movie.mp4", "gif", "{name}_{date}", { width: 640, height: 480 }, "2026-06-27"),
+    "/a/movie_2026-06-27.gif"
+  );
+});
+
+test("templatedOutputForTab strips path separators and reserved chars", () => {
+  // a slash in the resolved stem must not break out of the input dir
+  assert.equal(
+    L.templatedOutputForTab("/a/clip.mp4", "trim", "{name}/sub:?", null, "2026-06-27"),
+    "/a/clipsub.mp4"
+  );
+});
+
+test("templatedOutputForTab returns '' to signal fallback when unusable", () => {
+  assert.equal(L.templatedOutputForTab("", "trim", "{name}", null, "d"), "");
+  assert.equal(L.templatedOutputForTab("a.mp4", "trim", "", null, "d"), "");
+  assert.equal(L.templatedOutputForTab("a.mp4", "trim", "   ", null, "d"), "");
+  // a template that resolves to nothing usable -> "" (caller falls back)
+  assert.equal(L.templatedOutputForTab("a.mp4", "trim", "{w}", null, "d"), "");
+});
+
 test("extOf returns the lowercase extension or empty", () => {
   assert.equal(L.extOf("a.MP4"), ".mp4");
   assert.equal(L.extOf("/x/y.tar.gz"), ".gz");

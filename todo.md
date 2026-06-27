@@ -146,7 +146,8 @@ Packaging / tests:
       the sidecar TestClient. Unit tests for the pure `parse_cropdetect` parser.
 - [ ] Scene-change thumbnails (`select='gt(scene,…)'`)
 - [ ] Trim multiple segments and join them in one go
-- [ ] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`)
+- [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
+      "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)
 - [ ] Estimate output size before encoding (compress preview)
 - [ ] GIF tuning: dithering mode + loop count
@@ -356,7 +357,17 @@ Direct manipulation on the embedded source player (it's already there):
 Workflow / re-use:
 - [ ] Recent files dropdown on inputs + remembered last-used input directory.
 - [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
-- [ ] Output filename templating with tokens ({name}, {op}, {w}x{h}, {date}).
+- [x] **Output filename templating with tokens** ({name}, {op}, {w}, {h}, {wxh},
+      {date}) — a global "Name template" box fills the auto-suggested output
+      filename from the input + op + probed dims + date. Pure `applyOutputTemplate`/
+      `templatedOutputForTab`/`splitPath` in `logic.js` (keeps the input dir + op
+      extension, strips path separators/reserved chars; "" signals fallback);
+      renderer `maybeFillOutput` prefers the template, re-fills once the probe
+      lands ({w}/{h}), tags auto-fills so a template edit refreshes them but a
+      user-typed path is never clobbered; persisted in `settings.json` (STICKY).
+      Verified: node:test (6 new, 98 total) + headless Electron E2E vs the real
+      sidecar (320×240 clip → compress "clip-compress-320x240.mp4"; user path
+      kept; blank → ".out.mp4" fallback; template persisted).
 - [ ] Toast on completion with inline "Open" / "Reveal in Explorer" actions.
 - [x] **Before/after result summary** — once an op completes, a green readout
       compares the output to the input: size delta with percent (e.g. "774 KB →

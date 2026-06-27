@@ -89,6 +89,14 @@
       <button id="preset-save" class="secondary" title="Save the current fields as a preset">Save</button>
     </div>
 
+    <!-- Output name template: tokens fill the auto-suggested output filename -->
+    <div id="naming" class="naming">
+      <span class="naming-label">Name template</span>
+      <input id="output-template" type="text" placeholder="e.g. {name}-{op}-{wxh}"
+             autocomplete="off" spellcheck="false" />
+      <span class="naming-hint">tokens: {name} {op} {w} {h} {wxh} {date}</span>
+    </div>
+
     <!-- Dimension presets: one-click frame sizes for the active tab's W/H fields -->
     <div id="dim-presets" class="dim-presets hidden"></div>
 
