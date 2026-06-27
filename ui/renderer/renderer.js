@@ -111,6 +111,46 @@ if (themeToggleBtn) {
   });
 }
 
+// --- Collapsible cards: Source and Probe can be folded to reclaim vertical space ---
+// The collapsed state persists in settings.json across launches.
+let sourceBodyCollapsed = false;
+let probeBodyCollapsed = false;
+
+function applySourceCollapse(collapsed) {
+  sourceBodyCollapsed = !!collapsed;
+  const body = $("#source-card-body");
+  const btn = $("#source-collapse");
+  if (body) body.classList.toggle("collapsed", sourceBodyCollapsed);
+  if (btn) {
+    btn.textContent = sourceBodyCollapsed ? "▼" : "▲";
+    btn.title = sourceBodyCollapsed ? "Expand source preview" : "Collapse source preview";
+  }
+}
+
+function applyProbeCollapse(collapsed) {
+  probeBodyCollapsed = !!collapsed;
+  const body = $("#probe-card-body");
+  const btn = $("#probe-collapse");
+  if (body) body.classList.toggle("collapsed", probeBodyCollapsed);
+  if (btn) {
+    btn.textContent = probeBodyCollapsed ? "▼" : "▲";
+    btn.title = probeBodyCollapsed ? "Expand probe output" : "Collapse probe output";
+  }
+}
+
+(function setupCollapsibles() {
+  const sb = $("#source-collapse");
+  if (sb) sb.addEventListener("click", () => {
+    applySourceCollapse(!sourceBodyCollapsed);
+    setSettings({ sourceCollapsed: sourceBodyCollapsed }).catch(() => {});
+  });
+  const pb = $("#probe-collapse");
+  if (pb) pb.addEventListener("click", () => {
+    applyProbeCollapse(!probeBodyCollapsed);
+    setSettings({ probeCollapsed: probeBodyCollapsed }).catch(() => {});
+  });
+})();
+
 // Pinned tools (tab ids) shown in a leading "★ Favorites" row; persisted in
 // settings.json. Populated from settings on load and updated by the star toggles.
 let favoritesData = [];
@@ -1016,6 +1056,8 @@ async function loadSettings() {
   try {
     const s = (await getSettings()) || {};
     applyTheme(s.theme); // restore the saved light/dark choice (defaults to dark)
+    if (s.sourceCollapsed) applySourceCollapse(true);
+    if (s.probeCollapsed) applyProbeCollapse(true);
     for (const id of STICKY) {
       const el = $("#" + id);
       if (el && s[id] != null && s[id] !== "") el.value = s[id];
