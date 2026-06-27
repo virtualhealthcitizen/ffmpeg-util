@@ -129,7 +129,15 @@ Packaging / tests:
       Verified: node:test (3 new, 109 total) + headless Electron E2E vs the real
       sidecar across two launches (load A then B → dropdown [B,A] + persisted; pick A
       → loads into input, moves to front; reorder persisted; restored on relaunch).
-- [ ] Drag-to-reorder the concat list ← next
+- [x] Drag-to-reorder the concat list — a draggable row list mirrors the
+      `#concat-inputs` textarea (the canonical store, untouched); dragging a row
+      reorders the lines and writes them back so every existing reader (run, drop,
+      compat banner) is unchanged. Pure `reorderList` in `logic.js` (immutable,
+      out-of-range-safe); `renderConcatList`/`setupConcatReorder` in renderer.js
+      (HTML5 DnD, delegated handlers, hidden below 2 inputs). Verified: node:test
+      (3 new, 112 total) + headless Electron E2E vs the real sidecar (3 clips →
+      rows a,b,c; drag a→end → textarea+rows reorder to b,c,a; single input hides
+      the list). ← next
 - [x] Light/dark theme toggle — a top-right ☀/☾ button swaps the palette via
       `data-theme="light"` on `<html>`; styles.css gains a `:root[data-theme="light"]`
       override (added `--inset`/`--btn`/`--chip-hover` vars so hardcoded sunken
@@ -139,7 +147,8 @@ Packaging / tests:
       Verified: node:test (3 new, 106 total) + headless Electron E2E vs the real
       sidecar (default dark; toggle → light palette/label/data-theme; persisted +
       restored across two launches; toggle back to dark; real compress still runs).
-- [ ] Drag-to-reorder the concat list
+- [x] Drag-to-reorder the concat list — DONE (see the entry under UI/UX above:
+      `reorderList` in `logic.js`, `renderConcatList` rows in renderer.js).
 - [x] Keyboard shortcuts (run, switch tabs) — Ctrl/Cmd+Enter runs the active tab's
       primary action; Ctrl/Cmd+]/[ (or ./,) cycle the *visible* tabs (search-aware,
       wrap-around). Pure `keyboardAction`/`nextVisibleTab` in `logic.js`; a global
