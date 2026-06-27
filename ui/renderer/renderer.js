@@ -7,7 +7,7 @@ const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previ
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
-  withoutPreset, estimateOutput } = window.FfuLogic;
+  withoutPreset, estimateOutput, friendlyError } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -28,6 +28,28 @@ function setStatus(msg, isErr = false) {
   const el = $("#status");
   el.textContent = msg;
   el.className = "status " + (isErr ? "err" : "ok");
+}
+
+// Show a friendly one-line hint above the raw error text for recognized ffmpeg
+// failures; hide it for unrecognized errors (and clear it on the next run).
+function showErrorHint(rawMessage) {
+  const el = $("#error-hint");
+  if (!el) return;
+  const hint = friendlyError(rawMessage);
+  if (hint) {
+    el.textContent = hint;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+function clearErrorHint() {
+  const el = $("#error-hint");
+  if (el) {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
 }
 
 // --- Tabs ---
@@ -684,6 +706,7 @@ async function run(label, op, body) {
   setRunButtonsDisabled(true);
   setCancelVisible(true);
   setStatus(label + "…");
+  clearErrorHint();
   showProgress(0);
   hidePreview();
   try {
@@ -727,6 +750,7 @@ async function run(label, op, body) {
     if (abort.signal.aborted) {
       setStatus("Cancelled — operation stopped.");
     } else {
+      showErrorHint(e.message); // friendly one-liner above the raw stderr
       setStatus("Error: " + e.message, true);
     }
   } finally {

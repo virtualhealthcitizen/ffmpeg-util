@@ -454,3 +454,47 @@ test("estimateOutput returns null when not applicable / no duration", () => {
   assert.equal(L.estimateOutput("speed", null, { factor: "2" }), null); // no probed duration
   assert.equal(L.estimateOutput("speed", 10, { factor: "0" }), null); // invalid factor
 });
+
+test("friendlyError maps common ffmpeg failures to a hint", () => {
+  assert.match(
+    L.friendlyError("clip.mp4: No such file or directory"),
+    /path doesn't exist/
+  );
+  assert.match(
+    L.friendlyError("[libx264 @ 0x..] height not divisible by 2 (320x241)"),
+    /even numbers/
+  );
+  assert.match(L.friendlyError("Unknown encoder 'libx265zzz'"), /Unrecognized codec/);
+  assert.match(
+    L.friendlyError("Unable to find a suitable output format for 'out.zzz'"),
+    /output file's extension/
+  );
+  assert.match(L.friendlyError("Permission denied"), /Permission denied/);
+  assert.match(L.friendlyError("moov atom not found"), /moov atom/);
+  assert.match(
+    L.friendlyError("clip.bin: Invalid data found when processing input"),
+    /valid media file/
+  );
+  assert.match(
+    L.friendlyError("Stream map '0:a' matches no streams."),
+    /required stream is missing/
+  );
+  assert.match(L.friendlyError("No space left on device"), /disk is full/);
+});
+
+test("friendlyError prefers the specific cause over the generic fallback", () => {
+  // ffmpeg prints "Conversion failed!" alongside the real cause — the specific
+  // rule must win over the generic last-resort one.
+  const stderr =
+    "[libx264 @ 0x] height not divisible by 2 (101x57)\n" +
+    "Error while filtering\nConversion failed!";
+  assert.match(L.friendlyError(stderr), /even numbers/);
+  // a bare generic failure still gets the soft fallback
+  assert.match(L.friendlyError("Conversion failed!"), /couldn't complete/);
+});
+
+test("friendlyError returns null for unrecognized / empty text", () => {
+  assert.equal(L.friendlyError("some totally novel ffmpeg gripe"), null);
+  assert.equal(L.friendlyError(""), null);
+  assert.equal(L.friendlyError(null), null);
+});

@@ -504,10 +504,53 @@
     return `~${formatDuration(out)}`;
   }
 
+  // --- Friendly error hints: map common ffmpeg stderr to a one-line explanation ---
+
+  // Ordered [pattern, hint] rules; the first whose regex matches the raw error
+  // text wins, so put specific causes before generic ones ("Conversion failed!"
+  // is printed alongside the real cause, so it stays last as a soft fallback).
+  const ERROR_HINTS = [
+    [/no such file or directory|cannot find the (file|path)/i,
+      "A path doesn't exist — check the input file path and that the output folder exists."],
+    [/permission denied|access is denied/i,
+      "Permission denied — the file may be read-only or open in another program."],
+    [/not divisible by 2/i,
+      "Width and height must be even numbers for this codec — round them to even values."],
+    [/unknown encoder|encoder.*not found|unknown decoder|automatic encoder selection failed/i,
+      "Unrecognized codec — check the video/audio codec name."],
+    [/unable to find a suitable output format|requested output format.*is not|invalid argument.*output|unknown.*format/i,
+      "Unrecognized output format — check the output file's extension."],
+    [/moov atom not found/i,
+      "This MP4 is incomplete or corrupt (its 'moov atom' is missing)."],
+    [/invalid data found when processing input/i,
+      "The input doesn't look like a valid media file (it may be corrupt or the wrong type)."],
+    [/matches no streams|does not contain any stream|stream specifier.*matches no/i,
+      "A required stream is missing — the input may have no audio (or no video) for this operation."],
+    [/output file (is empty|#0 does not contain)|nothing was encoded/i,
+      "Nothing was encoded — check the trim range or filter settings."],
+    [/no space left on device/i,
+      "The disk is full — free up space or pick another output folder."],
+    [/conversion failed/i,
+      "ffmpeg couldn't complete the operation — see the details below."],
+  ];
+
+  // Map raw ffmpeg/ffprobe error text to a short, human-friendly hint, or null
+  // when nothing recognizable matched (the caller then shows just the raw text).
+  // Pure & order-defined.
+  function friendlyError(text) {
+    const s = String(text || "");
+    for (const [re, hint] of ERROR_HINTS) {
+      if (re.test(s)) return hint;
+    }
+    return null;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,
+    ERROR_HINTS,
+    friendlyError,
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,
