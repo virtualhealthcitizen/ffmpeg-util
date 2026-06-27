@@ -386,6 +386,13 @@ def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "hue=s=0", output_path]
 
 
+def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to boomerang a clip: play it forward then reversed (video only),
+    so the output runs about twice the input duration."""
+    fc = "[0:v]split[a][b];[b]reverse[r];[a][r]concat=n=2:v=1[v]"
+    return ["-i", input_path, "-filter_complex", fc, "-map", "[v]", "-an", output_path]
+
+
 def build_fade_args(
     input_path: str, output_path: str, fade_s: float, total_s: float, *, audio: bool = True
 ) -> list[str]:

@@ -285,6 +285,19 @@ def test_volume_attenuates_by_gain(client, media, auth):
     assert abs((before - 6.0) - after) < 1.5, f"before={before} after={after}"
 
 
+def test_boomerang_doubles_duration(client, media, auth):
+    d, src = media
+    out = d / "boomerang.mp4"
+    r = client.post(
+        "/boomerang",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists()
+    assert abs(_duration(out) - 2 * _duration(src)) < 0.4
+
+
 def test_reverse_preserves_duration(client, media, auth):
     d, src = media
     out = d / "reversed.mp4"

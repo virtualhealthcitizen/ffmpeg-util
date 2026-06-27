@@ -160,7 +160,9 @@ Packaging / tests:
       sidecar (`/loop` + `/run/stream`), Loop tab. Verified E2E: count=3 -> ~3x duration.
 
 ### More ideas (round 4)
-- [ ] Boomerang (play forward then reversed — duration doubles)
+- [x] Boomerang (play forward then reversed — duration doubles) — core
+      `build_boomerang_args`, CLI `boomerang`, sidecar (`/boomerang` + `/run/stream`),
+      Boomerang tab. Verified E2E: output duration ~= 2x input.
 - [ ] Brightness / contrast / saturation adjust (`eq` filter)
 - [ ] Invert colors (`negate`) / sepia tone
 - [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
