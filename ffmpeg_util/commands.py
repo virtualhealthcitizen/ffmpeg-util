@@ -368,6 +368,42 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_fade_args(
+    input_path: str, output_path: str, fade_s: float, total_s: float, *, audio: bool = True
+) -> list[str]:
+    """Build args for a ``fade_s``-second fade in (from black) and fade out (to
+    black) at the start and end of a ``total_s``-long clip; audio fades too."""
+    if fade_s <= 0:
+        raise ValueError("fade duration must be > 0")
+    if total_s <= 0:
+        raise ValueError("total duration must be > 0")
+    out_start = max(0.0, total_s - fade_s)
+    vf = f"fade=t=in:st=0:d={fade_s},fade=t=out:st={out_start:.3f}:d={fade_s}"
+    if audio:
+        af = f"afade=t=in:st=0:d={fade_s},afade=t=out:st={out_start:.3f}:d={fade_s}"
+        return ["-i", input_path, "-vf", vf, "-af", af, output_path]
+    return ["-i", input_path, "-vf", vf, output_path]
+
+
+def fade(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    fade_s: float,
+    *,
+    total_s: float | None = None,
+    audio: bool | None = None,
+) -> None:
+    """Apply a fade in/out, probing duration and audio presence when not given."""
+    if total_s is None:
+        total_s = probe_duration(runner, input_path)
+    if not total_s:
+        raise ValueError("could not determine input duration for fade")
+    if audio is None:
+        audio = has_audio(runner, input_path)
+    runner.run_ffmpeg(build_fade_args(input_path, output_path, fade_s, total_s, audio=audio))
+
+
 def build_volume_args(input_path: str, output_path: str, gain_db: float) -> list[str]:
     """Build args to adjust audio loudness by ``gain_db`` decibels (video copied)."""
     return ["-i", input_path, "-c:v", "copy", "-af", f"volume={gain_db}dB", output_path]

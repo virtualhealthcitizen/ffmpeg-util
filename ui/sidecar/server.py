@@ -162,6 +162,23 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class FadeReq(BaseModel):
+    input: str
+    output: str
+    duration: float = 1.0
+    overwrite: bool = True
+
+
+@app.post("/fade")
+def fade(req: FadeReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.fade(runner, req.input, req.output, req.duration)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class VolumeReq(BaseModel):
     input: str
     output: str
@@ -427,6 +444,8 @@ class RunReq(BaseModel):
     every: int = 1
     # volume
     gain: float = 0.0
+    # fade (seconds, each end)
+    fade: float = 1.0
     # transform
     transform: str | None = None
     # crop (uses width/height above for the rectangle size)
@@ -531,11 +550,16 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 )
                 yield _sse({"type": "done", "output": req.output})
                 return
-            if req.op in ("speed", "reverse"):
-                # Both need audio detection and don't fit the pure _build_op_args path.
+            if req.op in ("speed", "reverse", "fade"):
+                # These need audio detection (and fade needs duration) and don't fit
+                # the pure _build_op_args path.
                 audio = commands.has_audio(runner, req.input)
                 if req.op == "speed":
                     args = commands.build_speed_args(req.input, req.output, req.factor, audio=audio)
+                elif req.op == "fade":
+                    if not total:
+                        raise ValueError("could not determine input duration for fade")
+                    args = commands.build_fade_args(req.input, req.output, req.fade, total, audio=audio)
                 else:
                     args = commands.build_reverse_args(req.input, req.output, audio=audio)
                 cleanup = None
