@@ -77,7 +77,7 @@ Packaging / tests:
       and Cols/Rows fields on the Thumbnail tab (reuses the image preview).
       Verified E2E: 3x2 grid of 160px tiles -> exactly 480x240.
 - [x] Progress reporting via ffmpeg `-progress` (core `iter_ffmpeg_progress`; used by the UI sidecar)
-- [ ] GitHub Actions CI running pytest on push
+- [x] GitHub Actions CI running pytest on push — `.github/workflows/ci.yml`: python-tests (pytest root + sidecar, with ffmpeg) + node-tests (npm test); verified local pytest 97+65 passed, node:test 118 passed + E2E smoke (sidecar health, 33 tabs, compress output). ← next
 
 ## Feature ideas (ideation backlog)
 
@@ -167,7 +167,7 @@ Packaging / tests:
       1:08→0:11, hidden after completion, output produced).
 
 ### Project / infra
-- [ ] GitHub Actions CI (pytest + node:test); note: not E2E-verifiable locally
+- [x] GitHub Actions CI (pytest + node:test) — DONE (see entry above in Possible v2)
 - [ ] Signed electron-builder installer (needs Windows Developer Mode/admin here)
 - [ ] CLI: read defaults from a config file
 
