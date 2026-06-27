@@ -35,6 +35,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
     refreshInputs(); // show the new tab's input + multi-input compat (if any)
+    setSettings({ activeTab: tab }).catch(() => {}); // remember across launches
   });
 });
 
@@ -378,6 +379,10 @@ async function loadSettings() {
     for (const id of STICKY) {
       const el = $("#" + id);
       if (el && s[id] != null && s[id] !== "") el.value = s[id];
+    }
+    if (s.activeTab) {
+      const tb = document.querySelector('.tabs button[data-tab="' + s.activeTab + '"]');
+      if (tb && !tb.classList.contains("active")) tb.click(); // restore last tab
     }
   } catch (_) {
     // first run / no store yet — ignore
