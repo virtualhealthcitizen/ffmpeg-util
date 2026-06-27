@@ -175,6 +175,18 @@ Packaging / tests:
 - [ ] Replace the audio track with an external audio file
 - [ ] Set / clear metadata title
 
+### More ideas (round 5)
+- [ ] Change frame rate without changing speed (`fps` filter)
+- [ ] Downmix audio to mono / pick a single channel
+- [ ] Trim silence from the ends (`silenceremove`)
+- [ ] Blur or pixelate a region
+- [ ] Crossfade-concatenate two clips (`xfade`)
+- [ ] Timestamp / timecode overlay (`drawtext`)
+- [ ] Blurred-fill pad (blurred background instead of black bars)
+- [ ] Stabilize shaky video (`vidstab`, two-pass)
+- [ ] Convert to a specific pixel format / 10-bit
+- [ ] Generate a waveform PNG from audio (`showwavespic`)
+
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
 - [x] `pyproject.toml` with console entry point `ffmpeg-util`
