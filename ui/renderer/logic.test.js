@@ -163,6 +163,78 @@ test("TOOL_ALIASES covers tabs and is searchable via filterTools", () => {
   assert.deepEqual(L.filterTools("backwards", tools), ["reverse"]);
 });
 
+test("formatBytes scales to KB/MB/GB", () => {
+  assert.equal(L.formatBytes(0), "0 B");
+  assert.equal(L.formatBytes(512), "512 B");
+  assert.equal(L.formatBytes(1536), "1.5 KB");
+  assert.equal(L.formatBytes(5 * 1024 * 1024), "5.0 MB");
+  assert.equal(L.formatBytes(1024 * 1024 * 1024), "1.0 GB");
+  assert.equal(L.formatBytes("2048"), "2.0 KB"); // numeric strings (ffprobe)
+  assert.equal(L.formatBytes("nope"), null);
+});
+
+test("formatDuration renders M:SS and H:MM:SS", () => {
+  assert.equal(L.formatDuration(5), "0:05");
+  assert.equal(L.formatDuration(65), "1:05");
+  assert.equal(L.formatDuration(3661), "1:01:01");
+  assert.equal(L.formatDuration("12.5"), "0:13");
+  assert.equal(L.formatDuration(null), null);
+});
+
+test("parseFrameRate handles ratios and plain numbers", () => {
+  assert.equal(L.parseFrameRate("30/1"), 30);
+  assert.equal(Math.round(L.parseFrameRate("30000/1001") * 100) / 100, 29.97);
+  assert.equal(L.parseFrameRate("25"), 25);
+  assert.equal(L.parseFrameRate("0/0"), null);
+  assert.equal(L.parseFrameRate(null), null);
+});
+
+test("channelLabel names mono/stereo/N ch", () => {
+  assert.equal(L.channelLabel(1), "mono");
+  assert.equal(L.channelLabel(2), "stereo");
+  assert.equal(L.channelLabel(6), "6 ch");
+  assert.equal(L.channelLabel(0), null);
+});
+
+test("summarizeProbe builds ordered chips from ffprobe JSON", () => {
+  const data = {
+    format: { duration: "65", size: "5242880" },
+    streams: [
+      { codec_type: "video", codec_name: "h264", width: 1920, height: 1080, avg_frame_rate: "30/1" },
+      { codec_type: "audio", codec_name: "aac", channels: 2, sample_rate: "48000" },
+    ],
+  };
+  assert.deepEqual(L.summarizeProbe(data), [
+    { label: "Duration", value: "1:05" },
+    { label: "Size", value: "1920×1080" },
+    { label: "FPS", value: "30 fps" },
+    { label: "Video", value: "h264" },
+    { label: "Audio", value: "aac" },
+    { label: "Channels", value: "stereo" },
+    { label: "Rate", value: "48 kHz" },
+    { label: "File", value: "5.0 MB" },
+  ]);
+});
+
+test("summarizeProbe skips missing facts (audio-only, no size)", () => {
+  const data = {
+    format: { duration: "12" },
+    streams: [{ codec_type: "audio", codec_name: "mp3", channels: 1, sample_rate: "44100" }],
+  };
+  assert.deepEqual(L.summarizeProbe(data), [
+    { label: "Duration", value: "0:12" },
+    { label: "Audio", value: "mp3" },
+    { label: "Channels", value: "mono" },
+    { label: "Rate", value: "44.1 kHz" },
+  ]);
+});
+
+test("summarizeProbe tolerates empty/garbage input", () => {
+  assert.deepEqual(L.summarizeProbe(null), []);
+  assert.deepEqual(L.summarizeProbe({}), []);
+  assert.deepEqual(L.summarizeProbe({ streams: "nope" }), []);
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

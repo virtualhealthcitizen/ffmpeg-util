@@ -3,7 +3,7 @@
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
   window.sidecar;
 const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
-  filterTools, TOOL_ALIASES } = window.FfuLogic;
+  filterTools, TOOL_ALIASES, summarizeProbe } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -32,6 +32,7 @@ document.querySelectorAll(".tabs button").forEach((btn) => {
     const tab = btn.dataset.tab;
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab));
+    refreshSource(); // show the new tab's input (if any)
   });
 });
 
@@ -86,6 +87,108 @@ function currentTab() {
   });
 })();
 
+// --- Source card: auto-preview + friendly probe summary for the active input ---
+// The primary input path for the current tab (concat/stacks read their first slot).
+function activeInputPath() {
+  const tab = currentTab();
+  if (tab === "concat") return parseLines($("#concat-inputs").value)[0] || "";
+  if (tab === "hstack" || tab === "vstack") return val(tab + "-input-a");
+  const el = $("#" + tab + "-input");
+  return el ? el.value.trim() : "";
+}
+
+let sourceUrl = null;
+let lastSourcePath = null;
+
+function hideSource() {
+  lastSourcePath = null;
+  $("#source").classList.add("hidden");
+  const img = $("#source-img");
+  const vid = $("#source-video");
+  vid.pause();
+  img.classList.add("hidden");
+  vid.classList.add("hidden");
+  img.removeAttribute("src");
+  vid.removeAttribute("src");
+  if (sourceUrl) {
+    URL.revokeObjectURL(sourceUrl);
+    sourceUrl = null;
+  }
+}
+
+async function showSourceMedia(path) {
+  const { kind } = previewKind(path); // input is a real file, no %d to resolve
+  const img = $("#source-img");
+  const vid = $("#source-video");
+  if (!kind) {
+    img.classList.add("hidden");
+    vid.classList.add("hidden");
+    return;
+  }
+  try {
+    const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(path), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    sourceUrl = URL.createObjectURL(blob);
+    if (kind === "image") {
+      img.src = sourceUrl;
+      img.classList.remove("hidden");
+      vid.classList.add("hidden");
+    } else {
+      vid.src = sourceUrl;
+      vid.classList.remove("hidden");
+      img.classList.add("hidden");
+    }
+  } catch (_) {
+    /* preview is best-effort */
+  }
+}
+
+function renderChips(chips) {
+  const box = $("#source-chips");
+  box.textContent = "";
+  if (!chips.length) {
+    const msg = document.createElement("span");
+    msg.className = "chips-msg";
+    msg.textContent = "Couldn't read media info for this file.";
+    box.appendChild(msg);
+    return;
+  }
+  for (const { label, value } of chips) {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    const l = document.createElement("span");
+    l.className = "chip-label";
+    l.textContent = label;
+    const v = document.createElement("span");
+    v.className = "chip-value";
+    v.textContent = value;
+    chip.append(l, v);
+    box.appendChild(chip);
+  }
+}
+
+async function refreshSource() {
+  const path = activeInputPath();
+  if (!path) return hideSource();
+  if (path === lastSourcePath) return; // already shown
+  lastSourcePath = path;
+  $("#source").classList.remove("hidden");
+  renderChips([]); // clear stale chips while loading
+  showSourceMedia(path);
+  try {
+    const { result } = await api("/probe", { input: path, as_json: true });
+    if (path !== lastSourcePath) return; // a newer input superseded this one
+    const data = typeof result === "string" ? JSON.parse(result) : result;
+    renderChips(summarizeProbe(data));
+  } catch (_) {
+    renderChips([]); // shows the soft "couldn't read" message
+  }
+}
+
 // --- Drag & drop: drop files anywhere to load them into the active tab ---
 (function setupDragDrop() {
   const body = document.body;
@@ -106,6 +209,7 @@ function currentTab() {
     if (upd) {
       $("#" + upd.id).value = upd.value;
       setStatus(`Loaded ${paths.length} file(s) into the ${currentTab()} tab.`);
+      refreshSource();
     }
   });
 })();
@@ -121,7 +225,17 @@ document.querySelectorAll(".pick-file").forEach((btn) => {
     } else {
       $("#" + btn.dataset.target).value = p;
     }
+    refreshSource();
   });
+});
+
+// Typed/edited input paths refresh the source card on commit (blur/Enter).
+document.addEventListener("change", (e) => {
+  const id = e.target && e.target.id;
+  if (!id) return;
+  if (id.endsWith("-input") || id.endsWith("-input-a") || id === "concat-inputs") {
+    refreshSource();
+  }
 });
 
 document.querySelectorAll(".pick-save").forEach((btn) => {

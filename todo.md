@@ -226,9 +226,13 @@ Direct-manipulation (visual instead of typed numbers):
 - [ ] Before/after compare slider on the output preview (drag a divider over input↔output).
 
 Input affordances (kill the typed-number friction — this is what bit "Blur pad"):
-- [ ] **Auto source-preview + friendly probe card** — on file select/drop, auto-show
-      the input thumbnail/player plus a readable summary (duration · W×H · fps · codecs ·
-      size). Would have shown the Blur-pad user the source dimensions up front.
+- [x] **Auto source-preview + friendly probe card** — on file select/drop/type, the
+      active tab's input auto-shows an inline player/thumbnail plus a chip summary
+      (duration · W×H · fps · codecs · channels · rate · file size). Pure
+      `summarizeProbe`/`formatBytes`/`formatDuration`/`parseFrameRate` in `logic.js`;
+      renderer reuses `/probe?as_json` + `/file`. Verified: node:test (7 new cases,
+      28 total) + headless Electron E2E against the real sidecar (320×240 clip →
+      correct chips + video preview, screenshot).
 - [ ] **Dimension / aspect presets** — clickable chips (16:9, 9:16, 1:1, 720p, 1080p,
       "match source") that fill Width/Height for pad, blur_pad, crop, compress.
 - [ ] Sliders with live readouts for the numeric ops — volume (dB), speed (×),
@@ -249,10 +253,9 @@ Workflow / feedback components:
       remember window size & position.
 
 **Priority for this round (highest first):**
-1. Tool search / command palette — biggest, most universal friction; clean pure logic
-   to unit-test; E2E-screenshottable via `capture.js`. **← burning next.**
-2. Auto source-preview + friendly probe card — broad, every tab benefits.
-3. Dimension / aspect presets — directly fixes the Blur-pad width/height pain.
+1. ~~Tool search / command palette~~ — DONE (round 7).
+2. ~~Auto source-preview + friendly probe card~~ — DONE (round 7).
+3. Dimension / aspect presets — directly fixes the Blur-pad width/height pain. **← next.**
 4. Sliders with live readouts; 5. Visual crop selector; 6. the rest.
 
 - [x] **Tool search / command palette** — filter box above the tabs (pure

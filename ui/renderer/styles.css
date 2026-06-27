@@ -110,6 +110,44 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* Source card: input preview + friendly probe summary, auto-filled per tab. */
+.source.hidden { display: none; }
+.source-body { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.source-media { flex: 0 0 auto; }
+#source-img,
+#source-video {
+  max-width: 280px;
+  max-height: 170px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #1b1c1f;
+  display: block;
+}
+#source-img.hidden,
+#source-video.hidden { display: none; }
+.source-media:empty,
+.source-media.hidden { display: none; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 200px; }
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  background: #1b1c1f;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 64px;
+}
+.chip .chip-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.chip .chip-value { font-size: 13px; color: var(--text); }
+.chips .chips-msg { color: var(--muted); font-size: 12px; align-self: center; }
+
 input[type="text"], input[type="number"], textarea {
   flex: 1;
   padding: 9px 11px;

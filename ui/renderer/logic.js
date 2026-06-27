@@ -141,11 +141,105 @@
       .map((t) => t.tab);
   }
 
+  // --- Source probe summary (turn ffprobe JSON into friendly chips) ---
+
+  // Human-readable byte size: 1536 -> "1.5 KB". Returns null for non-finite.
+  function formatBytes(bytes) {
+    if (bytes == null || bytes === "") return null;
+    const n = Number(bytes);
+    if (!isFinite(n) || n < 0) return null;
+    if (n < 1024) return `${n} B`;
+    const units = ["KB", "MB", "GB", "TB"];
+    let v = n / 1024;
+    let i = 0;
+    while (v >= 1024 && i < units.length - 1) {
+      v /= 1024;
+      i++;
+    }
+    return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[i]}`;
+  }
+
+  // Seconds -> "M:SS" (or "H:MM:SS" past an hour). Returns null if not finite.
+  function formatDuration(seconds) {
+    if (seconds == null || seconds === "") return null;
+    const s = Number(seconds);
+    if (!isFinite(s) || s < 0) return null;
+    const total = Math.round(s);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const sec = total % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+  }
+
+  // Parse an ffprobe frame-rate ("30/1", "30000/1001") into fps, or null.
+  function parseFrameRate(rate) {
+    if (rate == null) return null;
+    const str = String(rate);
+    if (str.includes("/")) {
+      const [num, den] = str.split("/").map(Number);
+      if (!den || !isFinite(num) || !isFinite(den)) return null;
+      return num / den;
+    }
+    const n = Number(str);
+    return isFinite(n) && n > 0 ? n : null;
+  }
+
+  // Round an fps to a tidy label: 29.97, 30, 23.976 -> "29.97", "30", "23.98".
+  function formatFps(fps) {
+    if (fps == null) return null;
+    const rounded = Math.round(fps * 100) / 100;
+    return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(2)} fps`;
+  }
+
+  function channelLabel(channels) {
+    const c = Number(channels);
+    if (!c) return null;
+    if (c === 1) return "mono";
+    if (c === 2) return "stereo";
+    return `${c} ch`;
+  }
+
+  // Summarize parsed ffprobe JSON ({format, streams}) into ordered display chips:
+  // [{ label, value }]. Skips anything missing so the card only shows real facts.
+  function summarizeProbe(data) {
+    const d = data || {};
+    const fmt = d.format || {};
+    const streams = Array.isArray(d.streams) ? d.streams : [];
+    const video = streams.find((s) => s.codec_type === "video");
+    const audio = streams.find((s) => s.codec_type === "audio");
+    const chips = [];
+    const push = (label, value) => {
+      if (value != null && value !== "") chips.push({ label, value: String(value) });
+    };
+
+    push("Duration", formatDuration(fmt.duration));
+    if (video) {
+      if (video.width && video.height) push("Size", `${video.width}×${video.height}`);
+      push("FPS", formatFps(parseFrameRate(video.avg_frame_rate || video.r_frame_rate)));
+      push("Video", video.codec_name);
+    }
+    if (audio) {
+      const sr = Number(audio.sample_rate);
+      push("Audio", audio.codec_name);
+      push("Channels", channelLabel(audio.channels));
+      if (isFinite(sr) && sr > 0) push("Rate", `${Math.round(sr / 100) / 10} kHz`);
+    }
+    push("File", formatBytes(fmt.size));
+    return chips;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,
     filterTools,
+    formatBytes,
+    formatDuration,
+    parseFrameRate,
+    formatFps,
+    channelLabel,
+    summarizeProbe,
     isImagePath,
     isVideoPath,
     previewKind,
