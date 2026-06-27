@@ -244,6 +244,18 @@ def _avg_frame_rate(path):
     return float(num) / float(den)
 
 
+def test_waveform_produces_image_of_size(client, media, auth):
+    d, src = media
+    out = d / "wave.png"
+    r = client.post(
+        "/waveform",
+        json={"input": str(src), "output": str(out), "width": 640, "height": 120, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (640, 120)
+
+
 def test_crop_aspect_produces_target_ratio(client, media, auth):
     d, src = media  # 320x240 (4:3)
     out = d / "wide.mp4"

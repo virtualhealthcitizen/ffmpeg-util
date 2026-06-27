@@ -189,7 +189,7 @@ Packaging / tests:
 - [ ] Blurred-fill pad (blurred background instead of black bars)
 - [ ] Stabilize shaky video (`vidstab`, two-pass)
 - [ ] Convert to a specific pixel format / 10-bit
-- [ ] Generate a waveform PNG from audio (`showwavespic`)
+- [x] Generate a waveform PNG from audio (`showwavespic`) — core `build_waveform_args`, CLI `waveform`, sidecar (`/waveform` + `/run/stream`), Waveform tab. Verified E2E: 640x120 image.
 
 ### More ideas (round 6)
 - [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.

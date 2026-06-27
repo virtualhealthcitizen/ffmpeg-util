@@ -119,6 +119,18 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_waveform_args_build_filter():
+    args = c.build_waveform_args("in.mp4", "wave.png", 800, 120)
+    assert args[args.index("-filter_complex") + 1] == "showwavespic=s=800x120"
+    assert args[args.index("-frames:v") + 1] == "1"
+    assert args[-1] == "wave.png"
+
+
+def test_waveform_args_reject_bad_size():
+    with pytest.raises(ValueError):
+        c.build_waveform_args("in.mp4", "wave.png", 0, 100)
+
+
 def test_parse_aspect():
     assert c.parse_aspect("16:9") == (16, 9)
     assert c.parse_aspect("1:1") == (1, 1)
