@@ -67,15 +67,25 @@ async function createWindow() {
   const started = startSidecar(port);
   const healthy = started && (await waitForHealth(port));
 
+  const saved = settingsStore.load(settingsFile());
   mainWindow = new BrowserWindow({
-    width: 920,
-    height: 760,
+    ...settingsStore.windowOptions(saved),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       additionalArguments: [`--sidecar-port=${port}`, `--sidecar-token=${TOKEN}`],
     },
+  });
+  if (saved.window && saved.window.maximized) mainWindow.maximize();
+
+  // Persist window size/position (and maximized state) across launches. Uses the
+  // un-maximized bounds so restoring from a maximized session keeps a sane size.
+  mainWindow.on("close", () => {
+    const bounds = mainWindow.getNormalBounds();
+    settingsStore.save(settingsFile(), {
+      window: { ...bounds, maximized: mainWindow.isMaximized() },
+    });
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));

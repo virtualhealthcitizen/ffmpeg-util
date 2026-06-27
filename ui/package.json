@@ -5,8 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test renderer/logic.test.js",
-    "pack": "electron-packager . ffmpeg-util --platform=win32 --arch=x64 --out=dist --overwrite --extra-resource=sidecar/dist/ffmpeg-util-sidecar.exe --ignore=\"^/dist($|/)\" --ignore=\"^/sidecar/(build|dist)($|/)\" --ignore=\"^/renderer/logic\\.test\\.js$\"",
+    "test": "node --test renderer/logic.test.js settings.test.js",
+    "pack": "electron-packager . ffmpeg-util --platform=win32 --arch=x64 --out=dist --overwrite --extra-resource=sidecar/dist/ffmpeg-util-sidecar.exe --ignore=\"^/dist($|/)\" --ignore=\"^/sidecar/(build|dist)($|/)\" --ignore=\"^/renderer/logic\\.test\\.js$\" --ignore=\"^/settings\\.test\\.js$\"",
     "dist": "electron-builder --dir"
   },
   "license": "MIT",
@@ -28,7 +28,8 @@
       "settings.js",
       "sidecar-launcher.js",
       "renderer/**/*",
-      "!renderer/logic.test.js"
+      "!renderer/logic.test.js",
+      "!settings.test.js"
     ],
     "extraResources": [
       {

@@ -144,7 +144,8 @@ Packaging / tests:
       sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.
 - [ ] Denoise / sharpen / deinterlace filter presets
 - [ ] System notification (and optional sound) on completion
-- [ ] Remember window size & position across launches
+- [x] Remember window size & position across launches — done (see round 9: window
+      bounds persisted in `settings.json`, restored via `windowOptions`).
 - [ ] A/B compare: input vs output side-by-side preview
 
 ### More ideas (round 3)
@@ -357,7 +358,14 @@ Safety / correctness (latent gaps in the current UI):
       UI reset confirmed).
 
 Persistence / memory:
-- [ ] Remember the active tab + window size/position across launches.
+- [x] Remember the active tab + window size/position across launches — main.js
+      restores `BrowserWindow` bounds (pure `settingsStore.windowOptions`) and saves
+      them (+ maximized) on close; the renderer persists `activeTab` on tab switch
+      and restores it on load. `settings.save` now shallow-merges so the renderer's
+      sticky fields and the window bounds share one `settings.json` without
+      clobbering. Verified: node:test (4 new settings unit tests, 42 total) +
+      headless Electron E2E across two launches (1024×700 @120,90 + Compress tab →
+      both restored).
 - [ ] Recent inputs/outputs per tab; remember the last-used directory for pickers.
 - [ ] Save/load named presets (profiles) per tool.
 
@@ -372,7 +380,7 @@ Help / discoverability:
 
 **Priority for round 9 (highest first):**
 1. ~~Overwrite confirmation + Run-button-disabled-while-running~~ — DONE.
-2. ~~Cancel a running op~~ — DONE. 3. remember tab + window — **← next.** 4. presets; 5. the rest.
+2. ~~Cancel a running op~~ — DONE. 3. ~~remember tab + window~~ — DONE. 4. presets — **← next.** 5. the rest.
 
 ## Done
 - [x] Create package layout (`ffmpeg_util/`, `tests/`)
