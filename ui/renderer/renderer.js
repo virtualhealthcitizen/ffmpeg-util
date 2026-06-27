@@ -7,7 +7,7 @@ const { suggestOutput, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previ
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
-  withoutPreset } = window.FfuLogic;
+  withoutPreset, estimateOutput } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -107,11 +107,14 @@ function activeInputPath() {
 let sourceUrl = null;
 let lastSourcePath = null;
 let sourceDims = null; // {w,h} of the active input's video, for the "Match source" preset
+let lastSourceDuration = null; // probed source duration (s), for the output estimate
 
 function hideSource() {
   lastSourcePath = null;
   sourceDims = null;
   refreshDimPresets(); // drop the "Match source" chip once there's no source
+  lastSourceDuration = null;
+  refreshEstimate();
   $("#source").classList.add("hidden");
   const img = $("#source-img");
   const vid = $("#source-video");
@@ -232,7 +235,7 @@ function renderChips(chips, actions = {}) {
 async function refreshSource() {
   const path = activeInputPath();
   if (!path) return hideSource();
-  if (path === lastSourcePath) return renderSourceActions(); // re-target buttons for this tab
+  if (path === lastSourcePath) { renderSourceActions(); return refreshEstimate(); } // re-target for this tab
   lastSourcePath = path;
   $("#source").classList.remove("hidden");
   renderChips([]); // clear stale chips while loading
@@ -245,10 +248,53 @@ async function refreshSource() {
     renderChips(summarizeProbe(data), sourceFillActions(currentTab(), data));
     sourceDims = videoDims(data); // feeds the "Match source" frame-size preset
     refreshDimPresets();
+    lastSourceDuration = Number((data.format || {}).duration) || null;
+    refreshEstimate();
   } catch (_) {
     renderChips([]); // shows the soft "couldn't read" message
+    sourceDims = null;
+    refreshDimPresets();
+    lastSourceDuration = null;
+    refreshEstimate();
   }
 }
+
+// --- Estimated-output readout (predicted duration/size from current settings) ---
+// The estimate-relevant fields per tab (only tabs whose output is predictable).
+function estimateFields(tab) {
+  const v = (id) => { const el = $("#" + id); return el ? el.value.trim() : ""; };
+  if (tab === "trim") return { start: v("trim-start"), end: v("trim-end"), duration: v("trim-duration") };
+  if (tab === "speed") return { factor: v("speed-factor") };
+  if (tab === "loop") return { count: v("loop-count") };
+  if (tab === "boomerang") return {};
+  if (tab === "compress") return { bitrate: v("compress-bitrate"), target: v("compress-target"), crf: v("compress-crf") };
+  return null;
+}
+
+function refreshEstimate() {
+  const el = $("#estimate");
+  if (!el) return;
+  const fields = estimateFields(currentTab());
+  const text = fields ? estimateOutput(currentTab(), lastSourceDuration, fields) : null;
+  if (!text) {
+    el.classList.add("hidden");
+    return;
+  }
+  el.innerHTML = "Estimated output: ";
+  const b = document.createElement("b");
+  b.textContent = text;
+  el.appendChild(b);
+  el.classList.remove("hidden");
+}
+
+// Live-update the estimate as the user edits the relevant option fields.
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (!id) return;
+  if (/^(trim-(start|end|duration)|speed-factor|loop-count|compress-(bitrate|target|crf))$/.test(id)) {
+    refreshEstimate();
+  }
+});
 
 // --- Multi-input compatibility banner (hstack/vstack/concat) ---
 function multiInputPaths(tab) {

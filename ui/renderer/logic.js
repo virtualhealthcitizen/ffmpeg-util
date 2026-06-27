@@ -435,10 +435,81 @@
     return { ...base, [tab]: t };
   }
 
+  // --- Estimated-output readout: predict output duration/size from settings ---
+
+  // Parse an ffmpeg-style time ("5", "1:05", "00:00:01.500") to seconds, or null.
+  function parseTimeToSeconds(t) {
+    if (t == null || String(t).trim() === "") return null;
+    const parts = String(t).trim().split(":").map(Number);
+    if (parts.some((n) => !isFinite(n) || n < 0)) return null;
+    let secs;
+    if (parts.length === 1) secs = parts[0];
+    else if (parts.length === 2) secs = parts[0] * 60 + parts[1];
+    else if (parts.length === 3) secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    else return null;
+    return secs;
+  }
+
+  // Parse a bitrate ("2M", "500k", "800000", "2.5M") to bits/sec (decimal), or null.
+  function parseBitrateBps(s) {
+    if (s == null) return null;
+    const m = String(s).trim().match(/^([\d.]+)\s*([kKmMgG]?)$/);
+    if (!m) return null;
+    const n = Number(m[1]);
+    if (!isFinite(n) || n <= 0) return null;
+    const mult = { "": 1, k: 1e3, m: 1e6, g: 1e9 }[m[2].toLowerCase()];
+    return n * mult;
+  }
+
+  // Estimate an op's output as a short "~…" string, or null when not predictable.
+  // Duration is exact for length-changing ops (trim/speed/loop/boomerang); size is
+  // shown only for compress when an explicit target-MB or bitrate is given (CRF
+  // size isn't predictable). `inputSeconds` is the probed source duration.
+  function estimateOutput(tab, inputSeconds, fields) {
+    const f = fields || {};
+    const inDur = Number(inputSeconds);
+    const haveDur = isFinite(inDur) && inDur > 0;
+
+    if (tab === "compress") {
+      const target = Number(f.target);
+      if (isFinite(target) && target > 0) return `~${formatBytes(target * 1024 * 1024)}`;
+      const bps = parseBitrateBps(f.bitrate);
+      if (bps && haveDur) return `~${formatBytes((bps * inDur) / 8)}`;
+      return null; // CRF / default → size not predictable
+    }
+
+    if (!haveDur) return null;
+    let out = null;
+    if (tab === "trim") {
+      const start = parseTimeToSeconds(f.start);
+      const end = parseTimeToSeconds(f.end);
+      const dur = parseTimeToSeconds(f.duration);
+      if (dur != null) out = dur;
+      else if (end != null) out = Math.max(0, end - (start || 0));
+      else if (start != null) out = Math.max(0, inDur - start);
+      else out = inDur;
+    } else if (tab === "speed") {
+      const factor = Number(f.factor);
+      if (isFinite(factor) && factor > 0) out = inDur / factor;
+    } else if (tab === "loop") {
+      const count = Number(f.count);
+      if (isFinite(count) && count >= 1) out = inDur * count;
+    } else if (tab === "boomerang") {
+      out = inDur * 2;
+    } else {
+      return null;
+    }
+    if (out == null || !isFinite(out)) return null;
+    return `~${formatDuration(out)}`;
+  }
+
   const api = {
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,
+    parseTimeToSeconds,
+    parseBitrateBps,
+    estimateOutput,
     filterTools,
     DIMENSION_FIELDS,
     FPS_FIELDS,

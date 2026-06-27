@@ -175,6 +175,18 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .compat.ok { color: var(--ok); border-color: rgba(76, 175, 80, 0.4); background: rgba(76, 175, 80, 0.08); }
 .compat.warn { color: #ffc107; border-color: rgba(255, 193, 7, 0.45); background: rgba(255, 193, 7, 0.08); }
 
+/* Estimated-output readout (predicted duration/size from current settings). */
+.estimate {
+  padding: 8px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.estimate.hidden { display: none; }
+.estimate b { color: var(--text); font-weight: 600; }
+
 input[type="text"], input[type="number"], textarea {
   flex: 1;
   padding: 9px 11px;

@@ -414,3 +414,43 @@ test("parseSseBuffer reassembles an event split across chunks", () => {
   assert.equal(r2.events.length, 1);
   assert.equal(r2.events[0].percent, 99);
 });
+
+test("parseTimeToSeconds parses secs / M:SS / H:MM:SS(.ms)", () => {
+  assert.equal(L.parseTimeToSeconds("5"), 5);
+  assert.equal(L.parseTimeToSeconds("1:05"), 65);
+  assert.equal(L.parseTimeToSeconds("00:00:01.500"), 1.5);
+  assert.equal(L.parseTimeToSeconds("1:01:01"), 3661);
+  assert.equal(L.parseTimeToSeconds(""), null);
+  assert.equal(L.parseTimeToSeconds("nope"), null);
+});
+
+test("parseBitrateBps parses k/M/G suffixes (decimal)", () => {
+  assert.equal(L.parseBitrateBps("2M"), 2_000_000);
+  assert.equal(L.parseBitrateBps("500k"), 500_000);
+  assert.equal(L.parseBitrateBps("800000"), 800_000);
+  assert.equal(L.parseBitrateBps("2.5M"), 2_500_000);
+  assert.equal(L.parseBitrateBps(""), null);
+  assert.equal(L.parseBitrateBps("abc"), null);
+});
+
+test("estimateOutput predicts duration for length-changing ops", () => {
+  assert.equal(L.estimateOutput("speed", 10, { factor: "2" }), "~0:05");
+  assert.equal(L.estimateOutput("loop", 10, { count: "3" }), "~0:30");
+  assert.equal(L.estimateOutput("boomerang", 10, {}), "~0:20");
+  assert.equal(L.estimateOutput("trim", 10, { duration: "4" }), "~0:04");
+  assert.equal(L.estimateOutput("trim", 10, { start: "2", end: "8" }), "~0:06");
+  assert.equal(L.estimateOutput("trim", 10, { start: "3" }), "~0:07");
+});
+
+test("estimateOutput predicts compress size only when target/bitrate given", () => {
+  assert.equal(L.estimateOutput("compress", 10, { target: "5" }), "~5.0 MB");
+  assert.equal(L.estimateOutput("compress", 10, { bitrate: "2M" }), "~2.4 MB"); // 2e6*10/8 bytes
+  assert.equal(L.estimateOutput("compress", 10, { crf: "23" }), null); // CRF not predictable
+  assert.equal(L.estimateOutput("compress", 10, {}), null);
+});
+
+test("estimateOutput returns null when not applicable / no duration", () => {
+  assert.equal(L.estimateOutput("convert", 10, {}), null);
+  assert.equal(L.estimateOutput("speed", null, { factor: "2" }), null); // no probed duration
+  assert.equal(L.estimateOutput("speed", 10, { factor: "0" }), null); // invalid factor
+});
