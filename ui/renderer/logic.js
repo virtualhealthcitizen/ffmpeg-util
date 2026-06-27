@@ -813,7 +813,42 @@
     return parts.join(" ");
   }
 
+  // --- Keyboard shortcuts (run the active tab, cycle tabs) ---
+  // Pure mapping from a keydown to an app action, so the renderer just dispatches.
+  // Modifier (Ctrl/Cmd) gates every shortcut so plain typing in fields is untouched:
+  //   Ctrl/Cmd+Enter            → run the active tab's primary action
+  //   Ctrl/Cmd+] or Ctrl+Cmd+. → next tab; Ctrl/Cmd+[ or Ctrl/Cmd+, → previous tab
+  // `event` only needs {key, ctrlKey, metaKey}. Returns null for anything else.
+  function keyboardAction(event) {
+    if (!event || (!event.ctrlKey && !event.metaKey)) return null;
+    switch (event.key) {
+      case "Enter":
+        return { type: "run" };
+      case "]":
+      case ".":
+        return { type: "switch", dir: 1 };
+      case "[":
+      case ",":
+        return { type: "switch", dir: -1 };
+      default:
+        return null;
+    }
+  }
+
+  // Pure neighbor lookup over the *visible* tab ids (search may hide some), wrapping
+  // around. dir is +1 (next) / -1 (previous). Returns null when there are no tabs;
+  // if `current` isn't visible, lands on the first (next) or last (previous) tab.
+  function nextVisibleTab(visibleTabs, current, dir) {
+    if (!visibleTabs || !visibleTabs.length) return null;
+    const i = visibleTabs.indexOf(current);
+    if (i === -1) return dir > 0 ? visibleTabs[0] : visibleTabs[visibleTabs.length - 1];
+    const n = (i + dir + visibleTabs.length) % visibleTabs.length;
+    return visibleTabs[n];
+  }
+
   const api = {
+    keyboardAction,
+    nextVisibleTab,
     IMAGE_EXTS,
     VIDEO_EXTS,
     TOOL_ALIASES,

@@ -122,7 +122,13 @@ Packaging / tests:
 - [ ] Recent files list / remembered last input dir
 - [ ] Light/dark theme toggle
 - [ ] Drag-to-reorder the concat list
-- [ ] Keyboard shortcuts (run, switch tabs)
+- [x] Keyboard shortcuts (run, switch tabs) — Ctrl/Cmd+Enter runs the active tab's
+      primary action; Ctrl/Cmd+]/[ (or ./,) cycle the *visible* tabs (search-aware,
+      wrap-around). Pure `keyboardAction`/`nextVisibleTab` in `logic.js`; a global
+      keydown dispatcher in renderer.js; discoverability hint under the search box.
+      Verified: node:test (5 new, 89 total) + headless Electron E2E vs the real
+      sidecar (Ctrl+] convert→trim, Ctrl+[ back, wrap to last; Ctrl+Enter runs a
+      real compress → output file produced).
 - [ ] Progress ETA estimate (from speed + remaining duration)
 
 ### Project / infra
@@ -367,7 +373,8 @@ Navigation / layout polish (the 30-tab nav is still a wall when search is empty)
 - [ ] Group tabs into labeled categories (carried from round 7) — pairs well with search.
 - [ ] Favorites: pin frequently-used tools to a top row; persist across launches.
 - [ ] Collapse/expand the Source and Probe cards to reclaim vertical space.
-- [ ] Keyboard: Enter runs the active tab's primary action; arrows cycle tabs.
+- [x] Keyboard: run the active tab + cycle tabs — DONE (see "Keyboard shortcuts"
+      under UI/UX above: Ctrl/Cmd+Enter runs, Ctrl/Cmd+]/[ cycle visible tabs).
 
 **Priority for round 8 (highest first):**
 1. ~~Clickable probe chips + "Match source"~~ — DONE.
