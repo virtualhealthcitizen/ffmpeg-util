@@ -119,6 +119,17 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_eq_args_build_filter():
+    args = c.build_eq_args("in.mp4", "out.mp4", brightness=0.3, contrast=1.2, saturation=0.5)
+    vf = args[args.index("-vf") + 1]
+    assert vf == "eq=brightness=0.3:contrast=1.2:saturation=0.5"
+
+
+def test_eq_args_defaults_are_noop():
+    args = c.build_eq_args("in.mp4", "out.mp4")
+    assert args[args.index("-vf") + 1] == "eq=brightness=0.0:contrast=1.0:saturation=1.0"
+
+
 def test_boomerang_args_forward_then_reverse():
     args = c.build_boomerang_args("in.mp4", "out.mp4")
     fc = args[args.index("-filter_complex") + 1]

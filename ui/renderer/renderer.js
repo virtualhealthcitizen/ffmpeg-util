@@ -318,6 +318,21 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-eq").addEventListener("click", () => {
+  if (!requireFields("eq-input", "eq-output")) return;
+  const b = numOrNull("eq-brightness");
+  const c = numOrNull("eq-contrast");
+  const s = numOrNull("eq-saturation");
+  run("Adjusting", "eq", {
+    input: val("eq-input"),
+    output: val("eq-output"),
+    brightness: b != null ? b : 0,
+    contrast: c != null ? c : 1,
+    saturation: s != null ? s : 1,
+    overwrite: true,
+  });
+});
+
 $("#run-boomerang").addEventListener("click", () => {
   if (!requireFields("boomerang-input", "boomerang-output")) return;
   run("Making boomerang", "boomerang", {

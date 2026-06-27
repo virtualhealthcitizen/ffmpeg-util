@@ -166,6 +166,30 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class EqReq(BaseModel):
+    input: str
+    output: str
+    brightness: float = 0.0
+    contrast: float = 1.0
+    saturation: float = 1.0
+    overwrite: bool = True
+
+
+@app.post("/eq")
+def eq(req: EqReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_eq_args(
+            req.input, req.output,
+            brightness=req.brightness, contrast=req.contrast, saturation=req.saturation,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class BoomerangReq(BaseModel):
     input: str
     output: str
@@ -535,6 +559,10 @@ class RunReq(BaseModel):
     fade: float = 1.0
     # transform
     transform: str | None = None
+    # eq (color adjust)
+    brightness: float = 0.0
+    contrast: float = 1.0
+    saturation: float = 1.0
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -549,6 +577,11 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "eq":
+        return commands.build_eq_args(
+            req.input, req.output,
+            brightness=req.brightness, contrast=req.contrast, saturation=req.saturation,
+        ), None
     if op == "loudnorm":
         return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":

@@ -221,6 +221,21 @@ def _first_frame_satavg(path):
     return float(m.group(1)) if m else None
 
 
+def test_eq_brightness_raises_luma(client, media, auth):
+    d, src = media
+    base = _first_frame_yavg(src)
+    out = d / "bright.mp4"
+    r = client.post(
+        "/eq",
+        json={"input": str(src), "output": str(out), "brightness": 0.3, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    brightened = _first_frame_yavg(out)
+    assert base is not None and brightened is not None
+    assert brightened > base + 15, f"base={base} brightened={brightened}"
+
+
 def test_grayscale_removes_saturation(client, media, auth):
     d, src = media
     base = _first_frame_satavg(src)

@@ -68,6 +68,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # eq (color adjust)
+    p = sub.add_parser("eq", help="Adjust brightness / contrast / saturation.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--brightness", type=float, default=0.0, help="-1.0..1.0 (default 0).")
+    p.add_argument("--contrast", type=float, default=1.0, help="0..2+ (default 1).")
+    p.add_argument("--saturation", type=float, default=1.0, help="0..3 (default 1).")
+    _add_global_flags(p)
+
     # boomerang
     p = sub.add_parser("boomerang", help="Play forward then reversed (video only).")
     p.add_argument("input")
@@ -249,6 +258,13 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "eq":
+        runner.run_ffmpeg(commands.build_eq_args(
+            args.input, args.output,
+            brightness=args.brightness, contrast=args.contrast, saturation=args.saturation,
+        ))
         return 0
 
     if args.command == "boomerang":

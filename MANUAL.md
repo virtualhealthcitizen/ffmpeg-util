@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq**.
 
 ---
 
@@ -170,6 +170,12 @@ Plays the clip forward then backward (video only), so it runs ~twice as long.
 ffmpeg-util boomerang in.mp4 boomerang.mp4
 ```
 
+### eq — adjust brightness / contrast / saturation
+Defaults are no-ops (`--brightness 0`, `--contrast 1`, `--saturation 1`).
+```bash
+ffmpeg-util eq in.mp4 out.mp4 --brightness 0.1 --contrast 1.2 --saturation 1.3
+```
+
 ### grayscale — desaturate to black & white
 ```bash
 ffmpeg-util grayscale in.mp4 bw.mp4
@@ -219,7 +225,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

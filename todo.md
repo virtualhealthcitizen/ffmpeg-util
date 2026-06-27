@@ -163,7 +163,8 @@ Packaging / tests:
 - [x] Boomerang (play forward then reversed — duration doubles) — core
       `build_boomerang_args`, CLI `boomerang`, sidecar (`/boomerang` + `/run/stream`),
       Boomerang tab. Verified E2E: output duration ~= 2x input.
-- [ ] Brightness / contrast / saturation adjust (`eq` filter)
+- [x] Brightness / contrast / saturation adjust (`eq` filter) — core `build_eq_args`,
+      CLI `eq`, sidecar (`/eq` + `/run/stream`), Adjust tab. Verified E2E: brightness +0.3 raises YAVG.
 - [ ] Invert colors (`negate`) / sepia tone
 - [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
 - [ ] Deinterlace (`yadif`)
