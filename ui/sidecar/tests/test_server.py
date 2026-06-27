@@ -11,6 +11,15 @@ def _sse_events(text: str) -> list:
     ]
 
 
+def test_expected_output_duration():
+    import server
+    assert server._expected_output_duration("convert", 10) == 10
+    assert server._expected_output_duration("speed", 10, factor=2) == 5
+    assert server._expected_output_duration("loop", 10, count=3) == 30
+    assert server._expected_output_duration("boomerang", 10) == 20
+    assert server._expected_output_duration("convert", None) is None
+
+
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
