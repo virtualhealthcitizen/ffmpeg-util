@@ -1056,3 +1056,37 @@ test("recentDir returns the most-recent entry's directory without a trailing sep
   assert.equal(L.recentDir([]), "");
   assert.equal(L.recentDir(["noslash.mp4"]), "");
 });
+
+test("parseSpeed reads ffmpeg's speed field, rejecting junk", () => {
+  assert.equal(L.parseSpeed("1.05x"), 1.05);
+  assert.equal(L.parseSpeed("0.5x"), 0.5);
+  assert.equal(L.parseSpeed("2x"), 2);
+  assert.equal(L.parseSpeed("  1.5 x "), 1.5);
+  assert.equal(L.parseSpeed("N/A"), null);
+  assert.equal(L.parseSpeed("0x"), null);
+  assert.equal(L.parseSpeed(null), null);
+  assert.equal(L.parseSpeed(undefined), null);
+});
+
+test("etaSeconds = remaining output seconds / speed", () => {
+  // 10s output, at 2s in, encoding 2x -> (10-2)/2 = 4s remaining
+  assert.equal(L.etaSeconds({ total: 10, out_time: 2, speed: "2x" }), 4);
+  // half-speed doubles the wait
+  assert.equal(L.etaSeconds({ total: 10, out_time: 0, speed: "0.5x" }), 20);
+  // at/over the end clamps remaining to 0
+  assert.equal(L.etaSeconds({ total: 10, out_time: 12, speed: "1x" }), 0);
+});
+
+test("etaSeconds returns null until inputs are usable", () => {
+  assert.equal(L.etaSeconds(null), null);
+  assert.equal(L.etaSeconds({ total: null, out_time: 1, speed: "1x" }), null);
+  assert.equal(L.etaSeconds({ total: 0, out_time: 0, speed: "1x" }), null);
+  assert.equal(L.etaSeconds({ total: 10, out_time: 1, speed: "N/A" }), null);
+  assert.equal(L.etaSeconds({ total: 10, out_time: 1 }), null); // no speed
+});
+
+test("etaLabel formats the remaining time, or null when not predictable", () => {
+  assert.equal(L.etaLabel({ total: 100, out_time: 10, speed: "1x" }), "ETA ~1:30");
+  assert.equal(L.etaLabel({ total: 10, out_time: 2, speed: "2x" }), "ETA ~0:04");
+  assert.equal(L.etaLabel({ total: 10, out_time: 1, speed: "N/A" }), null);
+});

@@ -156,7 +156,15 @@ Packaging / tests:
       Verified: node:test (5 new, 89 total) + headless Electron E2E vs the real
       sidecar (Ctrl+] convert→trim, Ctrl+[ back, wrap to last; Ctrl+Enter runs a
       real compress → output file produced).
-- [ ] Progress ETA estimate (from speed + remaining duration)
+- [x] **Progress ETA estimate (from speed + remaining duration)** — the sidecar
+      progress event now also carries `out_time` (output position) + `total`
+      (expected output duration); a live "ETA ~m:ss" readout under the progress bar
+      counts down during a run. Pure `parseSpeed`/`etaSeconds`/`etaLabel` in
+      `logic.js` (ETA = remaining output secs ÷ encode speed); `#eta` rendered/
+      cleared by the renderer. Verified: node:test (4 new, 118 total) + sidecar
+      pytest (progress events expose out_time/total) + headless Electron E2E vs the
+      real sidecar (heavy 1080p compress → 107 ETA samples counting down
+      1:08→0:11, hidden after completion, output produced).
 
 ### Project / infra
 - [ ] GitHub Actions CI (pytest + node:test); note: not E2E-verifiable locally

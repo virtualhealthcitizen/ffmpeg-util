@@ -793,6 +793,39 @@
     return `~${formatDuration(out)}`;
   }
 
+  // --- Live ETA: remaining time for an in-flight op from a progress event ---
+
+  // Parse ffmpeg's `speed` field ("1.05x", "0.5x", "N/A") into a positive number
+  // (output seconds encoded per wall-clock second), or null when unusable.
+  function parseSpeed(speed) {
+    if (speed == null) return null;
+    const m = String(speed).match(/([\d.]+)\s*x?/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return isFinite(n) && n > 0 ? n : null;
+  }
+
+  // Estimate remaining seconds for an in-flight op from a `/run/stream` progress
+  // event ({speed, out_time, total}). ETA = remaining output seconds / speed.
+  // Returns null until the inputs are usable (no total, no speed, or 0×).
+  function etaSeconds(ev) {
+    if (!ev) return null;
+    const speed = parseSpeed(ev.speed);
+    const total = Number(ev.total);
+    const out = Number(ev.out_time);
+    if (!speed || !isFinite(total) || total <= 0) return null;
+    if (!isFinite(out) || out < 0) return null;
+    const remaining = Math.max(0, total - out);
+    return remaining / speed;
+  }
+
+  // "ETA ~0:42" label for a progress event, or null when not yet predictable.
+  function etaLabel(ev) {
+    const secs = etaSeconds(ev);
+    if (secs == null) return null;
+    return `ETA ~${formatDuration(secs)}`;
+  }
+
   // --- Visual crop selector: drag a rectangle over the source frame ---
 
   // Clamp a point {x,y} to the [0,w]×[0,h] box (displayed-pixel coords). Pure.
@@ -1117,6 +1150,9 @@
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,
+    parseSpeed,
+    etaSeconds,
+    etaLabel,
     EVEN_DIM_TABS,
     oddDimensionWarning,
     filterTools,
