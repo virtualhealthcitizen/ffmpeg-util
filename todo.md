@@ -140,7 +140,9 @@ Packaging / tests:
       (`/mute` + `/run/stream`), Mute tab. Verified E2E: output has 0 audio streams.
 - [x] Reverse a clip (video + audio) — core `reverse_media`/`build_reverse_args`, CLI `reverse`,
       sidecar (`/reverse` + `/run/stream`), Reverse tab. Verified E2E: output duration preserved.
-- [ ] Fade in/out (video fade + audio afade)
+- [x] Fade in/out (video fade + audio afade) — core `build_fade_args`/`fade`,
+      CLI `fade --duration`, sidecar (`/fade` + `/run/stream`), Fade tab.
+      Verified E2E: fade-in makes the first frame near-black (YAVG drops).
 - [x] Extract every Nth frame as images — core `build_extract_frames_args`, CLI `frames`,
       sidecar (`/frames` + `/run/stream`), Frames tab. Verified E2E: 90 frames, every 30 -> 3 files.
 - [x] Pad / letterbox to a target frame — core `build_pad_args` (scale-to-fit +

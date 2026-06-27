@@ -309,6 +309,16 @@ $("#run-thumbnail").addEventListener("click", () => {
   });
 });
 
+$("#run-fade").addEventListener("click", () => {
+  if (!requireFields("fade-input", "fade-output", "fade-duration")) return;
+  run("Fading", "fade", {
+    input: val("fade-input"),
+    output: val("fade-output"),
+    fade: numOrNull("fade-duration"),
+    overwrite: true,
+  });
+});
+
 $("#run-volume").addEventListener("click", () => {
   if (!requireFields("volume-input", "volume-output", "volume-gain")) return;
   run("Adjusting volume", "volume", {

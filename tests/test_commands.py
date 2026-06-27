@@ -119,6 +119,24 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_fade_args_with_audio():
+    args = c.build_fade_args("in.mp4", "out.mp4", 1.0, 5.0, audio=True)
+    vf = args[args.index("-vf") + 1]
+    assert "fade=t=in:st=0:d=1.0" in vf
+    assert "fade=t=out:st=4.000:d=1.0" in vf
+    af = args[args.index("-af") + 1]
+    assert "afade=t=in" in af and "afade=t=out" in af
+
+
+def test_fade_args_without_audio_and_validation():
+    args = c.build_fade_args("in.mp4", "out.mp4", 1.0, 5.0, audio=False)
+    assert "-af" not in args
+    with pytest.raises(ValueError):
+        c.build_fade_args("in.mp4", "out.mp4", 0, 5.0)
+    with pytest.raises(ValueError):
+        c.build_fade_args("in.mp4", "out.mp4", 1.0, 0)
+
+
 def test_volume_args_build_filter():
     args = c.build_volume_args("in.mp4", "out.mp4", -6.0)
     assert args[args.index("-af") + 1] == "volume=-6.0dB"

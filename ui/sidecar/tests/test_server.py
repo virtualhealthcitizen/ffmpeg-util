@@ -184,6 +184,37 @@ def _mean_volume(path):
     return float(m.group(1))
 
 
+def _first_frame_yavg(path):
+    import re
+    import subprocess
+    from conftest import FFMPEG
+    out = subprocess.run(
+        [FFMPEG, "-hide_banner", "-i", str(path),
+         "-vf", r"select=eq(n\,0),signalstats,metadata=print",
+         "-frames:v", "1", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    m = re.search(r"lavfi\.signalstats\.YAVG=([\d.]+)", out.stdout + out.stderr)
+    return float(m.group(1)) if m else None
+
+
+def test_fade_makes_first_frame_dark(client, media, auth):
+    d, src = media
+    base = _first_frame_yavg(src)
+    out = d / "faded.mp4"
+    r = client.post(
+        "/fade",
+        json={"input": str(src), "output": str(out), "duration": 1.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    faded = _first_frame_yavg(out)
+    assert base is not None and faded is not None, f"base={base} faded={faded}"
+    # Fade-in => the first frame is (near) black, far darker than the source's.
+    assert faded < base - 20, f"base={base} faded={faded}"
+    assert faded < 40, f"faded first-frame YAVG should be dark, got {faded}"
+
+
 def test_volume_attenuates_by_gain(client, media, auth):
     d, src = media
     out = d / "quieter.mp4"

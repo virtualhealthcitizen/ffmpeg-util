@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # fade
+    p = sub.add_parser("fade", help="Fade in from / out to black (video + audio).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--duration", type=float, default=1.0, help="Fade length in seconds (each end).")
+    _add_global_flags(p)
+
     # volume
     p = sub.add_parser("volume", help="Adjust audio loudness by a dB gain.")
     p.add_argument("input")
@@ -216,6 +223,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "fade":
+        commands.fade(runner, args.input, args.output, args.duration)
         return 0
 
     if args.command == "volume":
