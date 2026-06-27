@@ -195,6 +195,18 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .compat.ok { color: var(--ok); border-color: rgba(76, 175, 80, 0.4); background: rgba(76, 175, 80, 0.08); }
 .compat.warn { color: #ffc107; border-color: rgba(255, 193, 7, 0.45); background: rgba(255, 193, 7, 0.08); }
 
+/* Even-dimension warning: odd W/H will fail the x264 encode (compress/crop/pad/blur_pad). */
+.dim-warn {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.08);
+  margin-bottom: 16px;
+}
+.dim-warn.hidden { display: none; }
+
 /* Estimated-output readout (predicted duration/size from current settings). */
 .estimate {
   padding: 8px 14px;

@@ -680,6 +680,39 @@
     return null;
   }
 
+  // --- Even-dimension guard: warn before an odd width/height fails the encode ---
+
+  // Tabs whose output is re-encoded to H.264 (yuv420p), where a typed odd width or
+  // height makes ffmpeg fail with "height/width not divisible by 2". They reuse the
+  // DIMENSION_FIELDS field ids. PNG-output tabs (waveform/thumbnail) and palette
+  // GIF tolerate odd sizes, so they're deliberately excluded.
+  const EVEN_DIM_TABS = ["compress", "crop", "pad", "blur_pad"];
+
+  // Inspect the active tab's width/height fields and warn when either is a
+  // positive odd integer (x264 needs even dims). `fields` maps field id -> raw
+  // string value. Returns a one-line warning naming the offending field(s) and
+  // the nearest even value, or null when the tab isn't size-sensitive or both
+  // dims are even / blank / non-integer (those don't reliably fail the encode).
+  function oddDimensionWarning(tab, fields) {
+    if (!EVEN_DIM_TABS.includes(tab)) return null;
+    const dim = DIMENSION_FIELDS[tab];
+    if (!dim) return null;
+    const f = fields || {};
+    const offenders = [];
+    for (const [key, label] of [["w", "width"], ["h", "height"]]) {
+      const id = dim[key];
+      if (!id) continue;
+      const raw = f[id];
+      if (raw == null || String(raw).trim() === "") continue;
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n <= 0) continue; // ignore blanks / non-integers
+      if (n % 2 !== 0) offenders.push(`${label} ${n} → ${n + 1}`);
+    }
+    if (!offenders.length) return null;
+    const noun = offenders.length > 1 ? "dimensions" : "dimension";
+    return `Odd ${noun} — most video codecs need even numbers. Round ${offenders.join(" and ")}.`;
+  }
+
   // --- Result summary: before/after size + duration once an op finishes ---
 
   // Pull {size, duration} (positive numbers, or null) from parsed ffprobe data.
@@ -729,6 +762,8 @@
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,
+    EVEN_DIM_TABS,
+    oddDimensionWarning,
     filterTools,
     DIMENSION_FIELDS,
     FPS_FIELDS,
