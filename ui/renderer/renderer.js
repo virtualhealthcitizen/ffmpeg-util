@@ -9,7 +9,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
-  buildCliCommand, previewPath } = window.FfuLogic;
+  buildCliCommand, previewPath, keyboardAction, nextVisibleTab } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -115,6 +115,37 @@ function currentTab() {
       e.preventDefault();
       search.focus();
       search.select();
+    }
+  });
+})();
+
+// --- Keyboard shortcuts: run the active tab, cycle between (visible) tabs ---
+// Ctrl/Cmd+Enter runs the active tab's primary action; Ctrl/Cmd+]/[ (or ./,)
+// step to the next/previous tab that the search filter currently shows.
+(function () {
+  function visibleTabIds() {
+    return Array.from(document.querySelectorAll(".tabs button"))
+      .filter((b) => !b.classList.contains("hidden"))
+      .map((b) => b.dataset.tab);
+  }
+  document.addEventListener("keydown", (e) => {
+    const action = keyboardAction(e);
+    if (!action) return;
+    if (action.type === "run") {
+      const btn = document.getElementById("run-" + currentTab());
+      if (btn && !btn.disabled) {
+        e.preventDefault();
+        btn.click();
+      }
+      return;
+    }
+    if (action.type === "switch") {
+      const next = nextVisibleTab(visibleTabIds(), currentTab(), action.dir);
+      const btn = next && document.querySelector('.tabs button[data-tab="' + next + '"]');
+      if (btn) {
+        e.preventDefault();
+        btn.click();
+      }
     }
   });
 })();

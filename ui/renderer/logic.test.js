@@ -790,3 +790,37 @@ test("buildCliCommand places --audio after positionals for replace_audio", () =>
     "ffmpeg-util replace-audio v.mp4 o.mp4 --audio track.mp3 -y"
   );
 });
+
+test("keyboardAction maps Ctrl/Cmd+Enter to a run action", () => {
+  assert.deepEqual(L.keyboardAction({ key: "Enter", ctrlKey: true }), { type: "run" });
+  assert.deepEqual(L.keyboardAction({ key: "Enter", metaKey: true }), { type: "run" });
+});
+
+test("keyboardAction maps Ctrl/Cmd+]/. to next and [/, to previous", () => {
+  assert.deepEqual(L.keyboardAction({ key: "]", ctrlKey: true }), { type: "switch", dir: 1 });
+  assert.deepEqual(L.keyboardAction({ key: ".", metaKey: true }), { type: "switch", dir: 1 });
+  assert.deepEqual(L.keyboardAction({ key: "[", ctrlKey: true }), { type: "switch", dir: -1 });
+  assert.deepEqual(L.keyboardAction({ key: ",", metaKey: true }), { type: "switch", dir: -1 });
+});
+
+test("keyboardAction ignores keys without a Ctrl/Cmd modifier", () => {
+  assert.equal(L.keyboardAction({ key: "Enter" }), null);
+  assert.equal(L.keyboardAction({ key: "]", shiftKey: true }), null);
+  assert.equal(L.keyboardAction({ key: "a", ctrlKey: true }), null);
+  assert.equal(L.keyboardAction(null), null);
+});
+
+test("nextVisibleTab wraps forward and backward over visible tabs", () => {
+  const tabs = ["convert", "trim", "compress"];
+  assert.equal(L.nextVisibleTab(tabs, "convert", 1), "trim");
+  assert.equal(L.nextVisibleTab(tabs, "compress", 1), "convert"); // wrap to start
+  assert.equal(L.nextVisibleTab(tabs, "convert", -1), "compress"); // wrap to end
+  assert.equal(L.nextVisibleTab(tabs, "trim", -1), "convert");
+});
+
+test("nextVisibleTab handles a current tab hidden by the filter, and an empty list", () => {
+  const tabs = ["trim", "compress"]; // "convert" filtered out
+  assert.equal(L.nextVisibleTab(tabs, "convert", 1), "trim"); // first when moving forward
+  assert.equal(L.nextVisibleTab(tabs, "convert", -1), "compress"); // last when moving back
+  assert.equal(L.nextVisibleTab([], "convert", 1), null);
+});

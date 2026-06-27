@@ -35,6 +35,7 @@ body {
 h1 { margin: 0 0 4px; font-size: 22px; }
 .sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
 .hint-drop { margin-top: -14px; font-size: 12px; opacity: 0.75; }
+.hint-keys { margin: -8px 0 16px; font-size: 12px; opacity: 0.75; }
 
 /* Highlight the whole window while a file is dragged over it. */
 body.drag-over { box-shadow: inset 0 0 0 3px var(--accent); }
