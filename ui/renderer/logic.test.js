@@ -611,3 +611,43 @@ test("rectToCrop and cropToRect round-trip within even-rounding tolerance", () =
   assert.ok(Math.abs(back.width - 150) <= 1);
   assert.ok(Math.abs(back.height - 100) <= 1);
 });
+
+test("summarizeBeforeAfter reports size shrink + percent", () => {
+  const before = { format: { size: "10485760", duration: "30" } }; // 10 MB
+  const after = { format: { size: "3145728", duration: "30" } }; //  3 MB
+  // duration unchanged → only the size segment shows the −70% delta
+  assert.equal(L.summarizeBeforeAfter(before, after), "10 MB → 3.0 MB (−70%)");
+});
+
+test("summarizeBeforeAfter adds a duration segment when it changes", () => {
+  const before = { format: { size: "2000000", duration: "30" } };
+  const after = { format: { size: "1000000", duration: "15" } };
+  const text = L.summarizeBeforeAfter(before, after);
+  assert.match(text, /−50%/);
+  assert.ok(text.includes("0:30 → 0:15"), text);
+  assert.ok(text.includes(" · "), text); // both segments joined
+});
+
+test("summarizeBeforeAfter handles growth and equal sizes", () => {
+  const grew = L.summarizeBeforeAfter(
+    { format: { size: "1000000" } },
+    { format: { size: "1500000" } }
+  );
+  assert.match(grew, /\(\+50%\)/);
+  const same = L.summarizeBeforeAfter(
+    { format: { size: "1000000" } },
+    { format: { size: "1000000" } }
+  );
+  assert.match(same, /\(±0%\)/);
+});
+
+test("summarizeBeforeAfter falls back to output-only size, or null", () => {
+  // no input probe → just the output size, no percent
+  assert.equal(
+    L.summarizeBeforeAfter(null, { format: { size: "524288" } }),
+    "512 KB"
+  );
+  // nothing probeable → null (caller hides the line)
+  assert.equal(L.summarizeBeforeAfter(null, null), null);
+  assert.equal(L.summarizeBeforeAfter({ format: {} }, { format: {} }), null);
+});

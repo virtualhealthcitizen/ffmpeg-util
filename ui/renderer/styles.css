@@ -207,6 +207,19 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .estimate.hidden { display: none; }
 .estimate b { color: var(--text); font-weight: 600; }
 
+/* Before/after result summary (size + duration delta after an op finishes). */
+.summary {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  border-radius: 8px;
+  background: rgba(76, 175, 80, 0.08);
+  color: var(--ok);
+  font-size: 13px;
+}
+.summary.hidden { display: none; }
+.summary::before { content: "📊 "; }
+
 input[type="text"], input[type="number"], textarea {
   flex: 1;
   padding: 9px 11px;
