@@ -318,6 +318,15 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-vstack").addEventListener("click", () => {
+  if (!requireFields("vstack-input-a", "vstack-input-b", "vstack-output")) return;
+  run("Stacking vertically", "vstack", {
+    inputs: [val("vstack-input-a"), val("vstack-input-b")],
+    output: val("vstack-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-hstack").addEventListener("click", () => {
   if (!requireFields("hstack-input-a", "hstack-input-b", "hstack-output")) return;
   run("Combining side by side", "hstack", {

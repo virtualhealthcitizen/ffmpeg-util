@@ -171,7 +171,7 @@ Packaging / tests:
 - [x] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1) — core `compute_aspect_crop`/
       `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
-- [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. (vstack still pending.)
+- [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
 - [ ] Picture-in-picture overlay
 - [ ] Still image → video (image + duration, optional audio)
 - [ ] Replace the audio track with an external audio file

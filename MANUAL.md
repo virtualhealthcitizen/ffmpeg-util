@@ -7,7 +7,7 @@ ends sharing one core:
 - an **Electron desktop UI** (`ui/`) backed by a local Python sidecar.
 
 Both cover the same operations: **probe, convert, trim, concat, thumbnail,
-contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq, fps, crop-aspect, mono, title, waveform, sample-rate, hstack**.
+contact-sheet, compress (incl. target-size), gif, speed, transform, crop, mute, pad, loop, frames, reverse, volume, fade, grayscale, loudnorm, boomerang, eq, fps, crop-aspect, mono, title, waveform, sample-rate, hstack, vstack**.
 
 ---
 
@@ -188,6 +188,12 @@ Places two equal-height videos side by side (output width = sum); keeps the left
 ffmpeg-util hstack left.mp4 right.mp4 -o sidebyside.mp4
 ```
 
+### vstack — stacked
+Stacks two equal-width videos vertically (output height = sum); keeps the top audio.
+```bash
+ffmpeg-util vstack top.mp4 bottom.mp4 -o stacked.mp4
+```
+
 ### boomerang — forward then reversed
 Plays the clip forward then backward (video only), so it runs ~twice as long.
 ```bash
@@ -266,7 +272,7 @@ live progress.
 ## 6. The desktop UI
 
 The UI mirrors the commands as tabs (Convert, Trim, Concat, Thumbnail, Compress,
-GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust, FPS, Aspect, Mono, Title, Waveform, Sample rate, Side by side), with: a **Probe** button per input, **drag-and-drop** (drop a file to
+GIF, Speed, Transform, Crop, Mute, Pad, Loop, Frames, Reverse, Volume, Fade, Grayscale, Loudness, Boomerang, Adjust, FPS, Aspect, Mono, Title, Waveform, Sample rate, Side by side, Stacked), with: a **Probe** button per input, **drag-and-drop** (drop a file to
 load it into the active tab), a **live progress bar**, an **inline preview** of
 image and video outputs, and **persisted** option fields across launches.
 

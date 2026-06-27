@@ -452,6 +452,19 @@ def build_hstack_args(inputs: Sequence[str], output_path: str) -> list[str]:
     ]
 
 
+def build_vstack_args(inputs: Sequence[str], output_path: str) -> list[str]:
+    """Build args to stack two equal-width videos vertically. Keeps the first
+    input's audio if present."""
+    if len(inputs) != 2:
+        raise ValueError("vstack needs exactly two input files")
+    return [
+        "-i", inputs[0], "-i", inputs[1],
+        "-filter_complex", "[0:v][1:v]vstack=inputs=2[v]",
+        "-map", "[v]", "-map", "0:a?",
+        output_path,
+    ]
+
+
 def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
     """Build args to boomerang a clip: play it forward then reversed (video only),
     so the output runs about twice the input duration."""
