@@ -401,6 +401,17 @@ TRANSFORM_FILTERS = {
 }
 
 
+def build_waveform_args(input_path: str, output_path: str, width: int = 1000, height: int = 200) -> list[str]:
+    """Build args to render the audio waveform as a ``width``x``height`` image."""
+    if width < 1 or height < 1:
+        raise ValueError("waveform width and height must be >= 1")
+    return [
+        "-i", input_path,
+        "-filter_complex", f"showwavespic=s={width}x{height}",
+        "-frames:v", "1", output_path,
+    ]
+
+
 def build_grayscale_args(input_path: str, output_path: str) -> list[str]:
     """Build args to desaturate the video to grayscale (keeps the pixel format)."""
     return ["-i", input_path, "-vf", "hue=s=0", output_path]

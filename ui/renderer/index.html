@@ -37,6 +37,7 @@
       <button data-tab="crop_aspect">Aspect</button>
       <button data-tab="mono">Mono</button>
       <button data-tab="title">Title</button>
+      <button data-tab="waveform">Waveform</button>
     </nav>
 
     <!-- Convert -->
@@ -536,6 +537,27 @@
       </div>
       <p class="hint">Sets the title metadata tag; streams are copied (no re-encode).</p>
       <div class="row"><button class="primary" id="run-title">Set title</button></div>
+    </section>
+
+    <!-- Waveform -->
+    <section class="card panel" id="panel-waveform">
+      <label>Input file</label>
+      <div class="row">
+        <input id="waveform-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="waveform-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="waveform-input">Probe</button>
+      </div>
+      <label>Output image</label>
+      <div class="row">
+        <input id="waveform-output" type="text" placeholder="wave.png" />
+        <button class="pick-save" data-target="waveform-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Width <input id="waveform-width" type="number" min="1" placeholder="1000" /></label>
+        <label class="inline">Height <input id="waveform-height" type="number" min="1" placeholder="200" /></label>
+      </div>
+      <p class="hint">Renders the audio waveform to a PNG of the given size.</p>
+      <div class="row"><button class="primary" id="run-waveform">Render waveform</button></div>
     </section>
 
     <div id="progress" class="progress hidden"><div id="progress-bar"></div></div>

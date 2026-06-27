@@ -166,6 +166,26 @@ def thumbnail(req: ThumbnailReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class WaveformReq(BaseModel):
+    input: str
+    output: str
+    width: int = 1000
+    height: int = 200
+    overwrite: bool = True
+
+
+@app.post("/waveform")
+def waveform(req: WaveformReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_waveform_args(req.input, req.output, req.width, req.height))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class CropAspectReq(BaseModel):
     input: str
     output: str
@@ -657,6 +677,10 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "waveform":
+        return commands.build_waveform_args(
+            req.input, req.output, req.width or 1000, req.height or 200
+        ), None
     if op == "fps":
         return commands.build_fps_args(req.input, req.output, req.fps), None
     if op == "eq":

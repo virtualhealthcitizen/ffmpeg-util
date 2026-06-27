@@ -318,6 +318,17 @@ $("#run-grayscale").addEventListener("click", () => {
   });
 });
 
+$("#run-waveform").addEventListener("click", () => {
+  if (!requireFields("waveform-input", "waveform-output")) return;
+  run("Rendering waveform", "waveform", {
+    input: val("waveform-input"),
+    output: val("waveform-output"),
+    width: numOrNull("waveform-width") || 1000,
+    height: numOrNull("waveform-height") || 200,
+    overwrite: true,
+  });
+});
+
 $("#run-crop_aspect").addEventListener("click", () => {
   if (!requireFields("crop_aspect-input", "crop_aspect-output")) return;
   run("Cropping to aspect", "crop_aspect", {

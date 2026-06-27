@@ -68,6 +68,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # waveform
+    p = sub.add_parser("waveform", help="Render the audio waveform as an image.")
+    p.add_argument("input")
+    p.add_argument("output", help="Output image (e.g. wave.png).")
+    p.add_argument("--width", type=int, default=1000, help="Image width (default 1000).")
+    p.add_argument("--height", type=int, default=200, help="Image height (default 200).")
+    _add_global_flags(p)
+
     # crop-aspect
     p = sub.add_parser("crop-aspect", help="Center-crop to an aspect ratio (e.g. 16:9).")
     p.add_argument("input")
@@ -285,6 +293,11 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "waveform":
+        runner.run_ffmpeg(commands.build_waveform_args(
+            args.input, args.output, width=args.width, height=args.height))
         return 0
 
     if args.command == "crop-aspect":
