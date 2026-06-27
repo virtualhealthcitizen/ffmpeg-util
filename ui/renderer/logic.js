@@ -33,6 +33,63 @@
     return String(outputPath).replace(/%d/g, "1");
   }
 
+  // --- Auto-fill output path: input + per-op suffix so "output required" isn't a
+  // manual step. Each tab maps to a short tag (in.mp4 -> in.<tag>.<ext>); a few
+  // ops change the output type (gif/image/video), so they override the extension.
+  // Tabs not listed fall back to a tag derived from the tab name + the input's ext.
+  const OUTPUT_SPECS = {
+    convert: { tag: "out" },
+    trim: { tag: "trim" },
+    concat: { tag: "joined" },
+    thumbnail: { tag: "thumb", ext: ".png" },
+    compress: { tag: "small" },
+    gif: { tag: "anim", ext: ".gif" },
+    speed: { tag: "speed" },
+    transform: { tag: "rot" },
+    crop: { tag: "crop" },
+    mute: { tag: "mute" },
+    replace_audio: { tag: "dub" },
+    pad: { tag: "pad" },
+    loop: { tag: "loop" },
+    frames: { tag: "frame_%04d", ext: ".png" },
+    reverse: { tag: "rev" },
+    volume: { tag: "vol" },
+    fade: { tag: "fade" },
+    grayscale: { tag: "gray" },
+    invert: { tag: "invert" },
+    loudnorm: { tag: "loud" },
+    boomerang: { tag: "boom" },
+    eq: { tag: "eq" },
+    fps: { tag: "fps" },
+    crop_aspect: { tag: "aspect" },
+    mono: { tag: "mono" },
+    title: { tag: "titled" },
+    waveform: { tag: "wave", ext: ".png" },
+    sample_rate: { tag: "resample" },
+    hstack: { tag: "hstack" },
+    vstack: { tag: "vstack" },
+    blur_pad: { tag: "blurpad" },
+    image_to_video: { tag: "clip", ext: ".mp4" },
+    autocrop: { tag: "autocrop" },
+  };
+
+  // The lowercase extension of a path (incl. the dot), or "" if none.
+  function extOf(path) {
+    const m = /(\.[^.\\/]+)$/.exec(String(path));
+    return m ? m[1].toLowerCase() : "";
+  }
+
+  // Suggest an output path for a tab from its input path. Keeps the input's
+  // extension unless the op changes the output type. Returns "" without an input.
+  function suggestOutputForTab(inputPath, tab) {
+    const input = String(inputPath || "").trim();
+    if (!input) return "";
+    const spec = OUTPUT_SPECS[tab] || { tag: String(tab || "out").replace(/_/g, "") };
+    const ext = spec.ext || extOf(input) || ".mp4";
+    const base = input.replace(/\.[^.\\/]+$/, "");
+    return spec.tag ? base + "." + spec.tag + ext : base + ext;
+  }
+
   // Split a textarea/blob of paths into a trimmed, non-empty list.
   function parseLines(text) {
     return String(text)
@@ -581,6 +638,9 @@
     isVideoPath,
     previewKind,
     suggestOutput,
+    suggestOutputForTab,
+    OUTPUT_SPECS,
+    extOf,
     previewPath,
     parseLines,
     fieldLabel,

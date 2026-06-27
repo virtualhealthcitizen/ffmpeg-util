@@ -259,8 +259,14 @@ Input affordances (kill the typed-number friction — this is what bit "Blur pad
       1000×564; row hidden on gif). [Adopted a stranded 2h-old burn WIP.]
 - [ ] Sliders with live readouts for the numeric ops — volume (dB), speed (×),
       eq (brightness/contrast/saturation), fade (s), loudnorm (LUFS), blur sigma.
-- [ ] Auto-fill the output path from input + op suffix (in.mp4 → in.blurpad.mp4) so
-      "output required" stops being a manual step.
+- [x] **Auto-fill the output path** from input + op suffix (in.mp4 → in.small.mp4)
+      so "output required" stops being a manual step. Pure `suggestOutputForTab`/
+      `extOf` + `OUTPUT_SPECS` in `logic.js` (per-tab tag; gif/waveform/thumbnail/
+      frames/image_to_video override the extension); `maybeFillOutput` in the
+      renderer fills an empty output on every input change, never clobbering a
+      user-set path. Verified: node:test (4 new, 62 total) + headless Electron E2E
+      vs the real sidecar (compress→.small.mp4, gif→.anim.gif, waveform→.wave.png,
+      trim keeps a user-set output).
 
 Workflow / feedback components:
 - [ ] Cancel button — kill the running ffmpeg process mid-op.
@@ -277,8 +283,8 @@ Workflow / feedback components:
 **Priority for this round (highest first):**
 1. ~~Tool search / command palette~~ — DONE (round 7).
 2. ~~Auto source-preview + friendly probe card~~ — DONE (round 7).
-3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts — **← next.**
-4. Sliders with live readouts; 5. Visual crop selector; 6. the rest.
+3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts — claimed (feat/sliders, sibling).
+5. ~~Visual crop selector~~ — DONE. 6. ~~Auto-fill output path~~ — DONE. The rest — **← next.**
 
 - [x] **Tool search / command palette** — filter box above the tabs (pure
       `filterTools`/`TOOL_ALIASES` in `logic.js`), live-narrows the 30 buttons by
