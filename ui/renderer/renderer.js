@@ -283,6 +283,7 @@ const STICKY = [
   "compress-crf", "compress-bitrate", "compress-width", "compress-height",
   "compress-vcodec", "compress-preset",
   "gif-fps", "gif-width",
+  "image_to_video-seconds", "image_to_video-fps",
 ];
 
 async function loadSettings() {
@@ -501,6 +502,17 @@ $("#run-blur_pad").addEventListener("click", () => {
     width: numOrNull("blur_pad-width"),
     height: numOrNull("blur_pad-height"),
     sigma: numOrNull("blur_pad-sigma") != null ? numOrNull("blur_pad-sigma") : 20,
+    overwrite: true,
+  });
+});
+
+$("#run-image_to_video").addEventListener("click", () => {
+  if (!requireFields("image_to_video-input", "image_to_video-output", "image_to_video-seconds")) return;
+  run("Making video", "image_to_video", {
+    input: val("image_to_video-input"),
+    output: val("image_to_video-output"),
+    seconds: numOrNull("image_to_video-seconds"),
+    fps: numOrNull("image_to_video-fps") || 30,
     overwrite: true,
   });
 });

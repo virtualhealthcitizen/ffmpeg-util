@@ -98,7 +98,11 @@ Packaging / tests:
 - [ ] Audio: replace/mux an audio track; mix or strip tracks
 - [ ] Subtitles: burn-in (hardsub) or mux soft subs; extract subtitles
 - [ ] Watermark / text overlay (drawtext, image overlay with position)
-- [ ] Image sequence ↔ video (frames to video, video to frames)
+- [x] Image → video: loop a still image into a fixed-length clip — core
+      `build_image_to_video_args`, CLI `image-to-video --seconds/--fps`, sidecar
+      (`/image-to-video` + `/run/stream`), Image → video tab. Verified E2E:
+      a PNG → 3s h264 320×240 clip (duration measured via ffprobe).
+      (video → frames already shipped as `frames`.)
 - [ ] Hardware-accelerated encoding option (NVENC/QSV) when available
 
 ### Workflow

@@ -119,6 +119,7 @@
     hstack: "side by side horizontal compare two videos",
     vstack: "stacked vertical top bottom two videos",
     blur_pad: "blurred fill background letterbox frame fit no bars",
+    image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
   };
 
   // Filter a list of tools by a search query. Pure & order-preserving.

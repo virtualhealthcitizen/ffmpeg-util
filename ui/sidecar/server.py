@@ -814,6 +814,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_blur_pad_args(
             req.input, req.output, req.width, req.height, req.sigma
         ), None
+    if op == "image_to_video":
+        return commands.build_image_to_video_args(
+            req.input, req.output, req.seconds, fps=req.fps or 30
+        ), None
     if op == "mute":
         return commands.build_mute_args(req.input, req.output), None
     if op == "mono":
@@ -890,8 +894,12 @@ def _expected_output_duration(
     start: str | None = None,
     end: str | None = None,
     duration: str | None = None,
+    seconds: float | None = None,
 ) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
+    if op == "image_to_video":
+        # A still image has no input duration; the output runs for `seconds`.
+        return seconds
     if not total:
         return total
     if op == "speed" and factor:
@@ -970,6 +978,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             expected = _expected_output_duration(
                 req.op, total, factor=req.factor, count=req.count,
                 start=req.start, end=req.end, duration=req.duration,
+                seconds=req.seconds,
             )
             for fields in runner.iter_ffmpeg_progress(args):
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.

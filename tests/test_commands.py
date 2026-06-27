@@ -329,6 +329,24 @@ def test_blur_pad_args_reject_bad_size():
         c.build_blur_pad_args("in.mp4", "out.mp4", 0, 100)
 
 
+def test_image_to_video_args_build():
+    args = c.build_image_to_video_args("photo.png", "out.mp4", 5.0, fps=24)
+    assert args[:2] == ["-loop", "1"]
+    assert args[args.index("-i") + 1] == "photo.png"
+    assert args[args.index("-t") + 1] == "5.0"
+    assert args[args.index("-r") + 1] == "24"
+    assert args[args.index("-c:v") + 1] == "libx264"
+    assert args[args.index("-pix_fmt") + 1] == "yuv420p"
+    assert args[-1] == "out.mp4"
+
+
+def test_image_to_video_args_reject_bad_values():
+    with pytest.raises(ValueError):
+        c.build_image_to_video_args("photo.png", "out.mp4", 0)
+    with pytest.raises(ValueError):
+        c.build_image_to_video_args("photo.png", "out.mp4", 5.0, fps=0)
+
+
 def test_pad_args_build_filter():
     args = c.build_pad_args("in.mp4", "o.mp4", 640, 480)
     vf = args[args.index("-vf") + 1]
