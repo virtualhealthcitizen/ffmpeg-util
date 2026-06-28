@@ -142,11 +142,15 @@ class FfmpegRunner:
         A background reader keeps stderr drained, so it can't fill its pipe and
         deadlock the stdout progress read.
         """
-        # With on_log, raise the log level to `info` so ffmpeg actually emits its
-        # Input/Output/stream-mapping lines for the console view (the default
-        # `error` level prints nothing on a clean run).
+        # With on_log, raise the log level to `info` so ffmpeg emits its
+        # Input/Output/stream-mapping lines, and KEEP ``-stats`` (don't pass
+        # ``-nostats``) so it also prints the live ``frame=… time=… speed=…``
+        # readout to stderr — otherwise the console view goes silent for the
+        # whole encode of a long file (only the structured progress bar moves).
+        # Without on_log we keep ``-nostats`` (nothing reads the live stats).
+        pre = ["-progress", "pipe:1"] if on_log is not None else ["-progress", "pipe:1", "-nostats"]
         cmd = self.build_ffmpeg_args(
-            ["-progress", "pipe:1", "-nostats", *args],
+            [*pre, *args],
             loglevel="info" if on_log is not None else None,
         )
         rendered = self.format_command(cmd)
@@ -169,14 +173,38 @@ class FfmpegRunner:
         reader = None
         if on_log is not None:
             def _drain_stderr() -> None:
+                # Split on BOTH \r and \n: ffmpeg's live -stats readout refreshes
+                # the same line with a carriage return (no newline), so plain line
+                # iteration would buffer the whole encode into one chunk. Reading
+                # char-by-char and breaking on either lets each stats refresh
+                # surface as its own console line. stderr volume is low.
                 assert proc.stderr is not None
-                for raw in proc.stderr:
-                    line = raw.rstrip("\r\n")
-                    err_lines.append(line)
-                    try:
-                        on_log(line)
-                    except Exception:
-                        pass  # a bad consumer must not kill the run
+                buf = []
+                read = proc.stderr.read
+                while True:
+                    ch = read(1)
+                    if ch == "":
+                        break
+                    if ch in ("\r", "\n"):
+                        if buf:
+                            line = "".join(buf)
+                            buf = []
+                            if line.strip():
+                                err_lines.append(line)
+                                try:
+                                    on_log(line)
+                                except Exception:
+                                    pass  # a bad consumer must not kill the run
+                    else:
+                        buf.append(ch)
+                if buf:  # trailing partial without a terminator
+                    line = "".join(buf)
+                    if line.strip():
+                        err_lines.append(line)
+                        try:
+                            on_log(line)
+                        except Exception:
+                            pass
             reader = threading.Thread(target=_drain_stderr, daemon=True)
             reader.start()
         try:

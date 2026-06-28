@@ -866,6 +866,10 @@ def test_run_stream_emits_console_log(client, media, auth):
     logs = [e["line"] for e in _sse_events(r.text) if e["type"] == "log"]
     assert logs, "expected at least one ffmpeg console log line"
     assert any(ln.strip() for ln in logs)
+    # The live -stats readout must stream too (not just the startup info block),
+    # so the console keeps updating during a long encode instead of going silent.
+    assert any("time=" in ln or "frame=" in ln for ln in logs), \
+        "expected live ffmpeg stats lines (frame=/time=) in the console stream"
 
 
 def test_contact_sheet_dimensions(client, media, auth):
