@@ -8,6 +8,7 @@ re-implementing ffmpeg logic in Node.
 
 import json
 import os
+import queue
 import tempfile
 
 import uvicorn
@@ -1027,10 +1028,66 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 yield _sse({"type": "done", "output": req.output})
                 return
             if req.op == "gif":
-                commands.make_gif(
-                    runner, req.input, req.output,
-                    fps=req.fps, width=req.width or 480, start=req.start, duration=req.duration,
-                )
+                # Two-pass palette GIF, streamed so the UI isn't frozen on
+                # "Making GIF…": emit a phase line + live ffmpeg log per pass,
+                # and a progress bar over the (longer) encode pass.
+                filt = commands.gif_filter(req.fps, req.width or 480)
+                seek = ["-ss", req.start] if req.start is not None else []
+                dur = ["-t", req.duration] if req.duration is not None else []
+                gif_total = total
+                if req.duration is not None:
+                    try:
+                        gif_total = _parse_time(req.duration)
+                    except ValueError:
+                        gif_total = total
+                # A temp path we own; remove it so the encode never needs -y.
+                fd, palette = tempfile.mkstemp(suffix=".png", prefix="ffgifpal_")
+                os.close(fd)
+                try:
+                    os.remove(palette)
+                except OSError:
+                    pass
+                log_q: queue.Queue = queue.Queue()
+                try:
+                    yield _sse({"type": "log", "line": "Pass 1/2: generating color palette…"})
+                    for _ in runner.iter_ffmpeg_progress(
+                        [*seek, "-i", req.input, *dur, "-vf", f"{filt},palettegen", palette],
+                        on_log=log_q.put,
+                    ):
+                        while not log_q.empty():
+                            yield _sse({"type": "log", "line": log_q.get_nowait()})
+                    while not log_q.empty():
+                        yield _sse({"type": "log", "line": log_q.get_nowait()})
+                    yield _sse({"type": "log", "line": "Pass 2/2: encoding GIF…"})
+                    for fields in runner.iter_ffmpeg_progress(
+                        [*seek, "-i", req.input, *dur, "-i", palette,
+                         "-lavfi", f"{filt} [x];[x][1:v] paletteuse", req.output],
+                        on_log=log_q.put,
+                    ):
+                        while not log_q.empty():
+                            yield _sse({"type": "log", "line": log_q.get_nowait()})
+                        out_us = fields.get("out_time_us") or fields.get("out_time_ms")
+                        out_time = None
+                        if out_us:
+                            try:
+                                out_time = int(out_us) / 1_000_000
+                            except ValueError:
+                                out_time = None
+                        percent = None
+                        if gif_total and out_time is not None:
+                            percent = max(0.0, min(100.0, round(out_time / gif_total * 100, 1)))
+                        yield _sse({
+                            "type": "progress", "percent": percent,
+                            "speed": fields.get("speed"), "phase": fields.get("progress"),
+                            "out_time": out_time, "total": gif_total,
+                        })
+                    while not log_q.empty():
+                        yield _sse({"type": "log", "line": log_q.get_nowait()})
+                finally:
+                    try:
+                        os.remove(palette)
+                    except OSError:
+                        pass
                 yield _sse({"type": "done", "output": req.output})
                 return
             if req.op in ("speed", "reverse", "fade"):
@@ -1068,7 +1125,11 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 start=req.start, end=req.end, duration=req.duration,
                 seconds=req.seconds,
             )
-            for fields in runner.iter_ffmpeg_progress(args):
+            log_q: queue.Queue = queue.Queue()
+            for fields in runner.iter_ffmpeg_progress(args, on_log=log_q.put):
+                # Flush any ffmpeg log lines first so the console view keeps pace.
+                while not log_q.empty():
+                    yield _sse({"type": "log", "line": log_q.get_nowait()})
                 # out_time_ms is microseconds in ffmpeg (historical quirk), as is out_time_us.
                 out_us = fields.get("out_time_us") or fields.get("out_time_ms")
                 out_time = None
@@ -1090,6 +1151,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     "out_time": out_time,
                     "total": expected,
                 })
+            while not log_q.empty():
+                yield _sse({"type": "log", "line": log_q.get_nowait()})
             yield _sse({"type": "done", "output": req.output})
         except (FfmpegError, ValueError) as exc:
             yield _sse({"type": "error", "detail": _msg(exc)})

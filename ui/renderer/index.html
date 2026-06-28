@@ -820,6 +820,15 @@
     <div id="error-hint" class="error-hint hidden"></div>
     <div id="status" class="status"></div>
 
+    <!-- Live ffmpeg console output during a run (streamed log lines) -->
+    <section class="card console hidden" id="console">
+      <div class="card-header">
+        <label>Console <span id="console-count" class="console-count"></span></label>
+        <button class="secondary collapse-btn" id="console-collapse" title="Collapse console">▲</button>
+      </div>
+      <pre id="console-out" class="console-out" aria-live="polite"></pre>
+    </section>
+
     <!-- "Copy as CLI": the equivalent ffmpeg-util command for the current op -->
     <div id="cli-command-row" class="cli-command-row hidden">
       <code id="cli-command" class="cli-command"></code>

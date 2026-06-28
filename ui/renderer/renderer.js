@@ -13,7 +13,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
   addRecentFile, recentFileLabel, recentDir, reorderList,
-  resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel } = window.FfuLogic;
+  resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel,
+  appendConsoleLines } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -148,6 +149,13 @@ function applyProbeCollapse(collapsed) {
   if (pb) pb.addEventListener("click", () => {
     applyProbeCollapse(!probeBodyCollapsed);
     setSettings({ probeCollapsed: probeBodyCollapsed }).catch(() => {});
+  });
+  const cb = $("#console-collapse");
+  if (cb) cb.addEventListener("click", () => {
+    const out = $("#console-out");
+    const collapsed = out.classList.toggle("collapsed");
+    cb.textContent = collapsed ? "▼" : "▲";
+    cb.title = collapsed ? "Expand console" : "Collapse console";
   });
 })();
 
@@ -1290,6 +1298,26 @@ function hideProgress() {
   $("#progress-bar").style.width = "0%";
   setEta(null);
 }
+
+// --- Live console: stream ffmpeg log lines during a run ---
+let consoleLines = [];
+function clearConsole() {
+  consoleLines = [];
+  $("#console-out").textContent = "";
+  $("#console-count").textContent = "";
+}
+function showConsole() {
+  $("#console").classList.remove("hidden");
+}
+function appendConsole(line) {
+  consoleLines = appendConsoleLines(consoleLines, line);
+  const out = $("#console-out");
+  out.textContent = consoleLines.join("\n");
+  $("#console-count").textContent = `(${consoleLines.length})`;
+  // Auto-scroll to the newest line unless the user scrolled up to read.
+  const nearBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 40;
+  if (nearBottom) out.scrollTop = out.scrollHeight;
+}
 // Live "ETA ~0:42" readout next to the status line (cleared when empty).
 function setEta(text) {
   const el = $("#eta");
@@ -1350,6 +1378,8 @@ async function run(label, op, body) {
   hideSummary();
   showCliCommand(op, body); // surface the equivalent ffmpeg-util command
   showProgress(0);
+  clearConsole();
+  showConsole(); // live ffmpeg output, so a long run (e.g. GIF) isn't a black box
   hidePreview();
   try {
     const res = await fetch(baseUrl + "/run/stream", {
@@ -1377,6 +1407,8 @@ async function run(label, op, body) {
           if (ev.percent != null) showProgress(ev.percent);
           setStatus(`${label}… ${ev.percent != null ? ev.percent + "%" : ""}${ev.speed ? " (" + ev.speed + ")" : ""}`);
           setEta(etaLabel(ev)); // remaining time from speed + output position
+        } else if (ev.type === "log") {
+          appendConsole(ev.line); // live ffmpeg console output
         } else if (ev.type === "done") {
           result = ev;
         } else if (ev.type === "error") {

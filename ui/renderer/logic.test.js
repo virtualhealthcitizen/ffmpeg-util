@@ -1090,3 +1090,17 @@ test("etaLabel formats the remaining time, or null when not predictable", () => 
   assert.equal(L.etaLabel({ total: 10, out_time: 2, speed: "2x" }), "ETA ~0:04");
   assert.equal(L.etaLabel({ total: 10, out_time: 1, speed: "N/A" }), null);
 });
+
+test("appendConsoleLines appends, splits on newlines, and caps the buffer", () => {
+  assert.deepEqual(L.appendConsoleLines([], "first"), ["first"]);
+  assert.deepEqual(L.appendConsoleLines(["a"], "b"), ["a", "b"]);
+  // a multi-line chunk becomes multiple lines
+  assert.deepEqual(L.appendConsoleLines(["a"], "b\nc"), ["a", "b", "c"]);
+  // capped to the last `max` lines
+  const many = [];
+  let buf = [];
+  for (let i = 0; i < 10; i++) buf = L.appendConsoleLines(buf, "L" + i, 3);
+  assert.deepEqual(buf, ["L7", "L8", "L9"]);
+  // null/undefined are tolerated (become an empty line, never throw)
+  assert.deepEqual(L.appendConsoleLines(["a"], null), ["a", ""]);
+});

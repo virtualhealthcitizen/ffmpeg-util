@@ -826,6 +826,15 @@
     return `ETA ~${formatDuration(secs)}`;
   }
 
+  // --- Console buffer: append a streamed ffmpeg log line, capped to the last
+  // `max` lines so a chatty run can't grow the panel without bound. Pure. ---
+  function appendConsoleLines(existing, line, max = 500) {
+    const lines = Array.isArray(existing) ? existing.slice() : [];
+    const incoming = String(line == null ? "" : line).split("\n");
+    for (const l of incoming) lines.push(l);
+    return lines.length > max ? lines.slice(lines.length - max) : lines;
+  }
+
   // --- Visual crop selector: drag a rectangle over the source frame ---
 
   // Clamp a point {x,y} to the [0,w]×[0,h] box (displayed-pixel coords). Pure.
@@ -1153,6 +1162,7 @@
     parseSpeed,
     etaSeconds,
     etaLabel,
+    appendConsoleLines,
     EVEN_DIM_TABS,
     oddDimensionWarning,
     filterTools,

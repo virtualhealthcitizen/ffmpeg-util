@@ -4,7 +4,8 @@ import os
 import shutil
 import subprocess
 import tempfile
-from typing import Sequence
+import threading
+from typing import Callable, Sequence
 
 from .errors import FfmpegError, FfmpegNotFoundError
 
@@ -74,10 +75,18 @@ class FfmpegRunner:
             )
         return self._ffprobe_path
 
-    def build_ffmpeg_args(self, args: Sequence[str]) -> list[str]:
-        """Prepend the ffmpeg binary and global flags (overwrite/loglevel)."""
+    def build_ffmpeg_args(
+        self, args: Sequence[str], *, loglevel: str | None = None
+    ) -> list[str]:
+        """Prepend the ffmpeg binary and global flags (overwrite/loglevel).
+
+        ``loglevel`` overrides the default (``verbose`` when verbose else
+        ``error``) — e.g. ``info`` so a streamed run surfaces ffmpeg's normal
+        Input/Output/stream-mapping lines for a console view.
+        """
         cmd = [self.ffmpeg, "-hide_banner"]
-        cmd += ["-loglevel", "verbose" if self.verbose else "error"]
+        level = loglevel or ("verbose" if self.verbose else "error")
+        cmd += ["-loglevel", level]
         cmd.append("-y" if self.overwrite else "-n")
         cmd += list(args)
         return cmd
@@ -116,7 +125,9 @@ class FfmpegRunner:
             print(f"+ {rendered}")
         return subprocess.run(list(cmd), capture_output=True, text=True)
 
-    def iter_ffmpeg_progress(self, args: Sequence[str]):
+    def iter_ffmpeg_progress(
+        self, args: Sequence[str], *, on_log: Callable[[str], None] | None = None
+    ):
         """Run ffmpeg with ``-progress`` and yield each progress block as a dict.
 
         ffmpeg writes ``key=value`` lines to stdout; each block ends with a
@@ -124,21 +135,50 @@ class FfmpegRunner:
         each block boundary, so callers get periodic updates (``out_time_us``,
         ``speed``, ``total_size``, …). Raises :class:`FfmpegError` on a non-zero
         exit. In dry-run mode it prints the command and yields nothing.
+
+        If ``on_log`` is given, ffmpeg's stderr log lines are read live on a
+        background thread and passed to it one line at a time (e.g. to surface a
+        console view in the UI), in addition to the progress dicts yielded here.
+        A background reader keeps stderr drained, so it can't fill its pipe and
+        deadlock the stdout progress read.
         """
-        cmd = self.build_ffmpeg_args(["-progress", "pipe:1", "-nostats", *args])
+        # With on_log, raise the log level to `info` so ffmpeg actually emits its
+        # Input/Output/stream-mapping lines for the console view (the default
+        # `error` level prints nothing on a clean run).
+        cmd = self.build_ffmpeg_args(
+            ["-progress", "pipe:1", "-nostats", *args],
+            loglevel="info" if on_log is not None else None,
+        )
         rendered = self.format_command(cmd)
         if self.dry_run:
             print(rendered)
             return
         if self.verbose:
             print(f"+ {rendered}")
-        # Drain stderr to a temp file rather than a pipe: we read stdout
-        # incrementally for progress, so a pipe-buffered stderr could fill and
-        # deadlock ffmpeg (it blocks writing logs while we wait on stdout).
-        err_file = tempfile.TemporaryFile()
+
+        # Without on_log, drain stderr to a temp file (no extra thread). With it,
+        # pipe stderr and drain it on a background thread, forwarding each line.
+        err_file = tempfile.TemporaryFile() if on_log is None else None
+        err_lines: list[str] = []
         proc = subprocess.Popen(
-            list(cmd), stdout=subprocess.PIPE, stderr=err_file, text=True
+            list(cmd),
+            stdout=subprocess.PIPE,
+            stderr=err_file if on_log is None else subprocess.PIPE,
+            text=True,
         )
+        reader = None
+        if on_log is not None:
+            def _drain_stderr() -> None:
+                assert proc.stderr is not None
+                for raw in proc.stderr:
+                    line = raw.rstrip("\r\n")
+                    err_lines.append(line)
+                    try:
+                        on_log(line)
+                    except Exception:
+                        pass  # a bad consumer must not kill the run
+            reader = threading.Thread(target=_drain_stderr, daemon=True)
+            reader.start()
         try:
             fields: dict[str, str] = {}
             assert proc.stdout is not None
@@ -152,8 +192,13 @@ class FfmpegRunner:
                     yield fields
                     fields = {}
             proc.wait()
-            err_file.seek(0)
-            stderr = err_file.read().decode("utf-8", "replace")
+            if on_log is None:
+                err_file.seek(0)
+                stderr = err_file.read().decode("utf-8", "replace")
+            else:
+                if reader is not None:
+                    reader.join(timeout=2)
+                stderr = "\n".join(err_lines)
             if proc.returncode != 0:
                 raise FfmpegError(
                     f"Command failed (exit {proc.returncode}): {rendered}",
@@ -166,7 +211,8 @@ class FfmpegRunner:
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
-            err_file.close()
+            if err_file is not None:
+                err_file.close()
 
     def _run(self, cmd: Sequence[str]) -> subprocess.CompletedProcess | None:
         rendered = self.format_command(cmd)
