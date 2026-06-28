@@ -1141,6 +1141,40 @@
     return parseFloat(v.toFixed(10)) + spec.unit;
   }
 
+  // --- Pre-run path validation helpers ---
+
+  // [path, fieldId] pairs for every input of a run body so the renderer can
+  // check each exists and highlight the right field on failure. Empty paths are
+  // omitted — requireFields already catches missing values before the run starts.
+  function runInputEntries(tab, body) {
+    const b = body || {};
+    if (tab === "hstack" || tab === "vstack") {
+      const arr = Array.isArray(b.inputs) ? b.inputs : [];
+      return [
+        [String(arr[0] || "").trim(), tab + "-input-a"],
+        [String(arr[1] || "").trim(), tab + "-input-b"],
+      ].filter(([p]) => p);
+    }
+    if (Array.isArray(b.inputs)) {
+      const fieldId = tab + "-inputs"; // e.g. "concat-inputs"
+      return b.inputs
+        .map((p) => String(p || "").trim())
+        .filter(Boolean)
+        .map((p) => [p, fieldId]);
+    }
+    const p = String(b.input || "").trim();
+    return p ? [[p, tab + "-input"]] : [];
+  }
+
+  // [dir, fieldId] for the output-directory existence check, or null when the
+  // output path has no directory component (current dir — always present).
+  function runOutputDirEntry(tab, body) {
+    const out = String((body && body.output) || "").trim();
+    if (!out) return null;
+    const dir = splitPath(out).dir;
+    return dir ? [dir, tab + "-output"] : null;
+  }
+
   // --- Completion actions: Open + Reveal in file manager after a run ---
 
   // Platform-appropriate label for the "reveal in file manager" button.
@@ -1263,6 +1297,8 @@
     formatSliderOut,
     revealLabel,
     outputBaseName,
+    runInputEntries,
+    runOutputDirEntry,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

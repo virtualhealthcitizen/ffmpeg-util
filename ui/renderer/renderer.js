@@ -15,7 +15,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   addRecentFile, recentFileLabel, recentDir, reorderList,
   resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel,
   appendConsoleLines, SLIDER_SPECS, formatSliderOut,
-  revealLabel, outputBaseName } = window.FfuLogic;
+  revealLabel, outputBaseName,
+  runInputEntries, runOutputDirEntry } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1375,25 +1376,65 @@ function cancelOp() {
   if (currentAbort) currentAbort.abort();
 }
 
-// Ask the sidecar whether the output already exists; if so, confirm before we
-// clobber it. Best-effort: a failed check never blocks the run.
-async function confirmOverwrite(output) {
-  if (!output) return true;
+// Ask the sidecar whether a path (file or directory) exists. Best-effort:
+// failures always return true so a sidecar hiccup never blocks the run.
+async function checkExists(path) {
   try {
-    const res = await fetch(baseUrl + "/exists?path=" + encodeURIComponent(output), {
+    const res = await fetch(baseUrl + "/exists?path=" + encodeURIComponent(path), {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return true;
-    const { exists } = await res.json();
-    if (!exists) return true;
-    return window.confirm(overwriteMessage(output));
+    return (await res.json()).exists;
   } catch (_) {
     return true;
   }
 }
 
+// Highlight a form field as invalid; clearFieldErrors removes all highlights.
+function clearFieldErrors() {
+  document.querySelectorAll(".field-error").forEach((el) => el.classList.remove("field-error"));
+}
+function markFieldError(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) el.classList.add("field-error");
+}
+
+// Confirm before clobbering an existing output file.
+async function confirmOverwrite(output) {
+  if (!output) return true;
+  if (!(await checkExists(output))) return true;
+  return window.confirm(overwriteMessage(output));
+}
+
+// Pre-run check: verify input files exist and the output directory exists before
+// launching ffmpeg. Highlights the offending field and returns {ok, message}.
+// Best-effort: a sidecar error always returns {ok: true} so the run still fires.
+async function validateRunPaths(tab, body) {
+  clearFieldErrors();
+  for (const [path, fieldId] of runInputEntries(tab, body)) {
+    if (!(await checkExists(path))) {
+      markFieldError(fieldId);
+      return { ok: false, message: "Input not found: " + recentFileLabel(path) };
+    }
+  }
+  const outEntry = runOutputDirEntry(tab, body);
+  if (outEntry) {
+    const [dir, fieldId] = outEntry;
+    if (!(await checkExists(dir))) {
+      markFieldError(fieldId);
+      return { ok: false, message: "Output folder doesn't exist: " + dir };
+    }
+  }
+  return { ok: true };
+}
+
 async function run(label, op, body) {
   if (opInFlight) return; // an op is already running — ignore the extra click
+  const validation = await validateRunPaths(currentTab(), body);
+  if (!validation.ok) {
+    setStatus(validation.message, true);
+    return;
+  }
   if (!(await confirmOverwrite(body.output))) {
     setStatus("Cancelled — existing file left in place.");
     return;

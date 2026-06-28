@@ -1170,3 +1170,39 @@ test("outputBaseName extracts filename from Windows, POSIX, and bare paths", () 
   assert.equal(L.outputBaseName(null), null);
   assert.equal(L.outputBaseName(""), null);
 });
+
+test("runInputEntries maps body inputs to [path, fieldId] pairs", () => {
+  // single-input tab
+  assert.deepEqual(L.runInputEntries("compress", { input: "in.mp4", output: "out.mp4" }),
+    [["in.mp4", "compress-input"]]);
+  // multi-input concat: all paths map to the shared textarea id
+  assert.deepEqual(L.runInputEntries("concat", { inputs: ["a.mp4", "b.mp4"] }),
+    [["a.mp4", "concat-inputs"], ["b.mp4", "concat-inputs"]]);
+  // hstack/vstack: separate field per slot
+  assert.deepEqual(L.runInputEntries("hstack", { inputs: ["a.mp4", "b.mp4"] }),
+    [["a.mp4", "hstack-input-a"], ["b.mp4", "hstack-input-b"]]);
+  assert.deepEqual(L.runInputEntries("vstack", { inputs: ["x.mp4", "y.mp4"] }),
+    [["x.mp4", "vstack-input-a"], ["y.mp4", "vstack-input-b"]]);
+  // empty input is dropped (requireFields catches these before run starts)
+  assert.deepEqual(L.runInputEntries("compress", { input: "", output: "out.mp4" }), []);
+  // missing body
+  assert.deepEqual(L.runInputEntries("compress", null), []);
+});
+
+test("runOutputDirEntry returns [dir, fieldId] or null", () => {
+  // Windows path with directory component
+  const winEntry = L.runOutputDirEntry("compress", { output: "C:\\foo\\bar.mp4" });
+  assert.ok(winEntry !== null);
+  assert.equal(winEntry[0], "C:\\foo\\");
+  assert.equal(winEntry[1], "compress-output");
+  // POSIX path with directory component
+  const posixEntry = L.runOutputDirEntry("gif", { output: "/tmp/out.gif" });
+  assert.ok(posixEntry !== null);
+  assert.equal(posixEntry[0], "/tmp/");
+  assert.equal(posixEntry[1], "gif-output");
+  // bare filename (no dir) → null (cwd always exists, nothing to check)
+  assert.equal(L.runOutputDirEntry("compress", { output: "bar.mp4" }), null);
+  // no output → null
+  assert.equal(L.runOutputDirEntry("compress", { output: "" }), null);
+  assert.equal(L.runOutputDirEntry("compress", {}), null);
+});

@@ -474,8 +474,15 @@ Safety / correctness (latent gaps in the current UI):
       ignores re-clicks and `setRunButtonsDisabled` disables every `run-*` button
       for the op's duration, re-enabled in a `finally`. Verified: Electron E2E
       (button observed disabled mid-run via MutationObserver, re-enabled after).
-- [ ] Pre-run validation — verify the input exists and the output dir is writable
-      before launching ffmpeg; highlight the offending field instead of a late error.
+- [x] **Pre-run validation** — before launching ffmpeg, `/exists` checks each input
+      file and the output directory; the first failing path gets `.field-error` (red
+      border) and the status line names it. `runInputEntries`/`runOutputDirEntry` in
+      `logic.js` (pure); `checkExists`/`clearFieldErrors`/`markFieldError`/
+      `validateRunPaths` in `renderer.js`; `/exists` now uses `os.path.exists()` so
+      it handles dirs too. Verified: node:test (2 new, 126 total) + sidecar pytest
+      (dir existence, 67 total) + headless Electron E2E 10/10 (bad input → field-error
+      + "Input not found:" status; bad output dir → field-error + "Output folder…"
+      status; valid run clears highlight + output produced). ← next
 - [x] **Warn on odd width/height for x264 (must be even) before the run fails** — a
       `#dim-warn` banner flags a typed odd width/height on the re-encode tabs
       (compress/crop/pad/blur_pad) with the nearest-even fix, before ffmpeg fails
@@ -484,7 +491,7 @@ Safety / correctness (latent gaps in the current UI):
       to field edits, tab switches, chip/preset fills. Verified: node:test (3 new,
       76 total) + headless Electron E2E vs the real sidecar (odd 161 → "width 161 →
       162"; both odd → plural; even hides it; hidden on Convert; real 160×120 crop
-      succeeds). ← next
+      succeeds).
 - [x] Cancel a running op (kill the ffmpeg process) and reset the UI — a Cancel
       button aborts the `/run/stream` fetch; the disconnect makes the sidecar stop
       consuming progress, firing `iter_ffmpeg_progress`'s `finally` to kill ffmpeg
