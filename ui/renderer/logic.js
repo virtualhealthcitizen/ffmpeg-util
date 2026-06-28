@@ -1120,6 +1120,44 @@
     return visibleTabs[n];
   }
 
+  // --- Sliders with live readouts ---
+  // Configuration for each slider: id (the number input's id), range, step,
+  // default value when the field is empty, and unit suffix for the readout.
+  const SLIDER_SPECS = [
+    { id: "volume-gain",     min: -60, max: 30,  step: 0.5, def: 0,   unit: " dB" },
+    { id: "speed-factor",    min: 0.1, max: 4,   step: 0.1, def: 1,   unit: "×" },
+    { id: "eq-brightness",   min: -1,  max: 1,   step: 0.1, def: 0,   unit: "" },
+    { id: "eq-contrast",     min: 0,   max: 3,   step: 0.1, def: 1,   unit: "" },
+    { id: "eq-saturation",   min: 0,   max: 3,   step: 0.1, def: 1,   unit: "" },
+    { id: "fade-duration",   min: 0.1, max: 10,  step: 0.1, def: 1,   unit: "s" },
+    { id: "loudnorm-target", min: -70, max: -5,  step: 0.5, def: -16, unit: " LUFS" },
+  ];
+
+  // Format a (already-valid, finite) slider value for its live readout label.
+  // Removes floating-point noise then appends the unit suffix.
+  function formatSliderOut(spec, value) {
+    const v = parseFloat(value);
+    if (!isFinite(v)) return "";
+    return parseFloat(v.toFixed(10)) + spec.unit;
+  }
+
+  // --- Completion actions: Open + Reveal in file manager after a run ---
+
+  // Platform-appropriate label for the "reveal in file manager" button.
+  function revealLabel(platform) {
+    if (platform === "darwin") return "Reveal in Finder";
+    if (platform === "linux") return "Reveal in Files";
+    return "Reveal in Explorer";
+  }
+
+  // Extract just the filename from a path (handles both / and \ separators).
+  // Returns null for empty/null inputs; falls back to the original string when
+  // there is no separator so callers always get a displayable value or null.
+  function outputBaseName(outputPath) {
+    if (!outputPath) return null;
+    return String(outputPath).replace(/\\/g, "/").split("/").pop() || String(outputPath);
+  }
+
   // --- Light/dark theme toggle ---
   // The renderer carries a `data-theme` attribute on <html>; styles.css supplies a
   // `:root[data-theme="light"]` palette override (dark is the default :root). Pure
@@ -1221,6 +1259,10 @@
     recentFileLabel,
     recentDir,
     reorderList,
+    SLIDER_SPECS,
+    formatSliderOut,
+    revealLabel,
+    outputBaseName,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

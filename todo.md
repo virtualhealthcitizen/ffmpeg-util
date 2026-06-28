@@ -312,8 +312,12 @@ Input affordances (kill the typed-number friction — this is what bit "Blur pad
       the current/source width; Match copies probed dims). Verified: node:test
       (5 new, 50 total) + headless Electron E2E (720p→1280×720; 16:9 from 1000→
       1000×564; row hidden on gif). [Adopted a stranded 2h-old burn WIP.]
-- [ ] Sliders with live readouts for the numeric ops — volume (dB), speed (×),
-      eq (brightness/contrast/saturation), fade (s), loudnorm (LUFS), blur sigma.
+- [x] **Sliders with live readouts** for the numeric ops — volume (dB), speed (×),
+      eq (brightness/contrast/saturation), fade (s), loudnorm (LUFS). `SLIDER_SPECS`
+      + `formatSliderOut` in `logic.js`; `.sl-group` (range + readout span + number)
+      in `index.html`; `setupSliders`/`refreshSliders` wired in `renderer.js`; presets
+      exclude range inputs. Verified: node:test (4 new, 122 total) + headless Electron
+      E2E (11/11: all sliders present, bidirectional sync, Volume run via slider).
 - [x] **Auto-fill the output path** from input + op suffix (in.mp4 → in.small.mp4)
       so "output required" stops being a manual step. Pure `suggestOutputForTab`/
       `extOf` + `OUTPUT_SPECS` in `logic.js` (per-tab tag; gif/waveform/thumbnail/
@@ -339,7 +343,7 @@ Workflow / feedback components:
 **Priority for this round (highest first):**
 1. ~~Tool search / command palette~~ — DONE (round 7).
 2. ~~Auto source-preview + friendly probe card~~ — DONE (round 7).
-3. ~~Dimension / aspect presets~~ — DONE. 4. Sliders with live readouts (in flight, `feat/sliders`).
+3. ~~Dimension / aspect presets~~ — DONE. 4. ~~Sliders with live readouts~~ — DONE.
 5. ~~Visual crop selector~~ — DONE. 6. ~~Auto-fill output path~~ — DONE. The rest — **← next.**
 
 - [x] **Tool search / command palette** — filter box above the tabs (pure
