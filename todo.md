@@ -115,7 +115,7 @@ Packaging / tests:
 - [ ] Batch mode: apply one operation to many files / a whole folder
 - [ ] Job queue + history (recent runs, re-run, clear)
 - [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
-- [ ] "Reveal in Explorer" / open output after completion
+- [x] "Reveal in Explorer" / open output after completion
 - [x] Before/after size + duration summary on completion — see round 8 below.
 
 ### UI / UX
@@ -210,7 +210,7 @@ Packaging / tests:
       centered pad), CLI `pad`, sidecar (`/pad` + `/run/stream`), Pad tab.
       Verified E2E: 320x240 -> exact 640x640 frame.
 - [ ] Concatenate with automatic re-encode when inputs differ
-- [ ] Per-op "open output folder" after completion
+- [x] Per-op "open output folder" after completion
 - [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
 - [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,
       sidecar (`/loop` + `/run/stream`), Loop tab. Verified E2E: count=3 -> ~3x duration.
@@ -409,7 +409,15 @@ Workflow / re-use:
       Verified: node:test (6 new, 98 total) + headless Electron E2E vs the real
       sidecar (320×240 clip → compress "clip-compress-320x240.mp4"; user path
       kept; blank → ".out.mp4" fallback; template persisted).
-- [ ] Toast on completion with inline "Open" / "Reveal in Explorer" actions.
+- [x] **"Open" + "Reveal in Explorer/Finder/Files" buttons on completion** — after
+      a successful run, two buttons appear below the summary: "Open" (OS default
+      app via `shell.openPath` IPC) and "Reveal in Explorer/Finder/Files" (file
+      manager via `shell.showItemInFolder`; label adapts via `revealLabel(platform)`
+      in `logic.js`). Buttons are hidden before any run and cleared at each new run.
+      The "Done" status line shows just the filename (`outputBaseName` in `logic.js`).
+      Verified: node:test 124/124 (6 new: revealLabel + outputBaseName) + headless
+      Electron E2E 8/8 (hidden at start; visible + enabled after compress; status
+      "Done — ffu_ca_out.mp4"; Reveal label = "Reveal in Explorer" on win32).
 - [x] **Before/after result summary** — once an op completes, a green readout
       compares the output to the input: size delta with percent (e.g. "774 KB →
       61 KB (−92%)") plus a duration segment when the length changed

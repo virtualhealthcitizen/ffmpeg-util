@@ -19,4 +19,9 @@ contextBridge.exposeInMainWorld("sidecar", {
   setSettings: (data) => ipcRenderer.invoke("settings:set", data),
   // Resolve the absolute path of a dropped File (Electron 32+ removed File.path).
   getPathForFile: (file) => webUtils.getPathForFile(file),
+  // Open the output file with the OS default app, or reveal it in the file manager.
+  openPath: (p) => ipcRenderer.invoke("shell:openPath", p),
+  showItemInFolder: (p) => ipcRenderer.invoke("shell:showItemInFolder", p),
+  // The current OS platform ("win32" / "darwin" / "linux"), used for UI labels.
+  platform: process.platform,
 });
