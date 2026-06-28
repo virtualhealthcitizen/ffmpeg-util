@@ -320,6 +320,10 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .summary.hidden { display: none; }
 .summary::before { content: "📊 "; }
 
+/* Open / Reveal-in-Explorer buttons shown after a successful op. */
+.completion-actions { margin-top: 10px; display: flex; gap: 8px; }
+.completion-actions.hidden { display: none; }
+
 /* "Copy as CLI": the reconstructed ffmpeg-util command + a copy button */
 .cli-command-row {
   margin-top: 12px;
@@ -391,6 +395,33 @@ label.inline {
   font-size: 11px;
 }
 label.inline input { flex: none; }
+
+/* Slider controls: range slider + live readout + compact number input */
+.sl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+input[type="range"] {
+  flex: 1 1 120px;
+  min-width: 80px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+.sl-out {
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 5.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+input[type="number"].sl-num { max-width: 68px; width: 68px; }
 
 .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
 .hint code { background: var(--inset); padding: 1px 4px; border-radius: 3px; }

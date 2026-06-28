@@ -268,7 +268,13 @@
         <button class="pick-save" data-target="speed-output">Save as…</button>
       </div>
       <div class="row wrap">
-        <label class="inline">Factor <input id="speed-factor" type="number" step="0.1" min="0.1" placeholder="2 = 2× faster" /></label>
+        <label class="inline">Factor
+          <div class="sl-group">
+            <input type="range" id="speed-factor-sl" min="0.1" max="4" step="0.1" value="1" />
+            <span class="sl-out" id="speed-factor-out">1×</span>
+            <input id="speed-factor" type="number" step="0.1" min="0.1" class="sl-num" />
+          </div>
+        </label>
       </div>
       <p class="hint">&gt;1 speeds up, &lt;1 slows down. Audio is retimed to match.</p>
       <div class="row"><button class="primary" id="run-speed">Change speed</button></div>
@@ -456,7 +462,13 @@
         <button class="pick-save" data-target="volume-output">Save as…</button>
       </div>
       <div class="row wrap">
-        <label class="inline">Gain (dB) <input id="volume-gain" type="number" step="0.5" placeholder="-6 or 3" /></label>
+        <label class="inline">Gain (dB)
+          <div class="sl-group">
+            <input type="range" id="volume-gain-sl" min="-60" max="30" step="0.5" value="0" />
+            <span class="sl-out" id="volume-gain-out">0 dB</span>
+            <input id="volume-gain" type="number" step="0.5" class="sl-num" />
+          </div>
+        </label>
       </div>
       <p class="hint">Positive boosts, negative attenuates. Video is copied; audio is re-encoded.</p>
       <div class="row"><button class="primary" id="run-volume">Adjust volume</button></div>
@@ -476,7 +488,13 @@
         <button class="pick-save" data-target="fade-output">Save as…</button>
       </div>
       <div class="row wrap">
-        <label class="inline">Fade (s) <input id="fade-duration" type="number" step="0.1" min="0.1" placeholder="1" /></label>
+        <label class="inline">Fade (s)
+          <div class="sl-group">
+            <input type="range" id="fade-duration-sl" min="0.1" max="10" step="0.1" value="1" />
+            <span class="sl-out" id="fade-duration-out">1s</span>
+            <input id="fade-duration" type="number" step="0.1" min="0.1" class="sl-num" />
+          </div>
+        </label>
       </div>
       <p class="hint">Fades in from black at the start and out to black at the end (audio too).</p>
       <div class="row"><button class="primary" id="run-fade">Apply fade</button></div>
@@ -529,7 +547,13 @@
         <button class="pick-save" data-target="loudnorm-output">Save as…</button>
       </div>
       <div class="row wrap">
-        <label class="inline">Target (LUFS) <input id="loudnorm-target" type="number" step="0.5" placeholder="-16" /></label>
+        <label class="inline">Target (LUFS)
+          <div class="sl-group">
+            <input type="range" id="loudnorm-target-sl" min="-70" max="-5" step="0.5" value="-16" />
+            <span class="sl-out" id="loudnorm-target-out">-16 LUFS</span>
+            <input id="loudnorm-target" type="number" step="0.5" class="sl-num" />
+          </div>
+        </label>
       </div>
       <p class="hint">Normalizes integrated loudness (EBU R128). Common targets: -16 (web), -14 (streaming), -23 (broadcast).</p>
       <div class="row"><button class="primary" id="run-loudnorm">Normalize loudness</button></div>
@@ -566,9 +590,27 @@
         <button class="pick-save" data-target="eq-output">Save as…</button>
       </div>
       <div class="row wrap">
-        <label class="inline">Brightness <input id="eq-brightness" type="number" step="0.1" placeholder="0" /></label>
-        <label class="inline">Contrast <input id="eq-contrast" type="number" step="0.1" placeholder="1" /></label>
-        <label class="inline">Saturation <input id="eq-saturation" type="number" step="0.1" placeholder="1" /></label>
+        <label class="inline">Brightness
+          <div class="sl-group">
+            <input type="range" id="eq-brightness-sl" min="-1" max="1" step="0.1" value="0" />
+            <span class="sl-out" id="eq-brightness-out">0</span>
+            <input id="eq-brightness" type="number" step="0.1" class="sl-num" />
+          </div>
+        </label>
+        <label class="inline">Contrast
+          <div class="sl-group">
+            <input type="range" id="eq-contrast-sl" min="0" max="3" step="0.1" value="1" />
+            <span class="sl-out" id="eq-contrast-out">1</span>
+            <input id="eq-contrast" type="number" step="0.1" class="sl-num" />
+          </div>
+        </label>
+        <label class="inline">Saturation
+          <div class="sl-group">
+            <input type="range" id="eq-saturation-sl" min="0" max="3" step="0.1" value="1" />
+            <span class="sl-out" id="eq-saturation-out">1</span>
+            <input id="eq-saturation" type="number" step="0.1" class="sl-num" />
+          </div>
+        </label>
       </div>
       <p class="hint">Brightness −1…1 (0 = none), contrast/saturation around 1 (1 = none).</p>
       <div class="row"><button class="primary" id="run-eq">Adjust</button></div>
@@ -837,6 +879,12 @@
 
     <!-- Before/after size + duration summary, shown once an op completes -->
     <div id="summary" class="summary hidden"></div>
+
+    <!-- Open / Reveal in file manager buttons shown after a successful run -->
+    <div id="completion-actions" class="completion-actions hidden">
+      <button id="open-output" class="secondary" type="button">Open</button>
+      <button id="reveal-output" class="secondary" type="button">Reveal in Explorer</button>
+    </div>
 
     <section class="card preview hidden" id="preview">
       <label>Output preview</label>

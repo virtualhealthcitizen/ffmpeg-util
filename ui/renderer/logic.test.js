@@ -667,6 +667,55 @@ test("rectToCrop scales display px to even source-px crop values", () => {
   assert.equal(c.height, 320);
 });
 
+test("SLIDER_SPECS covers the expected tabs and has required fields", () => {
+  const specs = L.SLIDER_SPECS;
+  assert.ok(Array.isArray(specs), "SLIDER_SPECS is an array");
+  const ids = specs.map((s) => s.id);
+  assert.ok(ids.includes("volume-gain"), "has volume-gain");
+  assert.ok(ids.includes("speed-factor"), "has speed-factor");
+  assert.ok(ids.includes("eq-brightness"), "has eq-brightness");
+  assert.ok(ids.includes("eq-contrast"), "has eq-contrast");
+  assert.ok(ids.includes("eq-saturation"), "has eq-saturation");
+  assert.ok(ids.includes("fade-duration"), "has fade-duration");
+  assert.ok(ids.includes("loudnorm-target"), "has loudnorm-target");
+  for (const s of specs) {
+    assert.ok(typeof s.min === "number", `${s.id} has numeric min`);
+    assert.ok(typeof s.max === "number", `${s.id} has numeric max`);
+    assert.ok(typeof s.step === "number" && s.step > 0, `${s.id} has positive step`);
+    assert.ok(typeof s.def === "number", `${s.id} has numeric def`);
+    assert.ok(s.def >= s.min && s.def <= s.max, `${s.id} def is in [min,max]`);
+    assert.ok(typeof s.unit === "string", `${s.id} has string unit`);
+  }
+});
+
+test("formatSliderOut formats values with the correct unit suffix", () => {
+  const volSpec = L.SLIDER_SPECS.find((s) => s.id === "volume-gain");
+  assert.equal(L.formatSliderOut(volSpec, 0), "0 dB");
+  assert.equal(L.formatSliderOut(volSpec, -6), "-6 dB");
+  assert.equal(L.formatSliderOut(volSpec, 3.5), "3.5 dB");
+
+  const speedSpec = L.SLIDER_SPECS.find((s) => s.id === "speed-factor");
+  assert.equal(L.formatSliderOut(speedSpec, 1), "1×");
+  assert.equal(L.formatSliderOut(speedSpec, 2), "2×");
+  assert.equal(L.formatSliderOut(speedSpec, 0.5), "0.5×");
+
+  const loudSpec = L.SLIDER_SPECS.find((s) => s.id === "loudnorm-target");
+  assert.equal(L.formatSliderOut(loudSpec, -16), "-16 LUFS");
+  assert.equal(L.formatSliderOut(loudSpec, -23), "-23 LUFS");
+
+  const eqSpec = L.SLIDER_SPECS.find((s) => s.id === "eq-brightness");
+  assert.equal(L.formatSliderOut(eqSpec, 0), "0");
+  assert.equal(L.formatSliderOut(eqSpec, -0.5), "-0.5");
+});
+
+test("formatSliderOut handles floating-point noise gracefully", () => {
+  const fadeSpec = L.SLIDER_SPECS.find((s) => s.id === "fade-duration");
+  // 0.1+0.2 = 0.30000000000000004 in floating point
+  assert.equal(L.formatSliderOut(fadeSpec, 0.1 + 0.2), "0.3s");
+  assert.equal(L.formatSliderOut(fadeSpec, NaN), "");
+  assert.equal(L.formatSliderOut(fadeSpec, Infinity), "");
+});
+
 test("rectToCrop clamps to the source frame and never overflows", () => {
   const display = { width: 200, height: 100 };
   const source = { width: 400, height: 200 };
@@ -1103,4 +1152,21 @@ test("appendConsoleLines appends, splits on newlines, and caps the buffer", () =
   assert.deepEqual(buf, ["L7", "L8", "L9"]);
   // null/undefined are tolerated (become an empty line, never throw)
   assert.deepEqual(L.appendConsoleLines(["a"], null), ["a", ""]);
+});
+
+test("revealLabel returns the right label per platform", () => {
+  assert.equal(L.revealLabel("win32"), "Reveal in Explorer");
+  assert.equal(L.revealLabel("darwin"), "Reveal in Finder");
+  assert.equal(L.revealLabel("linux"), "Reveal in Files");
+  assert.equal(L.revealLabel("freebsd"), "Reveal in Explorer"); // unknown → Explorer
+  assert.equal(L.revealLabel(null), "Reveal in Explorer");
+  assert.equal(L.revealLabel(undefined), "Reveal in Explorer");
+});
+
+test("outputBaseName extracts filename from Windows, POSIX, and bare paths", () => {
+  assert.equal(L.outputBaseName("C:\\Users\\james\\out.mp4"), "out.mp4");
+  assert.equal(L.outputBaseName("/tmp/out.gif"), "out.gif");
+  assert.equal(L.outputBaseName("out.mp4"), "out.mp4");
+  assert.equal(L.outputBaseName(null), null);
+  assert.equal(L.outputBaseName(""), null);
 });

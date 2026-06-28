@@ -14,7 +14,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
   addRecentFile, recentFileLabel, recentDir, reorderList,
   resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel,
-  appendConsoleLines } = window.FfuLogic;
+  appendConsoleLines, SLIDER_SPECS, formatSliderOut,
+  revealLabel, outputBaseName } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1112,7 +1113,7 @@ function presetFieldEls(tab) {
   const panel = $("#panel-" + tab);
   if (!panel) return [];
   return Array.from(panel.querySelectorAll("input, select, textarea"))
-    .filter((el) => el.id && !isPathFieldId(el.id));
+    .filter((el) => el.id && !isPathFieldId(el.id) && el.type !== "range");
 }
 function collectOptionValues(tab) {
   const out = {};
@@ -1161,6 +1162,7 @@ $("#preset-load").addEventListener("click", () => {
   const values = name ? getPreset(presetsData, tab, name) : null;
   if (!values) { setStatus("Pick a saved preset to load.", true); return; }
   applyOptionValues(tab, values);
+  refreshSliders(); // sync range sliders to the restored number values
   setStatus(`Loaded preset "${name}".`);
 });
 
@@ -1222,6 +1224,34 @@ async function showPreview(outputPath) {
     hidePreview();
   }
 }
+
+// --- Completion actions: Open and Reveal in Explorer buttons after a run ---
+// Stored so the button click handlers can reference the last successful output.
+let lastOutputPath = null;
+
+function showCompletionActions(outputPath) {
+  lastOutputPath = outputPath || null;
+  const el = $("#completion-actions");
+  if (el) el.classList.toggle("hidden", !outputPath);
+}
+
+function hideCompletionActions() {
+  lastOutputPath = null;
+  const el = $("#completion-actions");
+  if (el) el.classList.add("hidden");
+}
+
+(function setupCompletionActions() {
+  const revealBtn = $("#reveal-output");
+  if (revealBtn) revealBtn.textContent = revealLabel(window.sidecar.platform);
+  const openBtn = $("#open-output");
+  if (openBtn) openBtn.addEventListener("click", () => {
+    if (lastOutputPath) window.sidecar.openPath(lastOutputPath).catch(() => {});
+  });
+  if (revealBtn) revealBtn.addEventListener("click", () => {
+    if (lastOutputPath) window.sidecar.showItemInFolder(lastOutputPath).catch(() => {});
+  });
+})();
 
 // --- Before/after result summary (size + duration once an op completes) ---
 function hideSummary() {
@@ -1376,6 +1406,7 @@ async function run(label, op, body) {
   setStatus(label + "…");
   clearErrorHint();
   hideSummary();
+  hideCompletionActions();
   showCliCommand(op, body); // surface the equivalent ffmpeg-util command
   showProgress(0);
   clearConsole();
@@ -1417,12 +1448,13 @@ async function run(label, op, body) {
       }
     }
     hideProgress();
-    setStatus(result ? "Done → " + result.output : "Done.");
+    setStatus(result && result.output ? "Done — " + (outputBaseName(result.output) || result.output) : "Done.");
     saveSettings();
     if (result && result.output) {
       showPreview(result.output);
       // Compare the output back to the primary input (single-input ops, else first).
       showSummary(body.input || (body.inputs && body.inputs[0]) || null, result.output);
+      showCompletionActions(result.output);
     }
   } catch (e) {
     hideProgress();
@@ -1813,3 +1845,46 @@ $("#run-autocrop").addEventListener("click", () => {
     overwrite: true,
   });
 });
+
+// --- Sliders with live readouts ---
+// Sync all sliders from their paired number inputs (called after preset load).
+function refreshSliders() {
+  for (const spec of SLIDER_SPECS) {
+    const sl = $("#" + spec.id + "-sl");
+    const num = $("#" + spec.id);
+    const out = $("#" + spec.id + "-out");
+    if (!sl || !num || !out) continue;
+    const v = num.value.trim() !== "" ? parseFloat(num.value) : spec.def;
+    const clamped = Math.min(spec.max, Math.max(spec.min, isFinite(v) ? v : spec.def));
+    sl.value = clamped;
+    out.textContent = formatSliderOut(spec, clamped);
+  }
+}
+
+// Wire up bidirectional slider↔number sync for each spec. Called once at init.
+function setupSliders() {
+  for (const spec of SLIDER_SPECS) {
+    const sl = $("#" + spec.id + "-sl");
+    const num = $("#" + spec.id);
+    const out = $("#" + spec.id + "-out");
+    if (!sl || !num || !out) continue;
+    sl.addEventListener("input", () => {
+      const v = parseFloat(sl.value);
+      if (!isFinite(v)) return;
+      const clamped = Math.min(spec.max, Math.max(spec.min, v));
+      const tidy = parseFloat((Math.round(clamped / spec.step) * spec.step).toFixed(10));
+      num.value = tidy;
+      out.textContent = formatSliderOut(spec, tidy);
+    });
+    num.addEventListener("input", () => {
+      const v = parseFloat(num.value);
+      if (!isFinite(v)) return;
+      const clamped = Math.min(spec.max, Math.max(spec.min, v));
+      sl.value = clamped;
+      out.textContent = formatSliderOut(spec, parseFloat(clamped.toFixed(10)));
+    });
+  }
+  refreshSliders(); // initialize readouts and slider positions from defaults
+}
+
+setupSliders();
