@@ -2,7 +2,7 @@
 // to report healthy, then open the window. The renderer talks to the sidecar over
 // loopback HTTP using a per-launch bearer token (so no other local process can use it).
 
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const { spawn, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const path = require("path");
@@ -120,6 +120,9 @@ ipcMain.handle("settings:set", (_e, data) => {
   settingsStore.save(settingsFile(), data);
   return true;
 });
+
+ipcMain.handle("shell:openPath", (_e, p) => shell.openPath(String(p || "")));
+ipcMain.handle("shell:showItemInFolder", (_e, p) => { shell.showItemInFolder(String(p || "")); });
 
 function killSidecar() {
   if (!sidecar || sidecar.killed || sidecar.pid == null) return;
