@@ -319,7 +319,7 @@ def make_gif(
     try:
         runner.run_ffmpeg([*seek, "-i", input_path, *dur, "-vf", f"{filt},palettegen", "-y", palette])
         runner.run_ffmpeg([
-            *seek, "-i", input_path, *dur, "-i", palette,
+            *seek, "-i", input_path, "-i", palette, *dur,
             "-lavfi", f"{filt} [x];[x][1:v] paletteuse", "-y", output_path,
         ])
     finally:
