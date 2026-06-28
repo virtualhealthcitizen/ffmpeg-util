@@ -10,6 +10,8 @@ import json
 import os
 import queue
 import tempfile
+import threading
+import time
 
 import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -1049,15 +1051,45 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     pass
                 log_q: queue.Queue = queue.Queue()
                 try:
-                    yield _sse({"type": "log", "line": "Pass 1/2: generating color palette…"})
-                    for _ in runner.iter_ffmpeg_progress(
-                        [*seek, "-i", req.input, *dur, "-vf", f"{filt},palettegen", palette],
-                        on_log=log_q.put,
-                    ):
+                    # Pass 1 (palettegen) reads the WHOLE clip but only emits one
+                    # output frame at the very end, so ffmpeg gives no progress or
+                    # stats while it runs — on a long clip the console/progress sit
+                    # dead for many seconds (looks frozen). Run it on a background
+                    # thread and emit our own heartbeat lines so the console keeps
+                    # ticking until the palette is ready.
+                    yield _sse({"type": "log", "line": "Pass 1/2: building color palette (reads the whole clip)…"})
+                    pal_state: dict = {}
+
+                    def _palettegen() -> None:
+                        try:
+                            for _ in runner.iter_ffmpeg_progress(
+                                [*seek, "-i", req.input, *dur, "-vf", f"{filt},palettegen", palette],
+                                on_log=log_q.put,
+                            ):
+                                pass
+                        except Exception as exc:  # surface to the generator
+                            pal_state["error"] = exc
+                        finally:
+                            pal_state["done"] = True
+
+                    pal_thread = threading.Thread(target=_palettegen, daemon=True)
+                    pal_thread.start()
+                    pal_started = time.monotonic()
+                    while not pal_state.get("done"):
+                        emitted = False
                         while not log_q.empty():
                             yield _sse({"type": "log", "line": log_q.get_nowait()})
+                            emitted = True
+                        if not emitted:
+                            elapsed = int(time.monotonic() - pal_started)
+                            yield _sse({"type": "log", "line": f"  …analyzing frames for the palette ({elapsed}s)…"})
+                            yield _sse({"type": "progress", "percent": None, "phase": "palettegen",
+                                        "speed": None, "out_time": None, "total": None})
+                        pal_thread.join(timeout=1.2)
                     while not log_q.empty():
                         yield _sse({"type": "log", "line": log_q.get_nowait()})
+                    if pal_state.get("error") is not None:
+                        raise pal_state["error"]
                     yield _sse({"type": "log", "line": "Pass 2/2: encoding GIF…"})
                     for fields in runner.iter_ffmpeg_progress(
                         [*seek, "-i", req.input, *dur, "-i", palette,
