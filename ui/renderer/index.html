@@ -159,7 +159,7 @@
         <label class="inline">Start <input id="trim-start" type="text" placeholder="00:00:00 or secs" /></label>
         <label class="inline">End <input id="trim-end" type="text" placeholder="(optional)" /></label>
         <label class="inline">Duration <input id="trim-duration" type="text" placeholder="(optional)" /></label>
-        <label class="check"><input id="trim-reencode" type="checkbox" /> Re-encode (frame-accurate)</label>
+        <label class="check" title="Off (default): stream-copy — instant and lossless, but the cut can only start on a keyframe, so the real start/end may be off by up to ~1–2s. On: re-encode the video so the cut lands on the exact frame you set (slower, and the video is recompressed)."><input id="trim-reencode" type="checkbox" /> Re-encode (frame-accurate)</label>
       </div>
       <p class="hint">Use End <em>or</em> Duration, not both. Stream-copy is keyframe-aligned; re-encode for exact cuts.</p>
       <div class="row"><button class="primary" id="run-trim">Trim</button></div>
