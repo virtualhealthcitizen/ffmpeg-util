@@ -1162,6 +1162,14 @@
         .filter(Boolean)
         .map((p) => [p, fieldId]);
     }
+    if (tab === "replace_audio") {
+      const entries = [];
+      const vid = String(b.input || "").trim();
+      if (vid) entries.push([vid, "replace_audio-input"]);
+      const aud = String(b.audio || "").trim();
+      if (aud) entries.push([aud, "replace_audio-audio"]);
+      return entries;
+    }
     const p = String(b.input || "").trim();
     return p ? [[p, tab + "-input"]] : [];
   }
