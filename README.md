@@ -5,6 +5,11 @@ the media chores you reach for constantly: convert, trim, concatenate,
 thumbnail, compress/resize, and probe.
 
 > 📖 Full usage guide: **[MANUAL.md](MANUAL.md)** (CLI, library, desktop UI, packaging).
+>
+> 🌐 Live showcase: this project on the
+> **[JM portfolio](https://jm-portfolio-5afqr6ijoq-uc.a.run.app/#/project/ffmpeg-util)**
+> (demo, changelog, releases) · built autonomously by the
+> **[Burn Fleet](https://jm-portfolio-5afqr6ijoq-uc.a.run.app/#/monitor)**.
 
 - **Zero runtime dependencies** — pure Python 3.11+ stdlib, shells out to `ffmpeg`/`ffprobe`.
 - **`--dry-run` everywhere** — print the exact command before running it.
