@@ -842,6 +842,30 @@ def test_run_stream_gif(client, media, auth):
     events = _sse_events(r.text)
     assert events[-1]["type"] == "done"
     assert out.exists() and out.stat().st_size > 0
+    # Stronger feedback: the GIF run now streams console log lines, a phase
+    # marker per pass, and progress over the encode (it used to emit only done).
+    logs = [e["line"] for e in events if e["type"] == "log"]
+    assert logs, "expected streamed ffmpeg console log lines"
+    assert any("Pass 1/2" in ln for ln in logs)
+    assert any("Pass 2/2" in ln for ln in logs)
+    assert any(e["type"] == "progress" for e in events)
+
+
+def test_run_stream_emits_console_log(client, media, auth):
+    # Every streamed op surfaces ffmpeg's console output as `log` events so the
+    # UI console panel isn't empty during a run.
+    d, src = media
+    out = d / "logged.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "compress", "input": str(src), "output": str(out),
+              "crf": 30, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    logs = [e["line"] for e in _sse_events(r.text) if e["type"] == "log"]
+    assert logs, "expected at least one ffmpeg console log line"
+    assert any(ln.strip() for ln in logs)
 
 
 def test_contact_sheet_dimensions(client, media, auth):
