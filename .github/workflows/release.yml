@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build & publish Windows release
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Python sidecar binary (PyInstaller) ----------------------------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install sidecar deps + PyInstaller
+        run: |
+          pip install pyinstaller
+          pip install -r ui/sidecar/requirements.txt
+
+      - name: Build sidecar binary
+        working-directory: ui/sidecar
+        run: >
+          pyinstaller --onefile --name ffmpeg-util-sidecar --noconfirm
+          --paths ../..
+          --collect-all uvicorn --collect-all fastapi
+          --collect-all pydantic --collect-all pydantic_core
+          --collect-submodules ffmpeg_util
+          --distpath dist --workpath build --specpath build
+          server.py
+
+      # ---- Electron app ---------------------------------------------------
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install npm deps
+        working-directory: ui
+        run: npm ci
+
+      - name: Package Electron app
+        working-directory: ui
+        run: npm run pack
+
+      # ---- Zip & release --------------------------------------------------
+      - name: Create release zip
+        shell: pwsh
+        run: |
+          $tag  = "${{ github.ref_name }}"
+          $src  = "ui\dist\ffmpeg-util-win32-x64"
+          $dest = "ffmpeg-util-$tag-windows-x64"
+          Move-Item $src $dest
+          $zip  = "$dest.zip"
+          Compress-Archive -Path $dest -DestinationPath $zip
+          Write-Host "Packaged: $zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: "ffmpeg-util ${{ github.ref_name }}"
+          files: "ffmpeg-util-${{ github.ref_name }}-windows-x64.zip"
+          generate_release_notes: true
