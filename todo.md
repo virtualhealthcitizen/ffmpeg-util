@@ -191,7 +191,7 @@ Packaging / tests:
       "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)
 - [ ] Estimate output size before encoding (compress preview)
-- [ ] GIF tuning: dithering mode + loop count
+- [x] GIF tuning: dithering mode + loop count — `make_gif` gains `dither` (sierra2_4a/bayer/floyd_steinberg/none) + `loop` (0=∞, -1=once); CLI `--dither`/`--loop`; sidecar `GifReq` + streaming path; Dither select + Loop field on GIF tab; persisted via STICKY. Verified: pytest 101+69 + node:test 126 + headless Electron E2E 6/6 (bayer+floyd_steinberg GIFs produced; all 4 dither options present; loop=-1 GIF produced). ← next
 - [x] Grayscale (desaturate) — core `build_grayscale_args` (`hue=s=0`), CLI `grayscale`,
       sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.
 - [ ] Denoise / sharpen / deinterlace filter presets

@@ -293,6 +293,9 @@ def gif_filter(fps: int, width: int) -> str:
     return f"fps={fps},scale={width}:-1:flags=lanczos"
 
 
+VALID_DITHERS = frozenset({"sierra2_4a", "bayer", "floyd_steinberg", "sierra2", "none"})
+
+
 def make_gif(
     runner: FfmpegRunner,
     input_path: str,
@@ -302,14 +305,19 @@ def make_gif(
     width: int = 480,
     start: str | None = None,
     duration: str | None = None,
+    dither: str = "sierra2_4a",
+    loop: int = 0,
 ) -> None:
     """Export an animated GIF using a two-pass palette (palettegen/paletteuse)
     for far better quality than a naive single pass. Optional trim via
-    ``start``/``duration``."""
+    ``start``/``duration``. ``dither`` controls the paletteuse dithering
+    algorithm; ``loop`` sets the GIF loop count (0=infinite, -1=no loop)."""
     if fps < 1:
         raise ValueError("fps must be >= 1")
     if width < 1:
         raise ValueError("width must be >= 1")
+    if dither not in VALID_DITHERS:
+        raise ValueError(f"dither must be one of: {', '.join(sorted(VALID_DITHERS))}")
     seek = ["-ss", start] if start is not None else []
     dur = ["-t", duration] if duration is not None else []
     filt = gif_filter(fps, width)
@@ -320,7 +328,8 @@ def make_gif(
         runner.run_ffmpeg([*seek, "-i", input_path, *dur, "-vf", f"{filt},palettegen", "-y", palette])
         runner.run_ffmpeg([
             *seek, "-i", input_path, "-i", palette, *dur,
-            "-lavfi", f"{filt} [x];[x][1:v] paletteuse", "-y", output_path,
+            "-lavfi", f"{filt} [x];[x][1:v] paletteuse=dither={dither}",
+            "-loop", str(loop), "-y", output_path,
         ])
     finally:
         try:
