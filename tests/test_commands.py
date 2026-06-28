@@ -523,6 +523,10 @@ def test_make_gif_rejects_bad_inputs():
         c.make_gif(runner, "in.mp4", "out.gif", width=0)
     with pytest.raises(ValueError):
         c.make_gif(runner, "in.mp4", "out.gif", dither="bogus")
+    # Regression: "none" was in VALID_DITHERS but is not a valid ffmpeg paletteuse
+    # dither mode — passing it caused ffmpeg to fail with "Option dither not found".
+    with pytest.raises(ValueError):
+        c.make_gif(runner, "in.mp4", "out.gif", dither="none")
 
 
 def test_make_gif_dither_in_encode_pass(capsys):

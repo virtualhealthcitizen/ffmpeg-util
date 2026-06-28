@@ -293,7 +293,7 @@ def gif_filter(fps: int, width: int) -> str:
     return f"fps={fps},scale={width}:-1:flags=lanczos"
 
 
-VALID_DITHERS = frozenset({"sierra2_4a", "bayer", "floyd_steinberg", "sierra2", "none"})
+VALID_DITHERS = frozenset({"sierra2_4a", "bayer", "floyd_steinberg", "sierra2"})
 
 
 def make_gif(
