@@ -1092,7 +1092,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                         raise pal_state["error"]
                     yield _sse({"type": "log", "line": "Pass 2/2: encoding GIF…"})
                     for fields in runner.iter_ffmpeg_progress(
-                        [*seek, "-i", req.input, *dur, "-i", palette,
+                        [*seek, "-i", req.input, "-i", palette, *dur,
                          "-lavfi", f"{filt} [x];[x][1:v] paletteuse", req.output],
                         on_log=log_q.put,
                     ):

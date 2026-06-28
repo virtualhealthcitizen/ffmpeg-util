@@ -496,6 +496,25 @@ def test_make_gif_two_pass_dry_run(capsys):
     assert "-ss 1" in out and "-t 2" in out
 
 
+def test_make_gif_duration_is_output_option_in_encode_pass(capsys):
+    # Regression: when duration is set, -t must come AFTER both -i args in the
+    # encode pass so ffmpeg treats it as an output option (limits the GIF length).
+    # Placing -t between the two -i args makes it an input option for the palette,
+    # which causes the GIF to run from start to EOF instead of for `duration` seconds.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.make_gif(runner, "in.mp4", "out.gif", fps=12, width=480, start="5", duration="3")
+    lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
+    assert len(lines) == 2, "expected two ffmpeg calls (palettegen + encode)"
+    encode_tokens = lines[1].split()
+    i_indices = [i for i, t in enumerate(encode_tokens) if t == "-i"]
+    t_indices = [i for i, t in enumerate(encode_tokens) if t == "-t"]
+    assert len(i_indices) == 2, "encode pass needs both input and palette -i"
+    assert t_indices, "-t must appear in the encode pass"
+    last_i = max(i_indices)
+    for t_idx in t_indices:
+        assert t_idx > last_i, "-t must come after both -i args (output option, not palette input option)"
+
+
 def test_make_gif_rejects_bad_inputs():
     runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
     with pytest.raises(ValueError):

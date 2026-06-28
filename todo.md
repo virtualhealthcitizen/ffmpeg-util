@@ -85,6 +85,12 @@ Packaging / tests:
 - [x] Animated GIF export (palette two-pass: palettegen + paletteuse), fps/width/trim —
       core `make_gif`, CLI `gif`, sidecar (`/gif` + `/run/stream`), GIF tab (auto-previews).
       Verified E2E: CLI/sidecar produce a valid gif (codec=gif, width matches).
+      **Bug fix (hunt):** encode pass placed `-t duration` between the two `-i` args,
+      making it an ffmpeg *input* option for the palette instead of an *output* option —
+      so GIFs with a `duration` encoded from `start` to EOF. Fixed by moving `*dur`
+      after both `-i` args in `make_gif` (commands.py) and the streaming GIF path
+      (sidecar/server.py); 1 new regression test (99 total); all 126 node:tests + 67
+      sidecar tests green; E2E smoke passes.
 - [x] Transforms: rotate (cw/ccw/180) + flip (h/v) — core `build_transform_args`,
       CLI `transform --op`, sidecar (`/transform` + `/run/stream`), Transform tab.
       Verified E2E: rotate-cw swaps 320x240 -> 240x320. (Crop still pending.)
