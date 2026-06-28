@@ -858,6 +858,32 @@ def test_run_stream_gif(client, media, auth):
     assert any(e["type"] == "progress" for e in events)
 
 
+def test_gif_dither_param(client, media, auth):
+    d, src = media
+    out = d / "dither.gif"
+    r = client.post(
+        "/gif",
+        json={"input": str(src), "output": str(out), "fps": 10, "width": 240,
+              "duration": "1", "dither": "bayer", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_gif_loop_param(client, media, auth):
+    d, src = media
+    out = d / "noloop.gif"
+    r = client.post(
+        "/gif",
+        json={"input": str(src), "output": str(out), "fps": 10, "width": 240,
+              "duration": "1", "loop": -1, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
 def test_run_stream_emits_console_log(client, media, auth):
     # Every streamed op surfaces ffmpeg's console output as `log` events so the
     # UI console panel isn't empty during a run.

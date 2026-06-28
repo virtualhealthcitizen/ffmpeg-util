@@ -1058,7 +1058,7 @@ const STICKY = [
   "thumbnail-time", "thumbnail-count", "thumbnail-width",
   "compress-crf", "compress-bitrate", "compress-width", "compress-height",
   "compress-vcodec", "compress-preset",
-  "gif-fps", "gif-width",
+  "gif-fps", "gif-width", "gif-dither", "gif-loop",
   "image_to_video-seconds", "image_to_video-fps",
   "autocrop-limit",
   "output-template",
@@ -1858,6 +1858,8 @@ $("#run-gif").addEventListener("click", () => {
     width: numOrNull("gif-width") || 480,
     start: strOrNull("gif-start"),
     duration: strOrNull("gif-duration"),
+    dither: val("gif-dither") || "sierra2_4a",
+    loop: numOrNull("gif-loop") ?? 0,
     overwrite: true,
   });
 });

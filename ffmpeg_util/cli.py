@@ -270,6 +270,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, default=480, help="Output width (default 480).")
     p.add_argument("--start", help="Start time (HH:MM:SS or seconds).")
     p.add_argument("--duration", help="Clip length.")
+    p.add_argument("--dither", default="sierra2_4a",
+                   choices=list(commands.VALID_DITHERS),
+                   help="Dither algorithm for paletteuse (default sierra2_4a).")
+    p.add_argument("--loop", type=int, default=0,
+                   help="GIF loop count: 0=infinite (default), -1=no loop.")
     _add_global_flags(p)
 
     # contact-sheet
@@ -476,6 +481,7 @@ def _dispatch(args: argparse.Namespace) -> int:
         commands.make_gif(
             runner, args.input, args.output,
             fps=args.fps, width=args.width, start=args.start, duration=args.duration,
+            dither=args.dither, loop=args.loop,
         )
         return 0
 

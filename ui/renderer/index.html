@@ -250,7 +250,18 @@
         <label class="inline">Start <input id="gif-start" type="text" placeholder="(optional)" /></label>
         <label class="inline">Duration <input id="gif-duration" type="text" placeholder="(optional)" /></label>
       </div>
-      <p class="hint">Two-pass palette for quality. Lower FPS/width = smaller file.</p>
+      <div class="row wrap">
+        <label class="inline">Dither
+          <select id="gif-dither">
+            <option value="sierra2_4a">High quality</option>
+            <option value="bayer">Ordered (bayer)</option>
+            <option value="floyd_steinberg">Diffuse (F-S)</option>
+            <option value="none">None (fast)</option>
+          </select>
+        </label>
+        <label class="inline">Loop <input id="gif-loop" type="number" min="-1" placeholder="0" title="0 = infinite, -1 = no loop" /></label>
+      </div>
+      <p class="hint">Two-pass palette for quality. Lower FPS/width = smaller file. Loop 0 = infinite.</p>
       <div class="row"><button class="primary" id="run-gif">Make GIF</button></div>
     </section>
 

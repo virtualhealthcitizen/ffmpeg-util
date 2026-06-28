@@ -710,6 +710,8 @@ class GifReq(BaseModel):
     width: int = 480
     start: str | None = None
     duration: str | None = None
+    dither: str = "sierra2_4a"
+    loop: int = 0
     overwrite: bool = True
 
 
@@ -722,6 +724,7 @@ def gif(req: GifReq, _: None = Depends(require_token)) -> dict:
         commands.make_gif(
             runner, req.input, req.output,
             fps=req.fps, width=req.width, start=req.start, duration=req.duration,
+            dither=req.dither, loop=req.loop,
         )
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -813,6 +816,8 @@ class RunReq(BaseModel):
     rows: int = 4
     # gif
     fps: int = 12
+    dither: str = "sierra2_4a"
+    loop: int = 0
     # speed
     factor: float = 1.0
     # frames
@@ -1033,6 +1038,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 # Two-pass palette GIF, streamed so the UI isn't frozen on
                 # "Making GIF…": emit a phase line + live ffmpeg log per pass,
                 # and a progress bar over the (longer) encode pass.
+                gif_dither = req.dither if req.dither in commands.VALID_DITHERS else "sierra2_4a"
+                gif_loop = req.loop
                 filt = commands.gif_filter(req.fps, req.width or 480)
                 seek = ["-ss", req.start] if req.start is not None else []
                 dur = ["-t", req.duration] if req.duration is not None else []
@@ -1093,7 +1100,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     yield _sse({"type": "log", "line": "Pass 2/2: encoding GIF…"})
                     for fields in runner.iter_ffmpeg_progress(
                         [*seek, "-i", req.input, "-i", palette, *dur,
-                         "-lavfi", f"{filt} [x];[x][1:v] paletteuse", req.output],
+                         "-lavfi", f"{filt} [x];[x][1:v] paletteuse=dither={gif_dither}",
+                         "-loop", str(gif_loop), req.output],
                         on_log=log_q.put,
                     ):
                         while not log_q.empty():

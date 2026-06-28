@@ -521,6 +521,36 @@ def test_make_gif_rejects_bad_inputs():
         c.make_gif(runner, "in.mp4", "out.gif", fps=0)
     with pytest.raises(ValueError):
         c.make_gif(runner, "in.mp4", "out.gif", width=0)
+    with pytest.raises(ValueError):
+        c.make_gif(runner, "in.mp4", "out.gif", dither="bogus")
+
+
+def test_make_gif_dither_in_encode_pass(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.make_gif(runner, "in.mp4", "out.gif", dither="bayer")
+    lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
+    assert len(lines) == 2
+    assert "paletteuse=dither=bayer" in lines[1]
+    assert "paletteuse=dither=bayer" not in lines[0]  # palettegen pass unchanged
+
+
+def test_make_gif_loop_in_encode_pass(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.make_gif(runner, "in.mp4", "out.gif", loop=-1)
+    lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
+    assert len(lines) == 2
+    encode_tokens = lines[1].split()
+    assert "-loop" in encode_tokens
+    assert encode_tokens[encode_tokens.index("-loop") + 1] == "-1"
+
+
+def test_make_gif_defaults_dither_and_loop(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.make_gif(runner, "in.mp4", "out.gif")
+    lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
+    assert "paletteuse=dither=sierra2_4a" in lines[1]
+    encode_tokens = lines[1].split()
+    assert encode_tokens[encode_tokens.index("-loop") + 1] == "0"
 
 
 def test_contact_sheet_args_builds_tile_filter():

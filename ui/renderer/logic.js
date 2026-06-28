@@ -327,7 +327,7 @@
     concat: "Join clips end-to-end (one path per line, in order). They must share codec/size — re-encode first if not.",
     thumbnail: "Grab a still (or N stills, or a contact sheet). Example: Time 00:00:03 → one frame; Count 5 → 5 frames.",
     compress: "Shrink with CRF/bitrate, optionally resizing. Example: CRF 28 + Width 1280 for a smaller 720p file.",
-    gif: "Make an animated GIF (palette two-pass). Example: Width 480, FPS 12, Start 0, Duration 3 for a short loop.",
+    gif: "Make an animated GIF (palette two-pass). Example: Width 480, FPS 12, Duration 3; Dither = High quality; Loop 0 = infinite.",
     speed: "Speed up or slow down (keeps pitch sane). Example: 2.0 plays twice as fast; 0.5 is half speed.",
     transform: "Rotate or flip. Example: op = rotate-cw turns 320×240 into 240×320; flip-h mirrors left↔right.",
     crop: "Cut a rectangle (drag on the preview or type x/y/w/h). Example: 160×120 at 80,60 keeps the centre.",
