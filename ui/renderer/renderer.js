@@ -759,7 +759,9 @@ function nameTemplate() {
 // the value it sets is tagged data-auto so a template change can refresh it.
 function maybeFillOutput(tab) {
   const outEl = document.getElementById(tab + "-output");
-  if (!outEl || outEl.value.trim() !== "") return;
+  if (!outEl) return;
+  // Never clobber a user-typed path; only fill if empty or still auto-generated.
+  if (outEl.value.trim() !== "" && !outEl.dataset.auto) return;
   const tmpl = nameTemplate();
   const suggestion = tmpl
     ? templatedOutputForTab(activeInputPath(), tab, tmpl, sourceDims, todayStr())

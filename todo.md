@@ -332,6 +332,13 @@ Input affordances (kill the typed-number friction — this is what bit "Blur pad
       user-set path. Verified: node:test (4 new, 62 total) + headless Electron E2E
       vs the real sidecar (compress→.small.mp4, gif→.anim.gif, waveform→.wave.png,
       trim keeps a user-set output).
+      **Bug fix (hunt):** `maybeFillOutput` ignored the `data-auto` tag, so changing
+      the input after an auto-fill left the stale previous filename in the output
+      field. Fixed by checking `!outEl.dataset.auto` alongside the empty-value
+      guard — auto-generated outputs now refresh when the input changes, while
+      user-typed outputs remain protected. node:test 126/126 + headless E2E 5/5
+      (clip1→.small auto-filled; swap to clip2→output updates to clip2.small;
+      user-typed path not clobbered; smoke compress still produces output). ← next
 
 Workflow / feedback components:
 - [ ] Cancel button — kill the running ffmpeg process mid-op.
