@@ -66,7 +66,7 @@ def exists(path: str, _: None = Depends(require_token)) -> dict:
     The renderer calls this before a run so it can warn about (and confirm)
     clobbering an existing output, instead of silently overwriting it.
     """
-    return {"exists": os.path.isfile(path)}
+    return {"exists": os.path.exists(path)}
 
 
 class ProbeReq(BaseModel):

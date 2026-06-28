@@ -295,6 +295,12 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 }
 .dim-warn.hidden { display: none; }
 
+/* Pre-run validation: highlight the offending input or output field in red. */
+.field-error {
+  border-color: var(--err) !important;
+  outline: 1px solid var(--err);
+}
+
 /* Estimated-output readout (predicted duration/size from current settings). */
 .estimate {
   padding: 8px 14px;

@@ -53,6 +53,13 @@ def test_exists_reports_presence(client, media, auth):
     assert r.json()["exists"] is False
 
 
+def test_exists_reports_directory(client, media, auth):
+    d, _ = media
+    r = client.get("/exists", params={"path": str(d)}, headers=auth)
+    assert r.status_code == 200
+    assert r.json()["exists"] is True
+
+
 def test_exists_requires_token(client, media):
     _, src = media
     r = client.get("/exists", params={"path": str(src)})
