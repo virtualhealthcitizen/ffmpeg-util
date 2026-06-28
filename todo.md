@@ -482,7 +482,10 @@ Safety / correctness (latent gaps in the current UI):
       it handles dirs too. Verified: node:test (2 new, 126 total) + sidecar pytest
       (dir existence, 67 total) + headless Electron E2E 10/10 (bad input → field-error
       + "Input not found:" status; bad output dir → field-error + "Output folder…"
-      status; valid run clears highlight + output produced). ← next
+      status; valid run clears highlight + output produced).
+      **Bug fix (hunt):** `runInputEntries` missed `b.audio` on Replace Audio — a
+      bad audio path bypassed field-error highlight and hit ffmpeg as a raw error.
+      Fixed in `logic.js`; 2 new node:tests (128 total); E2E smoke green. ← next
 - [x] **Warn on odd width/height for x264 (must be even) before the run fails** — a
       `#dim-warn` banner flags a typed odd width/height on the re-encode tabs
       (compress/crop/pad/blur_pad) with the nearest-even fix, before ffmpeg fails

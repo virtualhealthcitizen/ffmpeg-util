@@ -1183,6 +1183,16 @@ test("runInputEntries maps body inputs to [path, fieldId] pairs", () => {
     [["a.mp4", "hstack-input-a"], ["b.mp4", "hstack-input-b"]]);
   assert.deepEqual(L.runInputEntries("vstack", { inputs: ["x.mp4", "y.mp4"] }),
     [["x.mp4", "vstack-input-a"], ["y.mp4", "vstack-input-b"]]);
+  // replace_audio has TWO input paths: the video (input) and the audio file (audio)
+  assert.deepEqual(
+    L.runInputEntries("replace_audio", { input: "vid.mp4", audio: "track.mp3", output: "out.mp4" }),
+    [["vid.mp4", "replace_audio-input"], ["track.mp3", "replace_audio-audio"]],
+  );
+  // only non-empty paths are included
+  assert.deepEqual(
+    L.runInputEntries("replace_audio", { input: "vid.mp4", audio: "", output: "out.mp4" }),
+    [["vid.mp4", "replace_audio-input"]],
+  );
   // empty input is dropped (requireFields catches these before run starts)
   assert.deepEqual(L.runInputEntries("compress", { input: "", output: "out.mp4" }), []);
   // missing body
