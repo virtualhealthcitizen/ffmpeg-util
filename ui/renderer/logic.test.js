@@ -1056,7 +1056,7 @@ const NAV_TABS = [
   "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
-  "mono", "title", "waveform", "sample_rate", "hstack", "vstack", "blur_pad",
+  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
   "image_to_video", "autocrop",
 ];
 
@@ -1321,4 +1321,37 @@ test("runOutputDirEntry returns [dir, fieldId] or null", () => {
   // no output → null
   assert.equal(L.runOutputDirEntry("compress", { output: "" }), null);
   assert.equal(L.runOutputDirEntry("compress", {}), null);
+});
+
+test("trim_silence is in OUTPUT_SPECS with tag 'trimmed'", () => {
+  const spec = L.OUTPUT_SPECS["trim_silence"];
+  assert.ok(spec, "trim_silence must be in OUTPUT_SPECS");
+  assert.equal(spec.tag, "trimmed");
+});
+
+test("trim_silence is in TOOL_CATEGORIES Audio group", () => {
+  const audio = L.TOOL_CATEGORIES.find((c) => c.name === "Audio");
+  assert.ok(audio, "Audio category must exist");
+  assert.ok(audio.tabs.includes("trim_silence"), "trim_silence must be in Audio tabs");
+});
+
+test("helpForTab returns non-empty help for trim_silence", () => {
+  const h = L.helpForTab("trim_silence");
+  assert.ok(h && h.length > 0, "trim_silence must have a help entry");
+});
+
+test("TOOL_ALIASES has a non-empty entry for trim_silence", () => {
+  const alias = L.TOOL_ALIASES["trim_silence"];
+  assert.ok(alias && alias.length > 0, "trim_silence must have aliases");
+  assert.ok(alias.includes("silence"), "alias must include 'silence'");
+});
+
+test("fieldTooltip returns non-empty blurbs for trim_silence fields", () => {
+  assert.ok(L.fieldTooltip("trim_silence-threshold").length > 0);
+  assert.ok(L.fieldTooltip("trim_silence-min-duration").length > 0);
+});
+
+test("suggestOutputForTab uses 'trimmed' tag for trim_silence", () => {
+  const out = L.suggestOutputForTab("C:\\clips\\rec.mp3", "trim_silence");
+  assert.ok(out.includes("trimmed"), "output path should contain 'trimmed' tag");
 });

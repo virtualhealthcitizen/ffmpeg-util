@@ -1079,6 +1079,8 @@ const STICKY = [
   "sharpen-amount",
   "denoise-strength",
   "timecode-font-size",
+  "trim_silence-threshold",
+  "trim_silence-min-duration",
 ];
 
 async function loadSettings() {
@@ -1858,6 +1860,17 @@ $("#run-mono").addEventListener("click", () => {
   run("Downmixing to mono", "mono", {
     input: val("mono-input"),
     output: val("mono-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-trim_silence").addEventListener("click", () => {
+  if (!requireFields("trim_silence-input", "trim_silence-output")) return;
+  run("Trimming silence", "trim_silence", {
+    input: val("trim_silence-input"),
+    output: val("trim_silence-output"),
+    threshold_db: numOrNull("trim_silence-threshold") != null ? numOrNull("trim_silence-threshold") : -50,
+    min_duration: numOrNull("trim_silence-min-duration") != null ? numOrNull("trim_silence-min-duration") : 0.5,
     overwrite: true,
   });
 });
