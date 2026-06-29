@@ -308,6 +308,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, default=320, help="Per-tile width (default 320).")
     _add_global_flags(p)
 
+    # timecode
+    p = sub.add_parser("timecode", help="Burn a running HH:MM:SS.ms timecode into the video.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--font-size", type=int, default=24, help="Font size in points (default 24).")
+    p.add_argument(
+        "--position", default="top-left",
+        choices=["top-left", "top-right", "bottom-left", "bottom-right"],
+        help="Overlay corner (default top-left).",
+    )
+    p.add_argument("--color", default="white",
+                   help="Text color: a name (white, yellow) or hex #rrggbb (default white).")
+    _add_global_flags(p)
+
     # compress
     p = sub.add_parser("compress", help="Compress and/or resize a video.")
     p.add_argument("input")
@@ -524,6 +538,13 @@ def _dispatch(args: argparse.Namespace) -> int:
             runner, args.input, args.output,
             cols=args.cols, rows=args.rows, width=args.width,
         )
+        return 0
+
+    if args.command == "timecode":
+        runner.run_ffmpeg(commands.build_timecode_args(
+            args.input, args.output,
+            font_size=args.font_size, position=args.position, color=args.color,
+        ))
         return 0
 
     if args.command == "compress":
