@@ -447,6 +447,15 @@ def build_invert_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "negate", output_path]
 
 
+def build_deinterlace_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to deinterlace a video via ``yadif`` (Yet Another DeInterlacing Filter).
+
+    Uses mode=0 (send_frame): one output frame per input frame, no framerate change.
+    Safe to run on progressive sources — yadif passes them through unchanged.
+    """
+    return ["-i", input_path, "-vf", "yadif", output_path]
+
+
 def build_fps_args(input_path: str, output_path: str, fps: float) -> list[str]:
     """Build args to resample to ``fps`` frames/sec (drops/dupes frames; same
     duration and speed, unlike the ``speed`` op)."""

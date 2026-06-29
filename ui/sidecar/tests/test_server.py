@@ -373,6 +373,18 @@ def test_invert_negates_luma(client, media, auth):
     assert abs((base + inverted) - 255) < 25, f"base={base} inverted={inverted}"
 
 
+def test_deinterlace_produces_output(client, media, auth):
+    d, src = media
+    out = d / "deinterlaced.mp4"
+    r = client.post(
+        "/deinterlace",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "deinterlace should produce an output file"
+
+
 def test_fade_makes_first_frame_dark(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)
