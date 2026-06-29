@@ -1059,7 +1059,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 // these, each once. (Kept in sync with the <nav class="tabs"> buttons.)
 const NAV_TABS = [
   "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
-  "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
+  "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
   "image_to_video", "autocrop", "remux",
@@ -1370,4 +1370,39 @@ test("TOOL_ALIASES includes remux with container keywords", () => {
   assert.ok(L.TOOL_ALIASES.remux, "remux should have aliases");
   assert.ok(L.TOOL_ALIASES.remux.includes("container"));
   assert.ok(L.TOOL_ALIASES.remux.includes("mkv"));
+});
+
+test("scene_thumbs is in OUTPUT_SPECS with .png extension and %04d tag", () => {
+  const spec = L.OUTPUT_SPECS["scene_thumbs"];
+  assert.ok(spec, "scene_thumbs must be in OUTPUT_SPECS");
+  assert.ok(spec.tag.includes("%04d"), "tag must include %04d");
+  assert.equal(spec.ext, ".png");
+});
+
+test("suggestOutputForTab generates a %04d pattern for scene_thumbs", () => {
+  const out = L.suggestOutputForTab("C:\\clips\\movie.mp4", "scene_thumbs");
+  assert.ok(out.includes("scene_"), "output path should contain 'scene_' tag");
+  assert.ok(out.endsWith(".png"), "output should be a .png file");
+});
+
+test("scene_thumbs is in TOOL_CATEGORIES Trim & Frames group", () => {
+  const grp = L.TOOL_CATEGORIES.find((c) => c.name === "Trim & Frames");
+  assert.ok(grp, "Trim & Frames category must exist");
+  assert.ok(grp.tabs.includes("scene_thumbs"), "scene_thumbs must be in Trim & Frames");
+});
+
+test("helpForTab returns non-empty help for scene_thumbs", () => {
+  const h = L.helpForTab("scene_thumbs");
+  assert.ok(h && h.length > 0, "scene_thumbs must have a help entry");
+});
+
+test("TOOL_ALIASES has scene detection keywords for scene_thumbs", () => {
+  const alias = L.TOOL_ALIASES["scene_thumbs"];
+  assert.ok(alias && alias.length > 0, "scene_thumbs must have aliases");
+  assert.ok(alias.includes("scene"), "alias must include 'scene'");
+});
+
+test("fieldTooltip returns non-empty blurbs for scene_thumbs fields", () => {
+  assert.ok(L.fieldTooltip("scene-thumbs-threshold").length > 0);
+  assert.ok(L.fieldTooltip("scene-thumbs-width").length > 0);
 });

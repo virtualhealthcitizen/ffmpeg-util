@@ -55,6 +55,7 @@
     pad: { tag: "pad" },
     loop: { tag: "loop" },
     frames: { tag: "frame_%04d", ext: ".png" },
+    scene_thumbs: { tag: "scene_%04d", ext: ".png" },
     reverse: { tag: "rev" },
     volume: { tag: "vol" },
     fade: { tag: "fade" },
@@ -266,6 +267,7 @@
     pad: "letterbox bars frame fit border",
     loop: "repeat times duplicate",
     frames: "extract images sequence export png every nth",
+    scene_thumbs: "scene change detection cut transition thumbnail keyframe shot boundary",
     reverse: "backwards rewind",
     volume: "gain loud quiet db amplify boost attenuate",
     fade: "in out dissolve intro outro",
@@ -300,7 +302,7 @@
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
     { name: "Convert", tabs: ["convert", "remux"] },
-    { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "gif"] },
+    { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
@@ -351,6 +353,7 @@
     pad: "Letterbox to a target frame with solid bars (no cropping). Example: 320×240 → 640×640 centred.",
     loop: "Repeat the whole clip N times. Example: Count 3 makes the output ~3× as long.",
     frames: "Export every Nth frame as images. Example: Every 30 on a 30fps clip writes one PNG per second (use %d).",
+    scene_thumbs: "Extract one thumbnail at each scene cut (score > threshold). Example: Threshold 0.3 on a 5-min film → one PNG per shot (use %04d).",
     reverse: "Play the clip backwards (video and audio). Duration is unchanged.",
     volume: "Adjust loudness by decibels. Example: -6 halves perceived volume; +6 boosts it.",
     fade: "Fade in and out at the ends. Example: Duration 1 gives a 1s fade-in and 1s fade-out.",
@@ -1294,6 +1297,9 @@
     "loop-count":      "Total number of plays: 1 = no loop, 2 = play twice, 3 = three times, etc.",
     // Frames
     "frames-every":    "Extract one frame every N frames (e.g. 30 on a 30 fps clip = one frame per second). Use %04d in the output path.",
+    // Scene thumbs
+    "scene-thumbs-threshold": "Scene-change score threshold (0–1). Lower values catch more cuts: 0.1 for soft transitions, 0.3 for typical cuts, 0.4 for hard cuts only.",
+    "scene-thumbs-width":     "Scale each thumbnail to this width in pixels; height scales proportionally. Leave blank to keep the source resolution.",
     // Volume
     "volume-gain":     "Gain in decibels: +6 dB ≈ double loudness, -6 dB ≈ half. Typical adjustments are ±3–12 dB.",
     // Fade

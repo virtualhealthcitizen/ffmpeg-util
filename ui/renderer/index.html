@@ -48,6 +48,7 @@
       <button data-tab="pad">Pad</button>
       <button data-tab="loop">Loop</button>
       <button data-tab="frames">Frames</button>
+      <button data-tab="scene_thumbs">Scene thumbs</button>
       <button data-tab="reverse">Reverse</button>
       <button data-tab="volume">Volume</button>
       <button data-tab="fade">Fade</button>
@@ -450,6 +451,28 @@
       <p class="hint">Writes an image sequence; keep every Nth frame. Output must contain a
       printf token like <code>%04d</code>.</p>
       <div class="row"><button class="primary" id="run-frames">Extract frames</button></div>
+    </section>
+
+    <!-- Scene thumbs -->
+    <section class="card panel" id="panel-scene_thumbs">
+      <label>Input file</label>
+      <div class="row">
+        <input id="scene-thumbs-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="scene-thumbs-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="scene-thumbs-input">Probe</button>
+      </div>
+      <label>Output pattern</label>
+      <div class="row">
+        <input id="scene-thumbs-output" type="text" placeholder="C:\\out\\scene_%04d.png" />
+        <button class="pick-save" data-target="scene-thumbs-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Threshold <input id="scene-thumbs-threshold" type="number" min="0.01" max="1" step="0.05" placeholder="0.3" /></label>
+        <label class="inline">Width <input id="scene-thumbs-width" type="number" min="1" placeholder="original" /></label>
+      </div>
+      <p class="hint">Writes one PNG per scene cut; output must contain a token like <code>%04d</code>.
+      Lower threshold = more frames (0.1 catches soft cuts; 0.4 only hard cuts).</p>
+      <div class="row"><button class="primary" id="run-scene-thumbs">Extract scene thumbs</button></div>
     </section>
 
     <!-- Reverse -->

@@ -192,7 +192,11 @@ Packaging / tests:
       CLI `autocrop --limit`, sidecar (`/autocrop` + `/run/stream`), Auto-crop tab.
       Verified E2E: a 320×240 letterboxed clip → 320×180 (bars removed), via CLI and
       the sidecar TestClient. Unit tests for the pure `parse_cropdetect` parser.
-- [ ] Scene-change thumbnails (`select='gt(scene,…)'`)
+- [x] Scene-change thumbnails (`select='gt(scene,…)'`) — core `build_scene_thumbs_args`
+      (threshold + optional width), CLI `scene-thumbs --threshold/--width`, sidecar
+      (`/scene-thumbs` + `/run/stream` op `scene_thumbs`), Scene thumbs tab (Trim & Frames
+      category). Verified E2E: red→blue hard-cut clip → ≥1 PNG at threshold 0.1 (standalone
+      + streaming); pytest 123 root + 81 sidecar; node:test 152; smoke 5/5 (40 tabs). ← next
 - [ ] Trim multiple segments and join them in one go
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.

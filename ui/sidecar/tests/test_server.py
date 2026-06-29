@@ -556,6 +556,59 @@ def test_frames_extracts_expected_count(client, media, auth):
     assert len(pngs) == 3, [p.name for p in pngs]
 
 
+def test_scene_thumbs_finds_cuts(client, tmp_path, auth):
+    import subprocess
+    from conftest import FFMPEG
+    # Build a 2-second clip with a hard cut at the 1-second mark (red → blue).
+    src = tmp_path / "cuts.mp4"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=red:s=160x120:d=1",
+         "-f", "lavfi", "-i", "color=c=blue:s=160x120:d=1",
+         "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0[v]",
+         "-map", "[v]", str(src)],
+        check=True,
+    )
+    outdir = tmp_path / "scene"
+    outdir.mkdir()
+    r = client.post(
+        "/scene-thumbs",
+        json={"input": str(src), "output": str(outdir / "s_%04d.png"),
+              "threshold": 0.1, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    pngs = list(outdir.glob("s_*.png"))
+    assert len(pngs) >= 1, "expected at least one scene-change thumbnail"
+
+
+def test_run_stream_scene_thumbs(client, tmp_path, auth):
+    import subprocess
+    from conftest import FFMPEG
+    # Hard cut red → blue (high luma contrast); threshold 0.05 is very sensitive.
+    src = tmp_path / "cuts2.mp4"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=red:s=160x120:d=1",
+         "-f", "lavfi", "-i", "color=c=blue:s=160x120:d=1",
+         "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0[v]",
+         "-map", "[v]", str(src)],
+        check=True,
+    )
+    outdir = tmp_path / "scene2"
+    outdir.mkdir()
+    r = client.post(
+        "/run/stream",
+        json={"op": "scene_thumbs", "input": str(src),
+              "output": str(outdir / "t_%04d.png"),
+              "threshold": 0.05, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _sse_events(r.text)[-1]["type"] == "done"
+    assert list(outdir.glob("t_*.png")), "expected at least one scene thumbnail from stream"
+
+
 def test_loop_multiplies_duration(client, media, auth):
     d, src = media  # ~3s clip
     out = d / "looped.mp4"

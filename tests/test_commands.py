@@ -357,6 +357,32 @@ def test_extract_frames_args_reject_zero():
         c.build_extract_frames_args("in.mp4", "f_%04d.png", every=0)
 
 
+def test_scene_thumbs_args_build_select():
+    args = c.build_scene_thumbs_args("in.mp4", "s_%04d.png", threshold=0.3)
+    vf = args[args.index("-vf") + 1]
+    assert vf == "select=gt(scene\\,0.3)"
+    assert args[args.index("-fps_mode") + 1] == "vfr"
+    assert args[-1] == "s_%04d.png"
+
+
+def test_scene_thumbs_args_with_width():
+    args = c.build_scene_thumbs_args("in.mp4", "s_%04d.png", threshold=0.2, width=320)
+    vf = args[args.index("-vf") + 1]
+    assert vf == "select=gt(scene\\,0.2),scale=320:-1"
+
+
+def test_scene_thumbs_args_reject_bad_threshold():
+    with pytest.raises(ValueError):
+        c.build_scene_thumbs_args("in.mp4", "s_%04d.png", threshold=0)
+    with pytest.raises(ValueError):
+        c.build_scene_thumbs_args("in.mp4", "s_%04d.png", threshold=1.1)
+
+
+def test_scene_thumbs_requires_pattern():
+    with pytest.raises(ValueError):
+        c.build_scene_thumbs_args("in.mp4", "scene.png")  # no %d token
+
+
 def test_loop_args_use_stream_loop_count_minus_one():
     args = c.build_loop_args("in.mp4", "out.mp4", 3)
     assert args[args.index("-stream_loop") + 1] == "2"  # 3 plays = 2 extra loops
