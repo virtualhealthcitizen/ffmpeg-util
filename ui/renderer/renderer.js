@@ -1254,6 +1254,8 @@ async function showPreview(outputPath) {
 // --- Completion actions: Open and Reveal in Explorer buttons after a run ---
 // Stored so the button click handlers can reference the last successful output.
 let lastOutputPath = null;
+// Stored so "Run again" can re-fire the exact same op with the same parameters.
+let lastRunRecord = null;
 
 function showCompletionActions(outputPath) {
   lastOutputPath = outputPath || null;
@@ -1278,6 +1280,15 @@ function hideCompletionActions() {
     if (lastOutputPath) window.sidecar.showItemInFolder(lastOutputPath).catch(() => {});
   });
 })();
+
+// --- "Run again": re-run the last successful op with identical parameters ---
+function runAgain() {
+  if (!lastRunRecord || opInFlight) return;
+  run(lastRunRecord.label, lastRunRecord.op, lastRunRecord.body);
+}
+
+const runAgainBtn = $("#run-again");
+if (runAgainBtn) runAgainBtn.addEventListener("click", runAgain);
 
 // --- Before/after result summary (size + duration once an op completes) ---
 function hideSummary() {
@@ -1516,6 +1527,7 @@ async function run(label, op, body) {
     hideProgress();
     const doneBasename = result && result.output ? outputBaseName(result.output) || result.output : null;
     setStatus(doneBasename ? "Done — " + doneBasename : "Done.");
+    lastRunRecord = { label, op, body }; // enable "Run again" with the same params
     saveSettings();
     const notifyPayload = notifyComplete(doneBasename, notifyEnabled);
     if (notifyPayload) notify(notifyPayload.title, notifyPayload.body).catch(() => {});

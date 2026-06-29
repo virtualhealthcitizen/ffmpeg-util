@@ -440,7 +440,13 @@ Direct manipulation on the embedded source player (it's already there):
 Workflow / re-use:
 - [x] Recent files dropdown on inputs + remembered last-used input directory —
       DONE (see "Recent files list / remembered last input dir" under UI/UX above).
-- [ ] "Run again" / re-run last op with the same settings; per-tab last output path.
+- [x] **"Run again"** — after a successful run, a "Run again" button appears next to
+      Open/Reveal in `#completion-actions`; clicking it re-fires the exact same op
+      with the exact same parameters (stored as `lastRunRecord` in renderer.js).
+      No new pure logic — pure renderer state management. Verified: 146/146
+      node:test + headless Electron E2E 8/8 (button hidden before any run; visible
+      + enabled after first run; click re-runs compress → output reproduced; status
+      "Done" after re-run; committed smoke 5/5 green). ← next
 - [x] **Output filename templating with tokens** ({name}, {op}, {w}, {h}, {wxh},
       {date}) — a global "Name template" box fills the auto-suggested output
       filename from the input + op + probed dims + date. Pure `applyOutputTemplate`/
