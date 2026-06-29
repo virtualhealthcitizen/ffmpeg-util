@@ -285,7 +285,9 @@ Packaging / tests:
 - [ ] Auto-orient from rotation metadata, then strip it
 - [ ] Export a short preview clip (first N seconds, downscaled)
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
-- [ ] Change container only (remux) with codec compatibility check
+- [x] Change container only (remux, `-c copy`) — core `build_remux_args`, CLI `remux`, sidecar
+      (`/remux` + `/run/stream` op `remux`), Remux tab (Convert category). Verified E2E: 119 core
+      + 79 sidecar + 142 logic:test + E2E smoke 5/5 (39 nav tabs). ← next
 
 ### UI/UX components (round 7) — specialized components to ease individual tools
 > Theme: the app now has ~30 near-identical "input / output / fields / run" tabs in

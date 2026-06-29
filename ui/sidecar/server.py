@@ -919,6 +919,24 @@ def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class RemuxReq(BaseModel):
+    input: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/remux")
+def remux(req: RemuxReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_remux_args(req.input, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1000,6 +1018,8 @@ class RunReq(BaseModel):
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
     """Return (ffmpeg args, temp-file-to-clean-up-or-None) for the requested op."""
     op = req.op
+    if op == "remux":
+        return commands.build_remux_args(req.input, req.output), None
     if op == "waveform":
         return commands.build_waveform_args(
             req.input, req.output, req.width or 1000, req.height or 200
