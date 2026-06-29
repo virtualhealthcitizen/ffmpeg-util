@@ -1603,6 +1603,15 @@ $("#run-invert").addEventListener("click", () => {
   });
 });
 
+$("#run-deinterlace").addEventListener("click", () => {
+  if (!requireFields("deinterlace-input", "deinterlace-output")) return;
+  run("Deinterlacing", "deinterlace", {
+    input: val("deinterlace-input"),
+    output: val("deinterlace-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-blur_pad").addEventListener("click", () => {
   if (!requireFields("blur_pad-input", "blur_pad-output", "blur_pad-width", "blur_pad-height")) return;
   run("Blur padding", "blur_pad", {

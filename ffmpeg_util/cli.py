@@ -145,6 +145,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output")
     _add_global_flags(p)
 
+    # deinterlace
+    p = sub.add_parser("deinterlace", help="Deinterlace a video (yadif filter).")
+    p.add_argument("input")
+    p.add_argument("output")
+    _add_global_flags(p)
+
     # fade
     p = sub.add_parser("fade", help="Fade in from / out to black (video + audio).")
     p.add_argument("input")
@@ -408,6 +414,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "invert":
         runner.run_ffmpeg(commands.build_invert_args(args.input, args.output))
+        return 0
+
+    if args.command == "deinterlace":
+        runner.run_ffmpeg(commands.build_deinterlace_args(args.input, args.output))
         return 0
 
     if args.command == "fade":

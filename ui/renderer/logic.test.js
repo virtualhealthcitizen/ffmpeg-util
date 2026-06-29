@@ -193,6 +193,19 @@ test("helpForTab returns a one-line hint for a known tab, '' for unknown", () =>
   assert.equal(L.helpForTab(undefined), "");
 });
 
+test("deinterlace tab is in Color category and has aliases + help", () => {
+  const colorGroup = L.TOOL_CATEGORIES.find((g) => g.name === "Color");
+  assert.ok(colorGroup.tabs.includes("deinterlace"), "deinterlace should be in Color category");
+  const tools = Object.keys(L.TOOL_ALIASES).map((tab) => ({
+    tab,
+    label: tab,
+    keywords: L.TOOL_ALIASES[tab],
+  }));
+  assert.ok(L.filterTools("yadif", tools).includes("deinterlace"), "alias 'yadif' should match deinterlace");
+  assert.ok(L.filterTools("interlaced", tools).includes("deinterlace"), "alias 'interlaced' should match deinterlace");
+  assert.ok(L.helpForTab("deinterlace").length > 0, "deinterlace should have help text");
+});
+
 test("TOOL_HELP covers every tab in TOOL_CATEGORIES with a concise string", () => {
   const allTabs = L.TOOL_CATEGORIES.flatMap((c) => c.tabs);
   assert.ok(allTabs.length >= 30);
@@ -997,7 +1010,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 const NAV_TABS = [
   "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
-  "fade", "grayscale", "invert", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
+  "fade", "grayscale", "invert", "deinterlace", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "hstack", "vstack", "blur_pad",
   "image_to_video", "autocrop",
 ];
