@@ -678,3 +678,30 @@ def test_compress_to_size_runs_two_passes_dry_run(capsys):
     out = capsys.readouterr().out
     assert "-pass 1" in out and "-pass 2" in out
     assert "out.mp4" in out
+
+
+def test_build_trim_silence_args_defaults():
+    args = c.build_trim_silence_args("in.mp4", "out.mp4")
+    assert args[0] == "-i" and args[1] == "in.mp4"
+    assert "-af" in args
+    af = args[args.index("-af") + 1]
+    assert "silenceremove" in af
+    assert "start_periods=1" in af
+    assert "stop_periods=-1" in af
+    assert "-50.0dB" in af
+    assert "0.5" in af
+    assert args[-1] == "out.mp4"
+    assert "-c:v" in args and "copy" in args[args.index("-c:v") + 1]
+
+
+def test_build_trim_silence_args_custom():
+    args = c.build_trim_silence_args("a.mp3", "b.mp3", threshold_db=-60.0, min_duration=1.0)
+    af = args[args.index("-af") + 1]
+    assert "-60.0dB" in af
+    assert "1.0" in af
+    assert args[-1] == "b.mp3"
+
+
+def test_build_trim_silence_args_rejects_negative_duration():
+    with pytest.raises(ValueError, match="min_duration"):
+        c.build_trim_silence_args("in.mp4", "out.mp4", min_duration=-0.1)

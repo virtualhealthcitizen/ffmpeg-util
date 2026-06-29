@@ -253,7 +253,10 @@ Packaging / tests:
       CLI `fps`, sidecar (`/fps` + `/run/stream`), FPS tab. Verified E2E: 30fps -> 15fps.
 - [x] Downmix audio to mono — core `build_mono_args` (`-ac 1`), CLI `mono`, sidecar
       (`/mono` + `/run/stream`), Mono tab. Verified E2E: stereo source -> 1 channel out.
-- [ ] Trim silence from the ends (`silenceremove`)
+- [x] Trim silence from the ends (`silenceremove`) — core `build_trim_silence_args` (threshold_db/min_duration),
+      CLI `trim-silence`, sidecar (`/trim-silence` + `/run/stream` op `trim_silence`), Trim silence tab
+      (threshold + min-duration sliders, Audio category). Verified E2E: 8/8 checks (tab/panel/sliders/run button
+      present, output produced via UI); pytest 117 root + 76 sidecar; node:test 144. ← next
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
@@ -556,7 +559,7 @@ Power-user flow:
       fade→--duration, transform→--op, target_i→--target). Verified: node:test (8 new,
       84 total) + headless Electron E2E vs the real sidecar (compress run →
       `ffmpeg-util compress … --crf 28 --width 160 --vcodec libx264 --preset medium -y`;
-      row hidden before any run; Copy button feedback; real output produced). ← next
+      row hidden before any run; Copy button feedback; real output produced).
 
 Help / discoverability:
 - [~] Per-tab one-line example — DONE: a `#tab-help` line between the nav and the

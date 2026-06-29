@@ -685,6 +685,31 @@ def build_mute_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-c", "copy", "-an", output_path]
 
 
+def build_trim_silence_args(
+    input_path: str,
+    output_path: str,
+    *,
+    threshold_db: float = -50.0,
+    min_duration: float = 0.5,
+) -> list[str]:
+    """Build args to strip leading and trailing silence (silenceremove filter).
+
+    Audio is re-encoded by the filter; the video stream is copied.
+    ``threshold_db`` is the level below which audio is considered silence;
+    ``min_duration`` is the minimum run of silence (s) before it is stripped.
+    """
+    if min_duration < 0:
+        raise ValueError("min_duration must be >= 0")
+    thr = f"{threshold_db}dB"
+    dur = str(round(min_duration, 3))
+    sr = (
+        f"silenceremove="
+        f"start_periods=1:start_threshold={thr}:start_duration={dur}:"
+        f"stop_periods=-1:stop_threshold={thr}:stop_duration={dur}"
+    )
+    return ["-i", input_path, "-c:v", "copy", "-af", sr, output_path]
+
+
 def build_replace_audio_args(
     video_path: str, audio_path: str, output_path: str, *, audio_codec: str = "aac"
 ) -> list[str]:

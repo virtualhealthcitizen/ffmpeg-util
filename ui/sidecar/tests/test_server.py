@@ -1111,3 +1111,41 @@ def test_file_requires_token(client, media):
     _, src = media
     r = client.get("/file", params={"path": str(src)})
     assert r.status_code == 401
+
+
+def test_trim_silence_produces_output(client, media, auth):
+    d, src = media
+    out = d / "trimmed.mp4"
+    r = client.post(
+        "/trim-silence",
+        json={"input": str(src), "output": str(out),
+              "threshold_db": -50.0, "min_duration": 0.5, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_trim_silence_requires_token(client, media):
+    d, src = media
+    r = client.post(
+        "/trim-silence",
+        json={"input": str(src), "output": str(d / "x.mp4"), "overwrite": True},
+    )
+    assert r.status_code == 401
+
+
+def test_trim_silence_via_run_stream(client, media, auth):
+    d, src = media
+    out = d / "trimmed_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_silence", "input": str(src), "output": str(out),
+              "threshold_db": -50.0, "min_duration": 0.5, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    done = [e for e in events if e["type"] == "done"]
+    assert done and done[0].get("output") == str(out)
+    assert out.exists() and out.stat().st_size > 0

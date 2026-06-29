@@ -245,6 +245,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output")
     _add_global_flags(p)
 
+    # trim-silence
+    p = sub.add_parser("trim-silence", help="Remove leading and trailing silence (silenceremove).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--threshold", type=float, default=-50.0,
+                   help="Silence threshold in dB (default -50). Use --threshold=-60 for negatives.")
+    p.add_argument("--min-duration", type=float, default=0.5,
+                   help="Minimum silence run in seconds to strip (default 0.5).")
+    _add_global_flags(p)
+
     # mute
     p = sub.add_parser("mute", help="Strip the audio track (keep video).")
     p.add_argument("input")
@@ -501,6 +511,14 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "mono":
         runner.run_ffmpeg(commands.build_mono_args(args.input, args.output))
+        return 0
+
+    if args.command == "trim-silence":
+        runner.run_ffmpeg(commands.build_trim_silence_args(
+            args.input, args.output,
+            threshold_db=args.threshold,
+            min_duration=args.min_duration,
+        ))
         return 0
 
     if args.command == "mute":

@@ -709,6 +709,30 @@ def mono(req: MonoReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class TrimSilenceReq(BaseModel):
+    input: str
+    output: str
+    threshold_db: float = -50.0
+    min_duration: float = 0.5
+    overwrite: bool = True
+
+
+@app.post("/trim-silence")
+def trim_silence_op(req: TrimSilenceReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_trim_silence_args(
+            req.input, req.output,
+            threshold_db=req.threshold_db,
+            min_duration=req.min_duration,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class MuteReq(BaseModel):
     input: str
     output: str
@@ -959,6 +983,9 @@ class RunReq(BaseModel):
     title: str = ""
     # sample-rate
     rate: int = 44100
+    # trim-silence
+    threshold_db: float = -50.0
+    min_duration: float = 0.5
     # crop (uses width/height above for the rectangle size)
     x: int = 0
     y: int = 0
@@ -1036,6 +1063,12 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_replace_audio_args(req.input, req.audio, req.output), None
     if op == "mono":
         return commands.build_mono_args(req.input, req.output), None
+    if op == "trim_silence":
+        return commands.build_trim_silence_args(
+            req.input, req.output,
+            threshold_db=req.threshold_db,
+            min_duration=req.min_duration,
+        ), None
     if op == "sample_rate":
         return commands.build_sample_rate_args(req.input, req.output, req.rate), None
     if op == "title":

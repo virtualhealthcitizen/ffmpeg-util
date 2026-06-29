@@ -75,6 +75,7 @@
     blur_pad: { tag: "blurpad" },
     image_to_video: { tag: "clip", ext: ".mp4" },
     autocrop: { tag: "autocrop" },
+    trim_silence: { tag: "trimmed" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -283,6 +284,7 @@
     vstack: "stacked vertical top bottom two videos",
     blur_pad: "blurred fill background letterbox frame fit no bars",
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
+    trim_silence: "silence strip trim audio ends start trailing leading remove quiet padding",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -297,7 +299,7 @@
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
-    { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "waveform"] },
+    { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
     { name: "Metadata", tabs: ["title"] },
   ];
@@ -367,6 +369,7 @@
     blur_pad: "Pad to a target frame, filling the bars with a blurred copy of the video (no solid bars). Example: 320×240 → 480×480.",
     image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
     autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
+    trim_silence: "Strip leading and trailing silence (silenceremove). Example: Threshold -50 dB, Min 0.5s removes quiet pads from recordings.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
@@ -1145,7 +1148,9 @@
     { id: "loudnorm-target", min: -70, max: -5,  step: 0.5, def: -16, unit: " LUFS" },
     { id: "sharpen-amount",  min: -1.5, max: 5,  step: 0.1, def: 1.5, unit: "" },
     { id: "denoise-strength",   min: 1,  max: 10,  step: 0.5, def: 4,   unit: "" },
-    { id: "timecode-font-size", min: 6,  max: 72,  step: 2,   def: 24,  unit: " pt" },
+    { id: "timecode-font-size",         min: 6,   max: 72,  step: 2,   def: 24,   unit: " pt" },
+    { id: "trim_silence-threshold",     min: -80, max: -20, step: 1,   def: -50,  unit: " dB" },
+    { id: "trim_silence-min-duration",  min: 0.1, max: 3.0, step: 0.1, def: 0.5,  unit: "s" },
   ];
 
   // Format a (already-valid, finite) slider value for its live readout label.
@@ -1317,6 +1322,9 @@
     "timecode-font-size": "Font size in points for the timecode overlay (6–72). Default 24 suits 720p+; use 36+ for 1080p.",
     "timecode-position":  "Corner of the frame to place the timecode: top-left, top-right, bottom-left, bottom-right.",
     "timecode-color":     "Text colour: white/yellow are most legible on dark subjects; black works on bright backgrounds.",
+    // Trim silence
+    "trim_silence-threshold":    "Audio below this level is treated as silence. -50 dB is a safe default; try -40 for noisy rooms, -60 for very quiet pads.",
+    "trim_silence-min-duration": "Minimum run of silence (seconds) before it is removed. 0.5 trims any half-second or longer quiet section.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.
