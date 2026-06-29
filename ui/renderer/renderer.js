@@ -1836,6 +1836,17 @@ $("#run-frames").addEventListener("click", () => {
   });
 });
 
+$("#run-scene-thumbs").addEventListener("click", () => {
+  if (!requireFields("scene-thumbs-input", "scene-thumbs-output")) return;
+  run("Extracting scene thumbnails", "scene_thumbs", {
+    input: val("scene-thumbs-input"),
+    output: val("scene-thumbs-output"),
+    threshold: numOrNull("scene-thumbs-threshold") ?? 0.3,
+    width: numOrNull("scene-thumbs-width") || null,
+    overwrite: true,
+  });
+});
+
 $("#run-loop").addEventListener("click", () => {
   if (!requireFields("loop-input", "loop-output", "loop-count")) return;
   run("Looping", "loop", {

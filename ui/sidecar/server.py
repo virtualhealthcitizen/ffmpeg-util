@@ -591,6 +591,27 @@ def frames(req: FramesReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class SceneThumbsReq(BaseModel):
+    input: str
+    output: str
+    threshold: float = 0.3
+    width: int | None = None
+    overwrite: bool = True
+
+
+@app.post("/scene-thumbs")
+def scene_thumbs(req: SceneThumbsReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_scene_thumbs_args(
+            req.input, req.output, threshold=req.threshold, width=req.width))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class LoopReq(BaseModel):
     input: str
     output: str
@@ -969,6 +990,8 @@ class RunReq(BaseModel):
     factor: float = 1.0
     # frames
     every: int = 1
+    # scene-thumbs
+    threshold: float = 0.3
     # volume
     gain: float = 0.0
     # loudnorm
@@ -1059,6 +1082,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":
         return commands.build_extract_frames_args(req.input, req.output, req.every), None
+    if op == "scene_thumbs":
+        return commands.build_scene_thumbs_args(
+            req.input, req.output, threshold=req.threshold, width=req.width
+        ), None
     if op == "loop":
         return commands.build_loop_args(req.input, req.output, req.count), None
     if op == "pad":

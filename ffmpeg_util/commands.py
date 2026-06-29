@@ -955,6 +955,28 @@ def build_timecode_args(
     return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
 
 
+def build_scene_thumbs_args(
+    input_path: str,
+    output_pattern: str,
+    *,
+    threshold: float = 0.3,
+    width: int | None = None,
+) -> list[str]:
+    """Build args to extract one frame per scene cut via the ``select`` filter.
+
+    ffmpeg scores each frame 0–1 for how different it looks from the previous
+    one; frames scoring above ``threshold`` are emitted (lower = more frames).
+    ``output_pattern`` must contain a printf token (e.g. ``scene_%04d.png``).
+    """
+    if not 0 < threshold <= 1:
+        raise ValueError("threshold must be in (0, 1]")
+    require_sequence_pattern(output_pattern)
+    vf_parts = [f"select=gt(scene\\,{threshold})"]
+    if width:
+        vf_parts.append(f"scale={width}:-1")
+    return ["-i", input_path, "-vf", ",".join(vf_parts), "-fps_mode", "vfr", output_pattern]
+
+
 def build_remux_args(input_path: str, output_path: str) -> list[str]:
     """Remux (change container) without re-encoding using ``-c copy``.
 

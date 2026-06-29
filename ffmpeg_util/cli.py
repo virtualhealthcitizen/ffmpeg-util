@@ -201,6 +201,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--every", type=int, default=1, help="Keep every Nth frame (default 1).")
     _add_global_flags(p)
 
+    # scene-thumbs
+    p = sub.add_parser("scene-thumbs", help="Extract one thumbnail per scene cut.")
+    p.add_argument("input")
+    p.add_argument("output", help="Output pattern, e.g. scene_%%04d.png")
+    p.add_argument("--threshold", type=float, default=0.3,
+                   help="Scene-change score threshold 0–1 (lower = more frames, default 0.3).")
+    p.add_argument("--width", type=int, default=None, help="Scale output to this width (height auto).")
+    _add_global_flags(p)
+
     # loop
     p = sub.add_parser("loop", help="Repeat the input N times (stream-copy).")
     p.add_argument("input")
@@ -492,6 +501,11 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "frames":
         runner.run_ffmpeg(commands.build_extract_frames_args(args.input, args.output, args.every))
+        return 0
+
+    if args.command == "scene-thumbs":
+        runner.run_ffmpeg(commands.build_scene_thumbs_args(
+            args.input, args.output, threshold=args.threshold, width=args.width))
         return 0
 
     if args.command == "loop":
