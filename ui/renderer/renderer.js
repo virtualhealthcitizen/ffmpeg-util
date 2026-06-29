@@ -1,6 +1,6 @@
 // Renderer: thin client over the sidecar HTTP API exposed via window.sidecar.
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
-const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile } =
+const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile, notify } =
   window.sidecar;
 const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
@@ -17,7 +17,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   appendConsoleLines, SLIDER_SPECS, formatSliderOut,
   revealLabel, outputBaseName,
   runInputEntries, runOutputDirEntry,
-  fieldTooltip } = window.FfuLogic;
+  fieldTooltip, notifyComplete } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -112,6 +112,19 @@ if (themeToggleBtn) {
   themeToggleBtn.addEventListener("click", () => {
     applyTheme(nextTheme(currentTheme));
     setSettings({ theme: currentTheme }).catch(() => {}); // sticky across launches
+  });
+}
+
+// --- Completion notification toggle ---
+// When enabled, a native desktop notification fires after each successful run.
+// The setting is persisted in settings.json (shallow-merged with other keys).
+let notifyEnabled = false;
+
+const notifyToggle = $("#notify-toggle");
+if (notifyToggle) {
+  notifyToggle.addEventListener("change", () => {
+    notifyEnabled = notifyToggle.checked;
+    setSettings({ notify: notifyEnabled }).catch(() => {});
   });
 }
 
@@ -1071,6 +1084,10 @@ async function loadSettings() {
   try {
     const s = (await getSettings()) || {};
     applyTheme(s.theme); // restore the saved light/dark choice (defaults to dark)
+    if (s.notify != null && notifyToggle) {
+      notifyEnabled = !!s.notify;
+      notifyToggle.checked = notifyEnabled;
+    }
     if (s.sourceCollapsed) applySourceCollapse(true);
     if (s.probeCollapsed) applyProbeCollapse(true);
     for (const id of STICKY) {
@@ -1494,8 +1511,11 @@ async function run(label, op, body) {
       }
     }
     hideProgress();
-    setStatus(result && result.output ? "Done — " + (outputBaseName(result.output) || result.output) : "Done.");
+    const doneBasename = result && result.output ? outputBaseName(result.output) || result.output : null;
+    setStatus(doneBasename ? "Done — " + doneBasename : "Done.");
     saveSettings();
+    const notifyPayload = notifyComplete(doneBasename, notifyEnabled);
+    if (notifyPayload) notify(notifyPayload.title, notifyPayload.body).catch(() => {});
     if (result && result.output) {
       showPreview(result.output);
       // Compare the output back to the primary input (single-input ops, else first).

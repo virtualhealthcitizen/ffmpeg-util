@@ -1316,6 +1316,17 @@
     return Object.prototype.hasOwnProperty.call(FIELD_TOOLTIPS, id) ? FIELD_TOOLTIPS[id] : "";
   }
 
+  // --- Completion notification payload ---
+  // Returns { title, body } to show a desktop notification when an op finishes,
+  // or null when notifications are disabled. Pure so it's unit-testable.
+  function notifyComplete(basename, enabled) {
+    if (!enabled) return null;
+    return {
+      title: "ffmpeg-util",
+      body: basename ? "Done — " + basename : "Done.",
+    };
+  }
+
   const api = {
     THEMES,
     resolveTheme,
@@ -1403,6 +1414,7 @@
     runOutputDirEntry,
     FIELD_TOOLTIPS,
     fieldTooltip,
+    notifyComplete,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

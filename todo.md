@@ -195,7 +195,7 @@ Packaging / tests:
 - [x] Grayscale (desaturate) — core `build_grayscale_args` (`hue=s=0`), CLI `grayscale`,
       sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.
 - [ ] Denoise / sharpen / deinterlace filter presets
-- [ ] System notification (and optional sound) on completion
+- [x] System notification (and optional sound) on completion — DONE (see round 9 entry above)
 - [x] Remember window size & position across launches — done (see round 9: window
       bounds persisted in `settings.json`, restored via `windowOptions`).
 - [ ] A/B compare: input vs output side-by-side preview
@@ -356,8 +356,11 @@ Workflow / feedback components:
 - [ ] "Reveal in Explorer" / open-output button on completion.
 - [ ] Before/after size + duration summary on completion.
 - [ ] Inline per-field validation (highlight the offending field, not just the status line).
-- [ ] System notification (+ optional sound) on completion; light/dark theme toggle;
-      remember window size & position.
+- [x] System notification on completion — a 🔔 checkbox in the header fires a native desktop
+      notification (via Electron's `Notification` class in the main process) when an op finishes.
+      Toggle persists in `settings.json` (shallow-merge). Light/dark theme + window size/position already done.
+      Verified: node:test (3 new, 136 total) + headless Electron E2E 6/6 (checkbox present, starts unchecked,
+      persists enable/disable, restores on relaunch, notifyComplete payload correct). ← next
 
 **Priority for this round (highest first):**
 1. ~~Tool search / command palette~~ — DONE (round 7).
@@ -573,7 +576,7 @@ Help / discoverability:
       `.field-tip` badge styled in `styles.css`. Verified: node:test (3 new, 129
       total: fieldTooltip lookups, no path-field leaks, length ≤ 160) + headless
       Electron E2E 6/6 (38 badges injected; CRF tooltip correct; loop tooltip
-      correct; path fields have no badge; all badges carry aria-label). ← next
+      correct; path fields have no badge; all badges carry aria-label).
 - [x] Friendly error mapping (carried from round 8) — DONE (see round 8: friendlier
       error surface; `friendlyError` in `logic.js`, `#error-hint` above the raw stderr).
 

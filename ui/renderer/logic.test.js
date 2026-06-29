@@ -1269,6 +1269,21 @@ test("FIELD_TOOLTIPS entries are concise (≤ 160 chars) and non-empty", () => {
   }
 });
 
+test("notifyComplete returns null when disabled", () => {
+  assert.equal(L.notifyComplete("out.mp4", false), null);
+  assert.equal(L.notifyComplete(null, false), null);
+});
+
+test("notifyComplete returns { title, body } with filename when enabled", () => {
+  const result = L.notifyComplete("out.mp4", true);
+  assert.deepEqual(result, { title: "ffmpeg-util", body: "Done — out.mp4" });
+});
+
+test("notifyComplete returns a generic body when basename is falsy", () => {
+  assert.deepEqual(L.notifyComplete(null, true), { title: "ffmpeg-util", body: "Done." });
+  assert.deepEqual(L.notifyComplete("", true), { title: "ffmpeg-util", body: "Done." });
+});
+
 test("runOutputDirEntry returns [dir, fieldId] or null", () => {
   // Windows path with directory component
   const winEntry = L.runOutputDirEntry("compress", { output: "C:\\foo\\bar.mp4" });
