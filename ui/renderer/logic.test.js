@@ -847,6 +847,30 @@ test("oddDimensionWarning only applies to re-encoding, size-sensitive tabs", () 
   assert.deepEqual(L.EVEN_DIM_TABS, ["compress", "crop", "pad", "blur_pad"]);
 });
 
+test("SLIDER_SPECS includes sharpen-amount and denoise-strength", () => {
+  const ids = L.SLIDER_SPECS.map((s) => s.id);
+  assert.ok(ids.includes("sharpen-amount"), "SLIDER_SPECS has sharpen-amount");
+  assert.ok(ids.includes("denoise-strength"), "SLIDER_SPECS has denoise-strength");
+  const sa = L.SLIDER_SPECS.find((s) => s.id === "sharpen-amount");
+  assert.ok(sa.min < 0, "sharpen-amount min is negative (allows softening)");
+  assert.ok(sa.def > 0, "sharpen-amount default is positive (sharpens by default)");
+  const ds = L.SLIDER_SPECS.find((s) => s.id === "denoise-strength");
+  assert.ok(ds.min >= 1, "denoise-strength min >= 1");
+  assert.ok(ds.def >= ds.min && ds.def <= ds.max, "denoise-strength default in range");
+});
+
+test("TOOL_CATEGORIES Color group contains sharpen and denoise", () => {
+  const colorGroup = L.TOOL_CATEGORIES.find((g) => g.name === "Color");
+  assert.ok(colorGroup, "Color category exists");
+  assert.ok(colorGroup.tabs.includes("sharpen"), "Color group has sharpen");
+  assert.ok(colorGroup.tabs.includes("denoise"), "Color group has denoise");
+});
+
+test("suggestOutputForTab uses correct tags for sharpen and denoise", () => {
+  assert.equal(L.suggestOutputForTab("in.mp4", "sharpen"), "in.sharp.mp4");
+  assert.equal(L.suggestOutputForTab("in.mp4", "denoise"), "in.denoise.mp4");
+});
+
 test("buildCliCommand maps a simple input/output op with --flags and -y", () => {
   assert.equal(
     L.buildCliCommand("convert", {
@@ -1010,7 +1034,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 const NAV_TABS = [
   "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
-  "fade", "grayscale", "invert", "deinterlace", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
+  "fade", "grayscale", "invert", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "hstack", "vstack", "blur_pad",
   "image_to_video", "autocrop",
 ];

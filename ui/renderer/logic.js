@@ -58,6 +58,8 @@
     grayscale: { tag: "gray" },
     invert: { tag: "invert" },
     deinterlace: { tag: "deint" },
+    sharpen: { tag: "sharp" },
+    denoise: { tag: "denoise" },
     loudnorm: { tag: "loud" },
     boomerang: { tag: "boom" },
     eq: { tag: "eq" },
@@ -264,6 +266,8 @@
     grayscale: "black white desaturate mono color monochrome",
     invert: "negate negative invert colors photo negative inverse opposite",
     deinterlace: "interlaced yadif deinterlace combing comb fields progressive fix",
+    sharpen: "sharpen unsharp mask crisp edges detail acuity soften blur",
+    denoise: "denoise noise grain hqdn3d smooth reduce filter clean",
     loudnorm: "loudness normalize lufs ebu r128 level",
     boomerang: "forward back bounce pingpong instagram",
     eq: "adjust brightness contrast saturation color levels",
@@ -290,7 +294,7 @@
     { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video"] },
-    { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "eq"] },
+    { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
     { name: "Metadata", tabs: ["title"] },
@@ -344,6 +348,8 @@
     grayscale: "Desaturate to black & white (hue=s=0). No options to set — just run.",
     invert: "Invert colours (photo negative). No options to set — just run.",
     deinterlace: "Remove interlacing artefacts via yadif. Safe on progressive sources — no options needed, just run.",
+    sharpen: "Sharpen edges with the unsharp mask filter. Example: Amount 1.5 for moderate sharpening; negative values soften instead.",
+    denoise: "Reduce film grain / sensor noise via hqdn3d. Example: Strength 4 for moderate noise reduction; 8–10 for heavy smoothing.",
     loudnorm: "Normalize loudness to a broadcast target (EBU R128). Example: -16 LUFS for web/podcast levels.",
     boomerang: "Play forward then reversed so it bounces. Output duration is ~2× the input.",
     eq: "Tweak brightness/contrast/saturation (eq filter). Example: Brightness +0.1, Saturation 1.3 for a punchier look.",
@@ -1134,6 +1140,8 @@
     { id: "eq-saturation",   min: 0,   max: 3,   step: 0.1, def: 1,   unit: "" },
     { id: "fade-duration",   min: 0.1, max: 10,  step: 0.1, def: 1,   unit: "s" },
     { id: "loudnorm-target", min: -70, max: -5,  step: 0.5, def: -16, unit: " LUFS" },
+    { id: "sharpen-amount",  min: -1.5, max: 5,  step: 0.1, def: 1.5, unit: "" },
+    { id: "denoise-strength", min: 1,  max: 10,  step: 0.5, def: 4,   unit: "" },
   ];
 
   // Format a (already-valid, finite) slider value for its live readout label.
@@ -1297,6 +1305,10 @@
     "autocrop-limit":  "Black level threshold (0–255): pixels at or below this brightness count as 'bar' pixels. Default 24 suits most clips.",
     // Title
     "title-title":     "Metadata title tag to embed in the output file. Leave blank to clear the existing title.",
+    // Sharpen
+    "sharpen-amount":  "Unsharp mask luma amount: >0 sharpens (1.5 = moderate, 5 = heavy), <0 softens, 0 = no-op.",
+    // Denoise
+    "denoise-strength": "hqdn3d noise reduction strength: 1–3 light, 4–6 moderate, 7–10 heavy smoothing.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.

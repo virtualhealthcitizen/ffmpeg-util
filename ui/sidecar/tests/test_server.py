@@ -385,6 +385,30 @@ def test_deinterlace_produces_output(client, media, auth):
     assert out.exists(), "deinterlace should produce an output file"
 
 
+def test_sharpen_produces_output(client, media, auth):
+    d, src = media
+    out = d / "sharpened.mp4"
+    r = client.post(
+        "/sharpen",
+        json={"input": str(src), "output": str(out), "amount": 2.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "sharpen should produce an output file"
+
+
+def test_denoise_produces_output(client, media, auth):
+    d, src = media
+    out = d / "denoised.mp4"
+    r = client.post(
+        "/denoise",
+        json={"input": str(src), "output": str(out), "strength": 4.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "denoise should produce an output file"
+
+
 def test_fade_makes_first_frame_dark(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)

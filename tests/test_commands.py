@@ -257,6 +257,48 @@ def test_deinterlace_args_build_filter():
     assert args[-1] == "out.mp4"
 
 
+def test_sharpen_args_default():
+    args = c.build_sharpen_args("in.mp4", "out.mp4")
+    vf = args[args.index("-vf") + 1]
+    assert "unsharp" in vf and "la=1.5" in vf
+    assert args[-1] == "out.mp4"
+
+
+def test_sharpen_args_custom_amount():
+    args = c.build_sharpen_args("in.mp4", "out.mp4", amount=3.0)
+    vf = args[args.index("-vf") + 1]
+    assert "la=3.0" in vf
+
+
+def test_sharpen_args_negative_softens():
+    args = c.build_sharpen_args("in.mp4", "out.mp4", amount=-1.0)
+    vf = args[args.index("-vf") + 1]
+    assert "la=-1.0" in vf
+
+
+def test_sharpen_args_rejects_out_of_range():
+    with pytest.raises(ValueError):
+        c.build_sharpen_args("in.mp4", "out.mp4", amount=99)
+
+
+def test_denoise_args_default():
+    args = c.build_denoise_args("in.mp4", "out.mp4")
+    vf = args[args.index("-vf") + 1]
+    assert "hqdn3d" in vf and "4" in vf
+    assert args[-1] == "out.mp4"
+
+
+def test_denoise_args_custom_strength():
+    args = c.build_denoise_args("in.mp4", "out.mp4", strength=8.0)
+    vf = args[args.index("-vf") + 1]
+    assert "8.0" in vf
+
+
+def test_denoise_args_rejects_zero_strength():
+    with pytest.raises(ValueError):
+        c.build_denoise_args("in.mp4", "out.mp4", strength=0)
+
+
 def test_fade_args_with_audio():
     args = c.build_fade_args("in.mp4", "out.mp4", 1.0, 5.0, audio=True)
     vf = args[args.index("-vf") + 1]

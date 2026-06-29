@@ -50,6 +50,8 @@
       <button data-tab="grayscale">Grayscale</button>
       <button data-tab="invert">Invert</button>
       <button data-tab="deinterlace">Deinterlace</button>
+      <button data-tab="sharpen">Sharpen</button>
+      <button data-tab="denoise">Denoise</button>
       <button data-tab="loudnorm">Loudness</button>
       <button data-tab="boomerang">Boomerang</button>
       <button data-tab="eq">Adjust</button>
@@ -560,6 +562,58 @@
       </div>
       <p class="hint">Remove interlacing artefacts via yadif (Yet Another DeInterlacing Filter). Safe on progressive sources.</p>
       <div class="row"><button class="primary" id="run-deinterlace">Deinterlace</button></div>
+    </section>
+
+    <!-- Sharpen -->
+    <section class="card panel" id="panel-sharpen">
+      <label>Input file</label>
+      <div class="row">
+        <input id="sharpen-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="sharpen-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="sharpen-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="sharpen-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="sharpen-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Amount
+          <div class="sl-group">
+            <input type="range" id="sharpen-amount-sl" min="-1.5" max="5" step="0.1" value="1.5" />
+            <span class="sl-out" id="sharpen-amount-out">1.5</span>
+            <input id="sharpen-amount" type="number" step="0.1" class="sl-num" />
+          </div>
+        </label>
+      </div>
+      <p class="hint">Sharpen edges via unsharp mask. Positive amounts sharpen; negative amounts soften. 0 = no-op.</p>
+      <div class="row"><button class="primary" id="run-sharpen">Sharpen</button></div>
+    </section>
+
+    <!-- Denoise -->
+    <section class="card panel" id="panel-denoise">
+      <label>Input file</label>
+      <div class="row">
+        <input id="denoise-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="denoise-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="denoise-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="denoise-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="denoise-output">Save as…</button>
+      </div>
+      <div class="row wrap">
+        <label class="inline">Strength
+          <div class="sl-group">
+            <input type="range" id="denoise-strength-sl" min="1" max="10" step="0.5" value="4" />
+            <span class="sl-out" id="denoise-strength-out">4</span>
+            <input id="denoise-strength" type="number" step="0.5" min="1" class="sl-num" />
+          </div>
+        </label>
+      </div>
+      <p class="hint">Reduce noise via hqdn3d. Higher strength smooths more. 4 is a balanced start for moderate noise.</p>
+      <div class="row"><button class="primary" id="run-denoise">Denoise</button></div>
     </section>
 
     <!-- Loudness -->

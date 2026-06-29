@@ -231,11 +231,14 @@ Packaging / tests:
       (`/invert` + `/run/stream` op `invert`), Invert tab + search alias. Verified
       E2E: first-frame YAVG_out ≈ 255 − YAVG_in (negate inverts each sample).
       (sepia tone still open.)
-- [ ] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets
+- [x] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets — core `build_sharpen_args` (`unsharp=lx=5:ly=5:la={amount}`)
+      and `build_denoise_args` (`hqdn3d` scaled from defaults), CLI `sharpen --amount` / `denoise --strength`,
+      sidecar (`/sharpen` + `/denoise` + `/run/stream` ops), Sharpen + Denoise tabs (Color category, sliders).
+      Verified E2E: both endpoints produce output, tabs/sliders/buttons present (14/14 checks); pytest 109 root + 72 sidecar; node:test 133. ← next
 - [x] Deinterlace (`yadif`) — core `build_deinterlace_args` (`-vf yadif`), CLI `deinterlace`,
       sidecar (`/deinterlace` + `/run/stream` op `deinterlace`), Deinterlace tab (Color category).
       Verified E2E: tab present + nav, output produced via headless Electron against real sidecar
-      (5/5 checks); pytest 102 root + 70 sidecar; node:test 130. ← next
+      (5/5 checks); pytest 102 root + 70 sidecar; node:test 130.
 - [x] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1) — core `compute_aspect_crop`/
       `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).

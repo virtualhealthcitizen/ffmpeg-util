@@ -410,6 +410,44 @@ def deinterlace(req: DeinterlaceReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class SharpenReq(BaseModel):
+    input: str
+    output: str
+    amount: float = 1.5
+    overwrite: bool = True
+
+
+@app.post("/sharpen")
+def sharpen(req: SharpenReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_sharpen_args(req.input, req.output, req.amount))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class DenoiseReq(BaseModel):
+    input: str
+    output: str
+    strength: float = 4.0
+    overwrite: bool = True
+
+
+@app.post("/denoise")
+def denoise(req: DenoiseReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_denoise_args(req.input, req.output, req.strength))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FadeReq(BaseModel):
     input: str
     output: str
@@ -852,6 +890,10 @@ class RunReq(BaseModel):
     brightness: float = 0.0
     contrast: float = 1.0
     saturation: float = 1.0
+    # sharpen
+    amount: float = 1.5
+    # denoise
+    strength: float = 4.0
     # crop-aspect
     aspect: str = "16:9"
     # blur-pad
@@ -897,6 +939,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_invert_args(req.input, req.output), None
     if op == "deinterlace":
         return commands.build_deinterlace_args(req.input, req.output), None
+    if op == "sharpen":
+        return commands.build_sharpen_args(req.input, req.output, req.amount), None
+    if op == "denoise":
+        return commands.build_denoise_args(req.input, req.output, req.strength), None
     if op == "boomerang":
         return commands.build_boomerang_args(req.input, req.output), None
     if op == "hstack":

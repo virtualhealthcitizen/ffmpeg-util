@@ -456,6 +456,34 @@ def build_deinterlace_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-vf", "yadif", output_path]
 
 
+def build_sharpen_args(input_path: str, output_path: str, amount: float = 1.5) -> list[str]:
+    """Build args to sharpen (or soften) via the unsharp mask filter.
+
+    A fixed 5×5 luma kernel is used; ``amount`` controls the luma gain:
+    positive values sharpen, negative values soften/blur, 0 is a no-op.
+    Chroma is left at the ffmpeg default (no chroma sharpening).
+    """
+    if not -10 <= amount <= 10:
+        raise ValueError("amount must be in −10…10")
+    return ["-i", input_path, "-vf", f"unsharp=lx=5:ly=5:la={amount}", output_path]
+
+
+def build_denoise_args(input_path: str, output_path: str, strength: float = 4.0) -> list[str]:
+    """Build args to reduce noise via ``hqdn3d``.
+
+    ``strength`` scales all four hqdn3d parameters proportionally from the
+    ffmpeg defaults (4:3:6:4.5). Higher values smooth more; 4 is a balanced
+    starting point for moderate noise.
+    """
+    if strength <= 0:
+        raise ValueError("strength must be > 0")
+    ls = round(strength, 3)
+    cs = round(strength * 0.75, 3)
+    lt = round(strength * 1.5, 3)
+    ct = round(strength * 1.125, 3)
+    return ["-i", input_path, "-vf", f"hqdn3d={ls}:{cs}:{lt}:{ct}", output_path]
+
+
 def build_fps_args(input_path: str, output_path: str, fps: float) -> list[str]:
     """Build args to resample to ``fps`` frames/sec (drops/dupes frames; same
     duration and speed, unlike the ``speed`` op)."""

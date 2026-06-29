@@ -151,6 +151,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output")
     _add_global_flags(p)
 
+    # sharpen
+    p = sub.add_parser("sharpen", help="Sharpen or soften via unsharp mask (positive=sharpen, negative=soften).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--amount", type=float, default=1.5,
+                   help="Luma strength: >0 sharpens, <0 softens, 0 no-op (default 1.5).")
+    _add_global_flags(p)
+
+    # denoise
+    p = sub.add_parser("denoise", help="Reduce noise via hqdn3d (higher strength = more smoothing).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--strength", type=float, default=4.0,
+                   help="Noise reduction strength 1–10 (default 4).")
+    _add_global_flags(p)
+
     # fade
     p = sub.add_parser("fade", help="Fade in from / out to black (video + audio).")
     p.add_argument("input")
@@ -418,6 +434,14 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "deinterlace":
         runner.run_ffmpeg(commands.build_deinterlace_args(args.input, args.output))
+        return 0
+
+    if args.command == "sharpen":
+        runner.run_ffmpeg(commands.build_sharpen_args(args.input, args.output, args.amount))
+        return 0
+
+    if args.command == "denoise":
+        runner.run_ffmpeg(commands.build_denoise_args(args.input, args.output, args.strength))
         return 0
 
     if args.command == "fade":

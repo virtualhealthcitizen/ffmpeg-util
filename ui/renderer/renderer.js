@@ -1063,6 +1063,8 @@ const STICKY = [
   "image_to_video-seconds", "image_to_video-fps",
   "autocrop-limit",
   "output-template",
+  "sharpen-amount",
+  "denoise-strength",
 ];
 
 async function loadSettings() {
@@ -1608,6 +1610,26 @@ $("#run-deinterlace").addEventListener("click", () => {
   run("Deinterlacing", "deinterlace", {
     input: val("deinterlace-input"),
     output: val("deinterlace-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-sharpen").addEventListener("click", () => {
+  if (!requireFields("sharpen-input", "sharpen-output")) return;
+  run("Sharpening", "sharpen", {
+    input: val("sharpen-input"),
+    output: val("sharpen-output"),
+    amount: numOrNull("sharpen-amount") ?? 1.5,
+    overwrite: true,
+  });
+});
+
+$("#run-denoise").addEventListener("click", () => {
+  if (!requireFields("denoise-input", "denoise-output")) return;
+  run("Denoising", "denoise", {
+    input: val("denoise-input"),
+    output: val("denoise-output"),
+    strength: numOrNull("denoise-strength") ?? 4.0,
     overwrite: true,
   });
 });
