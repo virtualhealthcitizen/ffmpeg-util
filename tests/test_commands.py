@@ -687,7 +687,7 @@ def test_build_trim_silence_args_defaults():
     af = args[args.index("-af") + 1]
     assert "silenceremove" in af
     assert "start_periods=1" in af
-    assert "stop_periods=-1" in af
+    assert "stop_periods=1" in af
     assert "-50.0dB" in af
     assert "0.5" in af
     assert args[-1] == "out.mp4"

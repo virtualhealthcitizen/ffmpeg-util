@@ -705,7 +705,7 @@ def build_trim_silence_args(
     sr = (
         f"silenceremove="
         f"start_periods=1:start_threshold={thr}:start_duration={dur}:"
-        f"stop_periods=-1:stop_threshold={thr}:stop_duration={dur}"
+        f"stop_periods=1:stop_threshold={thr}:stop_duration={dur}"
     )
     return ["-i", input_path, "-c:v", "copy", "-af", sr, output_path]
 
