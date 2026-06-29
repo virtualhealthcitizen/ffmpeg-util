@@ -1185,3 +1185,30 @@ def test_run_stream_image_to_video_defaults_30fps(client, media, auth):
     fps_str = _json.loads(probe.stdout)["streams"][0]["r_frame_rate"]
     num, den = map(int, fps_str.split("/"))
     assert 28 <= num / den <= 32, f"expected ~30 fps default, got {fps_str}"
+
+
+def test_remux(client, media, auth):
+    d, src = media
+    out = d / "remuxed.mkv"
+    r = client.post(
+        "/remux",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_run_stream_remux(client, media, auth):
+    d, src = media
+    out = d / "remuxed_stream.mkv"
+    r = client.post(
+        "/run/stream",
+        json={"op": "remux", "input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    done = [e for e in events if e.get("type") == "done"]
+    assert done and done[0]["output"] == str(out)
+    assert out.exists() and out.stat().st_size > 0

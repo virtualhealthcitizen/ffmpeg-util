@@ -332,6 +332,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Text color: a name (white, yellow) or hex #rrggbb (default white).")
     _add_global_flags(p)
 
+    # remux
+    p = sub.add_parser("remux", help="Change container without re-encoding (-c copy).")
+    p.add_argument("input")
+    p.add_argument("output", help="Output file; extension sets the container (e.g. .mp4, .mkv).")
+    _add_global_flags(p)
+
     # compress
     p = sub.add_parser("compress", help="Compress and/or resize a video.")
     p.add_argument("input")
@@ -563,6 +569,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             args.input, args.output,
             font_size=args.font_size, position=args.position, color=args.color,
         ))
+        return 0
+
+    if args.command == "remux":
+        runner.run_ffmpeg(commands.build_remux_args(args.input, args.output))
         return 0
 
     if args.command == "compress":

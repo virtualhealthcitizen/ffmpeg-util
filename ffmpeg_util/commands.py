@@ -955,6 +955,16 @@ def build_timecode_args(
     return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
 
 
+def build_remux_args(input_path: str, output_path: str) -> list[str]:
+    """Remux (change container) without re-encoding using ``-c copy``.
+
+    The output container is inferred from the output extension. ffmpeg will
+    error if the existing codecs are incompatible with the target container
+    (e.g. HEVC into an AVI that doesn't support it).
+    """
+    return ["-i", input_path, "-c", "copy", output_path]
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

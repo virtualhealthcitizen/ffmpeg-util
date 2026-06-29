@@ -705,3 +705,14 @@ def test_build_trim_silence_args_custom():
 def test_build_trim_silence_args_rejects_negative_duration():
     with pytest.raises(ValueError, match="min_duration"):
         c.build_trim_silence_args("in.mp4", "out.mp4", min_duration=-0.1)
+
+
+def test_build_remux_args_uses_copy():
+    args = c.build_remux_args("in.mkv", "out.mp4")
+    assert args == ["-i", "in.mkv", "-c", "copy", "out.mp4"]
+
+
+def test_build_remux_args_preserves_output_path():
+    args = c.build_remux_args("video.mp4", "video.mov")
+    assert args[0] == "-i" and args[1] == "video.mp4"
+    assert args[-1] == "video.mov"

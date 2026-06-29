@@ -76,6 +76,7 @@
     image_to_video: { tag: "clip", ext: ".mp4" },
     autocrop: { tag: "autocrop" },
     trim_silence: { tag: "trimmed" },
+    remux: { tag: "remux" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -285,6 +286,7 @@
     blur_pad: "blurred fill background letterbox frame fit no bars",
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
     trim_silence: "silence strip trim audio ends start trailing leading remove quiet padding",
+    remux: "container format change mkv mp4 mov avi webm repackage rewrap copy codec",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -294,7 +296,7 @@
   // search has filtered all of its tools away. A new tab not listed here is never
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
-    { name: "Convert", tabs: ["convert"] },
+    { name: "Convert", tabs: ["convert", "remux"] },
     { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"] },
@@ -370,6 +372,7 @@
     image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
     autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
     trim_silence: "Strip leading and trailing silence (silenceremove). Example: Threshold -50 dB, Min 0.5s removes quiet pads from recordings.",
+    remux: "Change the container without re-encoding (-c copy). Example: in.mkv → in.mp4 — fast and lossless when the codecs are container-compatible.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.

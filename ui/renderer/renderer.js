@@ -1969,6 +1969,15 @@ $("#run-autocrop").addEventListener("click", () => {
   });
 });
 
+$("#run-remux").addEventListener("click", () => {
+  if (!requireFields("remux-input", "remux-output")) return;
+  run("Remuxing", "remux", {
+    input: val("remux-input"),
+    output: val("remux-output"),
+    overwrite: true,
+  });
+});
+
 // --- Sliders with live readouts ---
 // Sync all sliders from their paired number inputs (called after preset load).
 function refreshSliders() {

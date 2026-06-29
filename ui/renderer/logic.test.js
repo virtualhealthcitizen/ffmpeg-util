@@ -1057,7 +1057,7 @@ const NAV_TABS = [
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
-  "image_to_video", "autocrop",
+  "image_to_video", "autocrop", "remux",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1354,4 +1354,15 @@ test("fieldTooltip returns non-empty blurbs for trim_silence fields", () => {
 test("suggestOutputForTab uses 'trimmed' tag for trim_silence", () => {
   const out = L.suggestOutputForTab("C:\\clips\\rec.mp3", "trim_silence");
   assert.ok(out.includes("trimmed"), "output path should contain 'trimmed' tag");
+});
+
+test("suggestOutputForTab uses 'remux' tag and keeps input extension", () => {
+  assert.equal(L.suggestOutputForTab("in.mkv", "remux"), "in.remux.mkv");
+  assert.equal(L.suggestOutputForTab("clip.mp4", "remux"), "clip.remux.mp4");
+});
+
+test("TOOL_ALIASES includes remux with container keywords", () => {
+  assert.ok(L.TOOL_ALIASES.remux, "remux should have aliases");
+  assert.ok(L.TOOL_ALIASES.remux.includes("container"));
+  assert.ok(L.TOOL_ALIASES.remux.includes("mkv"));
 });
