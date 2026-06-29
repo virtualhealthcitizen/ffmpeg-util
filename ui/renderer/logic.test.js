@@ -866,9 +866,30 @@ test("TOOL_CATEGORIES Color group contains sharpen and denoise", () => {
   assert.ok(colorGroup.tabs.includes("denoise"), "Color group has denoise");
 });
 
-test("suggestOutputForTab uses correct tags for sharpen and denoise", () => {
+test("suggestOutputForTab uses correct tags for sharpen, denoise, and timecode", () => {
   assert.equal(L.suggestOutputForTab("in.mp4", "sharpen"), "in.sharp.mp4");
   assert.equal(L.suggestOutputForTab("in.mp4", "denoise"), "in.denoise.mp4");
+  assert.equal(L.suggestOutputForTab("in.mp4", "timecode"), "in.tc.mp4");
+});
+
+test("TOOL_CATEGORIES includes timecode in Video FX", () => {
+  const vfx = L.TOOL_CATEGORIES.find(g => g.name === "Video FX");
+  assert.ok(vfx, "Video FX category exists");
+  assert.ok(vfx.tabs.includes("timecode"), "Video FX includes timecode");
+});
+
+test("buildCliCommand handles timecode with font_size and position", () => {
+  assert.equal(
+    L.buildCliCommand("timecode", {
+      input: "in.mp4",
+      output: "in.tc.mp4",
+      font_size: 36,
+      position: "bottom-right",
+      color: "yellow",
+      overwrite: true,
+    }),
+    "ffmpeg-util timecode in.mp4 in.tc.mp4 --font-size 36 --position bottom-right --color yellow -y"
+  );
 });
 
 test("buildCliCommand maps a simple input/output op with --flags and -y", () => {
@@ -1034,7 +1055,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 const NAV_TABS = [
   "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "reverse", "volume",
-  "fade", "grayscale", "invert", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
+  "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "hstack", "vstack", "blur_pad",
   "image_to_video", "autocrop",
 ];
@@ -1053,7 +1074,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video"]);
+  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);

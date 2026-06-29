@@ -256,7 +256,7 @@ Packaging / tests:
 - [ ] Trim silence from the ends (`silenceremove`)
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)
-- [ ] Timestamp / timecode overlay (`drawtext`)
+- [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
 - [ ] Stabilize shaky video (`vidstab`, two-pass)
 - [ ] Convert to a specific pixel format / 10-bit
@@ -268,7 +268,7 @@ Packaging / tests:
 - [ ] Two-up compare grid (input vs output, hstack)
 - [ ] Trim by percentage (e.g. middle 50%)
 - [ ] Add chapters from a list
-- [ ] Burn a timestamp/elapsed overlay
+- [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [ ] Auto-orient from rotation metadata, then strip it
 - [ ] Export a short preview clip (first N seconds, downscaled)
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.

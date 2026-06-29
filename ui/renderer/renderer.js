@@ -1078,6 +1078,7 @@ const STICKY = [
   "output-template",
   "sharpen-amount",
   "denoise-strength",
+  "timecode-font-size",
 ];
 
 async function loadSettings() {
@@ -1621,6 +1622,18 @@ $("#run-invert").addEventListener("click", () => {
   run("Inverting colors", "invert", {
     input: val("invert-input"),
     output: val("invert-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-timecode").addEventListener("click", () => {
+  if (!requireFields("timecode-input", "timecode-output")) return;
+  run("Burning timecode", "timecode", {
+    input: val("timecode-input"),
+    output: val("timecode-output"),
+    font_size: numOrNull("timecode-font-size") ?? 24,
+    position: val("timecode-position") || "top-left",
+    color: val("timecode-color") || "white",
     overwrite: true,
   });
 });

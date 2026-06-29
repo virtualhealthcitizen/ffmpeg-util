@@ -636,6 +636,41 @@ def test_target_video_bitrate_rejects_bad_inputs():
         c.target_video_bitrate_kbps(0.01, 100, 128)  # target too small
 
 
+def test_timecode_args_default():
+    args = c.build_timecode_args("in.mp4", "out.mp4")
+    vf = args[args.index("-vf") + 1]
+    assert "drawtext" in vf
+    assert "pts" in vf
+    assert "fontsize=24" in vf
+    assert "x=10" in vf and "y=10" in vf
+    assert "fontcolor=white" in vf
+    assert args[-1] == "out.mp4"
+    assert "-c:a" in args and "copy" in args
+
+
+def test_timecode_args_custom_options():
+    args = c.build_timecode_args("in.mp4", "out.mp4", font_size=36, position="bottom-right", color="yellow")
+    vf = args[args.index("-vf") + 1]
+    assert "fontsize=36" in vf
+    assert "w-tw-10" in vf and "h-th-10" in vf
+    assert "fontcolor=yellow" in vf
+
+
+def test_timecode_args_rejects_small_font():
+    with pytest.raises(ValueError, match="font_size"):
+        c.build_timecode_args("in.mp4", "out.mp4", font_size=3)
+
+
+def test_timecode_args_rejects_bad_position():
+    with pytest.raises(ValueError, match="position"):
+        c.build_timecode_args("in.mp4", "out.mp4", position="center")
+
+
+def test_timecode_args_rejects_bad_color():
+    with pytest.raises(ValueError, match="color"):
+        c.build_timecode_args("in.mp4", "out.mp4", color="white; rm -rf /")
+
+
 def test_compress_to_size_runs_two_passes_dry_run(capsys):
     runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
     vkbps = c.compress_to_size(runner, "in.mp4", "out.mp4", 0.5, duration_s=5)

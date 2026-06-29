@@ -9,6 +9,7 @@ re-implementing ffmpeg logic in Node.
 import json
 import os
 import queue
+import sys
 import tempfile
 import threading
 import time
@@ -40,6 +41,29 @@ app.add_middleware(
 def require_token(authorization: str = Header(default="")) -> None:
     if not TOKEN or authorization != f"Bearer {TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _find_system_font() -> str | None:
+    """Return an absolute path to a usable system font, or None.
+
+    Needed on Windows builds of ffmpeg that lack fontconfig — drawtext requires
+    an explicit fontfile= when fontconfig isn't available.
+    """
+    if sys.platform == "win32":
+        win_fonts = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Fonts")
+        for name in ("arial.ttf", "segoeui.ttf", "consola.ttf", "cour.ttf"):
+            p = os.path.join(win_fonts, name)
+            if os.path.isfile(p):
+                return p
+    else:
+        for p in (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ):
+            if os.path.isfile(p):
+                return p
+    return None
 
 
 @app.get("/health")
@@ -443,6 +467,31 @@ def denoise(req: DenoiseReq, _: None = Depends(require_token)) -> dict:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
         runner.run_ffmpeg(commands.build_denoise_args(req.input, req.output, req.strength))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
+class TimecodeReq(BaseModel):
+    input: str
+    output: str
+    font_size: int = 24
+    position: str = "top-left"
+    color: str = "white"
+    overwrite: bool = True
+
+
+@app.post("/timecode")
+def timecode(req: TimecodeReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_timecode_args(
+            req.input, req.output,
+            font_size=req.font_size, position=req.position, color=req.color,
+            font_file=_find_system_font(),
+        ))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -894,6 +943,10 @@ class RunReq(BaseModel):
     amount: float = 1.5
     # denoise
     strength: float = 4.0
+    # timecode
+    font_size: int = 24
+    position: str = "top-left"
+    color: str = "white"
     # crop-aspect
     aspect: str = "16:9"
     # blur-pad
@@ -939,6 +992,12 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_invert_args(req.input, req.output), None
     if op == "deinterlace":
         return commands.build_deinterlace_args(req.input, req.output), None
+    if op == "timecode":
+        return commands.build_timecode_args(
+            req.input, req.output,
+            font_size=req.font_size, position=req.position, color=req.color,
+            font_file=_find_system_font(),
+        ), None
     if op == "sharpen":
         return commands.build_sharpen_args(req.input, req.output, req.amount), None
     if op == "denoise":

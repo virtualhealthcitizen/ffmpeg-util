@@ -870,6 +870,66 @@ def contact_sheet(
     )
 
 
+_TIMECODE_POSITIONS = {
+    "top-left": ("10", "10"),
+    "top-right": ("w-tw-10", "10"),
+    "bottom-left": ("10", "h-th-10"),
+    "bottom-right": ("w-tw-10", "h-th-10"),
+}
+_TIMECODE_COLOR_RE = re.compile(r"^[a-zA-Z0-9#@.]+$")
+
+
+def _drawtext_escape_path(path: str) -> str:
+    """Escape a file-system path for use in a drawtext fontfile= option.
+
+    The drawtext filter uses ':' as an option separator and '\\' as an escape
+    character, so Windows drive colons (C:/) and backslashes must be escaped.
+    Forward slashes are safe on all platforms (ffmpeg accepts them on Windows).
+    """
+    normalized = str(path).replace("\\", "/")
+    return normalized.replace(":", "\\:")
+
+
+def build_timecode_args(
+    input_path: str,
+    output_path: str,
+    *,
+    font_size: int = 24,
+    position: str = "top-left",
+    color: str = "white",
+    font_file: str | None = None,
+) -> list[str]:
+    """Build args to burn a running HH:MM:SS.ms timecode into the video.
+
+    Uses ffmpeg's ``drawtext`` filter with PTS expansion so the overlay counts
+    up from 00:00:00.000. A semi-transparent black box makes the text readable
+    on any background. Audio is stream-copied unchanged.
+    ``position`` is one of top-left / top-right / bottom-left / bottom-right.
+    ``color`` is any ffmpeg color name or hex (e.g. white, yellow, #ffffff).
+    ``font_file`` is an optional absolute path to a TTF/OTF font; required on
+    systems where fontconfig is unavailable (e.g. some Windows builds of ffmpeg).
+    """
+    if font_size < 6:
+        raise ValueError("font_size must be >= 6")
+    if position not in _TIMECODE_POSITIONS:
+        raise ValueError(
+            f"position must be one of {sorted(_TIMECODE_POSITIONS)}; got {position!r}"
+        )
+    color = str(color).strip()
+    if not color or not _TIMECODE_COLOR_RE.match(color):
+        raise ValueError(
+            "color must be a valid ffmpeg color name or hex value (e.g. white, #ffffff)"
+        )
+    x_expr, y_expr = _TIMECODE_POSITIONS[position]
+    fontfile_opt = f"fontfile='{_drawtext_escape_path(font_file)}':" if font_file else ""
+    vf = (
+        f"drawtext={fontfile_opt}text='%{{pts\\:hms}}':"
+        f"fontsize={font_size}:x={x_expr}:y={y_expr}:"
+        f"fontcolor={color}:box=1:boxcolor=black@0.5:boxborderw=5"
+    )
+    return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

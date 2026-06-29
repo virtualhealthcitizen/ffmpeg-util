@@ -57,6 +57,7 @@
     fade: { tag: "fade" },
     grayscale: { tag: "gray" },
     invert: { tag: "invert" },
+    timecode: { tag: "tc" },
     deinterlace: { tag: "deint" },
     sharpen: { tag: "sharp" },
     denoise: { tag: "denoise" },
@@ -265,6 +266,7 @@
     fade: "in out dissolve intro outro",
     grayscale: "black white desaturate mono color monochrome",
     invert: "negate negative invert colors photo negative inverse opposite",
+    timecode: "timestamp timecode burned text overlay drawtext clock time counter",
     deinterlace: "interlaced yadif deinterlace combing comb fields progressive fix",
     sharpen: "sharpen unsharp mask crisp edges detail acuity soften blur",
     denoise: "denoise noise grain hqdn3d smooth reduce filter clean",
@@ -293,7 +295,7 @@
     { name: "Convert", tabs: ["convert"] },
     { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
-    { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video"] },
+    { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
@@ -347,6 +349,7 @@
     fade: "Fade in and out at the ends. Example: Duration 1 gives a 1s fade-in and 1s fade-out.",
     grayscale: "Desaturate to black & white (hue=s=0). No options to set — just run.",
     invert: "Invert colours (photo negative). No options to set — just run.",
+    timecode: "Burn a running HH:MM:SS.ms timecode into the video (drawtext). Example: Font 24, top-left, white.",
     deinterlace: "Remove interlacing artefacts via yadif. Safe on progressive sources — no options needed, just run.",
     sharpen: "Sharpen edges with the unsharp mask filter. Example: Amount 1.5 for moderate sharpening; negative values soften instead.",
     denoise: "Reduce film grain / sensor noise via hqdn3d. Example: Strength 4 for moderate noise reduction; 8–10 for heavy smoothing.",
@@ -1141,7 +1144,8 @@
     { id: "fade-duration",   min: 0.1, max: 10,  step: 0.1, def: 1,   unit: "s" },
     { id: "loudnorm-target", min: -70, max: -5,  step: 0.5, def: -16, unit: " LUFS" },
     { id: "sharpen-amount",  min: -1.5, max: 5,  step: 0.1, def: 1.5, unit: "" },
-    { id: "denoise-strength", min: 1,  max: 10,  step: 0.5, def: 4,   unit: "" },
+    { id: "denoise-strength",   min: 1,  max: 10,  step: 0.5, def: 4,   unit: "" },
+    { id: "timecode-font-size", min: 6,  max: 72,  step: 2,   def: 24,  unit: " pt" },
   ];
 
   // Format a (already-valid, finite) slider value for its live readout label.
@@ -1309,6 +1313,10 @@
     "sharpen-amount":  "Unsharp mask luma amount: >0 sharpens (1.5 = moderate, 5 = heavy), <0 softens, 0 = no-op.",
     // Denoise
     "denoise-strength": "hqdn3d noise reduction strength: 1–3 light, 4–6 moderate, 7–10 heavy smoothing.",
+    // Timecode
+    "timecode-font-size": "Font size in points for the timecode overlay (6–72). Default 24 suits 720p+; use 36+ for 1080p.",
+    "timecode-position":  "Corner of the frame to place the timecode: top-left, top-right, bottom-left, bottom-right.",
+    "timecode-color":     "Text colour: white/yellow are most legible on dark subjects; black works on bright backgrounds.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.

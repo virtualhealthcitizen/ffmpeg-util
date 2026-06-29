@@ -409,6 +409,19 @@ def test_denoise_produces_output(client, media, auth):
     assert out.exists(), "denoise should produce an output file"
 
 
+def test_timecode_produces_output(client, media, auth):
+    d, src = media
+    out = d / "timecoded.mp4"
+    r = client.post(
+        "/timecode",
+        json={"input": str(src), "output": str(out), "font_size": 24,
+              "position": "top-left", "color": "white", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "timecode should produce an output file"
+
+
 def test_fade_makes_first_frame_dark(client, media, auth):
     d, src = media
     base = _first_frame_yavg(src)
