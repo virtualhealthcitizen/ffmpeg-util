@@ -1222,6 +1222,85 @@
     return resolveTheme(current) === "dark" ? "☀ Light" : "☾ Dark";
   }
 
+  // --- Per-field "?" tooltips: short help blurbs for non-obvious form fields ---
+  // Maps input/select element ids to a one-line explanation — what the field does
+  // and what values make sense. Covers the ~40 fields users most often mis-set or
+  // wonder about; obvious labels and path fields are intentionally omitted. Pure
+  // data + a lookup, consumed by setupFieldTooltips() in renderer.js which inserts
+  // a small ? badge next to each covered label at startup.
+  const FIELD_TOOLTIPS = {
+    // Convert
+    "convert-vcodec":  "Video codec: 'copy' to stream-copy without re-encoding, or a name like libx264 (H.264) or libx265 (HEVC).",
+    "convert-acodec":  "Audio codec: 'copy' to stream-copy, or a name like aac, mp3, or opus.",
+    // Trim
+    "trim-start":      "Start time: HH:MM:SS, MM:SS, or bare seconds (e.g. 5 or 1:30). Defaults to the beginning.",
+    "trim-end":        "End time — use End or Duration, not both. Defaults to the end of the clip.",
+    "trim-duration":   "How long to keep — use End or Duration, not both.",
+    // Thumbnail
+    "thumbnail-time":  "Timestamp for a single frame: HH:MM:SS or bare seconds. Ignored when Count > 1.",
+    "thumbnail-count": "Number of evenly-spaced frames to extract. Include %d in the output filename.",
+    "thumbnail-width": "Output image width in pixels; height scales proportionally. Leave blank for the source width.",
+    "thumbnail-cols":  "Columns in a contact-sheet montage — set both Cols and Rows to make a grid.",
+    "thumbnail-rows":  "Rows in a contact-sheet montage — set both Cols and Rows to make a grid.",
+    // Compress
+    "compress-crf":    "Constant Rate Factor: lower = better quality / larger file. 0 = lossless, 51 = worst; 18–28 is the useful range (default 23).",
+    "compress-bitrate":"Target average bitrate, e.g. '2M' for 2 Mbps or '500k'. Overridden by Target MB if set.",
+    "compress-target": "Target output file size in megabytes — uses a two-pass encode. Overrides CRF and Bitrate.",
+    "compress-vcodec": "Video codec: libx264 (H.264), libx265 (H.265/HEVC), libvpx-vp9 (VP9). Defaults to libx264.",
+    "compress-preset": "Encoding speed vs compression: ultrafast → veryslow. Slower = smaller file at the same CRF, but takes longer.",
+    // GIF
+    "gif-fps":         "Frames per second for the GIF. Lower = smaller file; 10–15 fps is a good range.",
+    "gif-width":       "Output width in pixels; height scales proportionally.",
+    "gif-start":       "Start time within the source clip: HH:MM:SS or bare seconds.",
+    "gif-duration":    "Length of the GIF in seconds.",
+    "gif-loop":        "Loop count: 0 = infinite loop, -1 = play once, N > 0 = play N times.",
+    // Speed
+    "speed-factor":    "Speed multiplier: 2.0 = twice as fast, 0.5 = half speed. Audio pitch is corrected automatically.",
+    // Crop
+    "crop-width":      "Crop rectangle width in source pixels. Must be even for H.264.",
+    "crop-height":     "Crop rectangle height in source pixels. Must be even for H.264.",
+    "crop-x":          "Left edge of the crop rectangle, in source pixels (0 = left edge of the frame).",
+    "crop-y":          "Top edge of the crop rectangle, in source pixels (0 = top of the frame).",
+    // Pad
+    "pad-width":       "Target frame width in pixels. The source is centred; solid bars fill the gaps.",
+    "pad-height":      "Target frame height in pixels.",
+    // Loop
+    "loop-count":      "Total number of plays: 1 = no loop, 2 = play twice, 3 = three times, etc.",
+    // Frames
+    "frames-every":    "Extract one frame every N frames (e.g. 30 on a 30 fps clip = one frame per second). Use %04d in the output path.",
+    // Volume
+    "volume-gain":     "Gain in decibels: +6 dB ≈ double loudness, -6 dB ≈ half. Typical adjustments are ±3–12 dB.",
+    // Fade
+    "fade-duration":   "Length of the fade-in and fade-out in seconds. Both ends fade; trim first to fade only one end.",
+    // Loudnorm
+    "loudnorm-target": "Integrated loudness target in LUFS: -16 for web/podcast, -14 for Spotify/YouTube, -23 for broadcast.",
+    // EQ
+    "eq-brightness":   "Brightness offset: -1 = black, 0 = unchanged, +1 = white.",
+    "eq-contrast":     "Contrast multiplier: 0 = flat grey, 1 = unchanged, >1 = higher contrast.",
+    "eq-saturation":   "Saturation multiplier: 0 = greyscale, 1 = unchanged, >1 = more vivid.",
+    // FPS
+    "fps-fps":         "Output frame rate in fps. Frames are dropped or duplicated to hit this rate; clip duration is unchanged.",
+    // Waveform
+    "waveform-width":  "Output PNG width in pixels. The waveform spans the full width.",
+    "waveform-height": "Output PNG height in pixels.",
+    // Blur pad
+    "blur_pad-width":  "Target frame width in pixels. The source is scaled to fit; the gap is filled with a blurred copy.",
+    "blur_pad-height": "Target frame height in pixels.",
+    "blur_pad-sigma":  "Blur strength for the background fill (Gaussian sigma). Higher = softer. Default 20 works for most clips.",
+    // Image to video
+    "image_to_video-seconds": "Length of the output clip in seconds.",
+    "image_to_video-fps":     "Frames per second for the output clip. 30 is standard.",
+    // Autocrop
+    "autocrop-limit":  "Black level threshold (0–255): pixels at or below this brightness count as 'bar' pixels. Default 24 suits most clips.",
+    // Title
+    "title-title":     "Metadata title tag to embed in the output file. Leave blank to clear the existing title.",
+  };
+
+  // The help blurb for a form field id, or "" when none is configured. Pure.
+  function fieldTooltip(id) {
+    return Object.prototype.hasOwnProperty.call(FIELD_TOOLTIPS, id) ? FIELD_TOOLTIPS[id] : "";
+  }
+
   const api = {
     THEMES,
     resolveTheme,
@@ -1307,6 +1386,8 @@
     outputBaseName,
     runInputEntries,
     runOutputDirEntry,
+    FIELD_TOOLTIPS,
+    fieldTooltip,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

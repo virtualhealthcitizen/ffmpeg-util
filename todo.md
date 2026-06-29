@@ -558,7 +558,16 @@ Help / discoverability:
       node:test (2 new, 114 total) + headless Electron E2E vs the real sidecar
       (Convert help on load; switching to Compress updates it to the CRF line; all
       33 nav tabs show a non-empty visible help line; real compress still runs →
-      output produced). (Per-field "?" tooltips still open.) ← next
+      output produced). (Per-field "?" tooltips: done — see entry below.)
+- [x] **Per-field "?" tooltips** — a small `?` badge next to each non-obvious
+      field label (label.inline) shows a native OS tooltip explaining the field and
+      giving good example values. 38 badges covering ~40 fields across all 33 tabs
+      (path inputs deliberately excluded). Pure `FIELD_TOOLTIPS`/`fieldTooltip` in
+      `logic.js`; `setupFieldTooltips` (one DOM pass at startup) in `renderer.js`;
+      `.field-tip` badge styled in `styles.css`. Verified: node:test (3 new, 129
+      total: fieldTooltip lookups, no path-field leaks, length ≤ 160) + headless
+      Electron E2E 6/6 (38 badges injected; CRF tooltip correct; loop tooltip
+      correct; path fields have no badge; all badges carry aria-label). ← next
 - [x] Friendly error mapping (carried from round 8) — DONE (see round 8: friendlier
       error surface; `friendlyError` in `logic.js`, `#error-hint` above the raw stderr).
 

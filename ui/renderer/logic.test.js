@@ -1199,6 +1199,39 @@ test("runInputEntries maps body inputs to [path, fieldId] pairs", () => {
   assert.deepEqual(L.runInputEntries("compress", null), []);
 });
 
+test("fieldTooltip returns a non-empty string for known fields, '' for unknown", () => {
+  // a few representative covered fields
+  const crf = L.fieldTooltip("compress-crf");
+  assert.ok(crf.length > 0, "compress-crf has a tooltip");
+  assert.ok(/CRF|Rate Factor/i.test(crf), "compress-crf mentions CRF");
+
+  const loop = L.fieldTooltip("gif-loop");
+  assert.ok(loop.length > 0, "gif-loop has a tooltip");
+  assert.ok(/infinite|loop/i.test(loop), "gif-loop mentions loop behaviour");
+
+  // unknown ids return ""
+  assert.equal(L.fieldTooltip("compress-input"), "");
+  assert.equal(L.fieldTooltip("nope"), "");
+  assert.equal(L.fieldTooltip(""), "");
+  assert.equal(L.fieldTooltip(undefined), "");
+});
+
+test("FIELD_TOOLTIPS has no path fields (input/output keys are excluded)", () => {
+  for (const id of Object.keys(L.FIELD_TOOLTIPS)) {
+    assert.ok(
+      !L.isPathFieldId(id),
+      `FIELD_TOOLTIPS should not include path field "${id}"`
+    );
+  }
+});
+
+test("FIELD_TOOLTIPS entries are concise (≤ 160 chars) and non-empty", () => {
+  for (const [id, text] of Object.entries(L.FIELD_TOOLTIPS)) {
+    assert.ok(text && text.length > 0, `tooltip for "${id}" must not be empty`);
+    assert.ok(text.length <= 160, `tooltip for "${id}" too long (${text.length})`);
+  }
+});
+
 test("runOutputDirEntry returns [dir, fieldId] or null", () => {
   // Windows path with directory component
   const winEntry = L.runOutputDirEntry("compress", { output: "C:\\foo\\bar.mp4" });
