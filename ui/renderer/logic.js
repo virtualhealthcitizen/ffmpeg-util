@@ -28,9 +28,12 @@
     return inputPath.replace(/\.[^.\\/]+$/, "") + ext;
   }
 
-  // Multi-frame thumbnails use a %d pattern; the first written file is %d -> 1.
+  // Multi-frame thumbnails use %d or zero-padded %04d patterns; resolve to the
+  // first frame (%04d -> "0001", %d -> "1") so a preview can be loaded.
   function previewPath(outputPath) {
-    return String(outputPath).replace(/%d/g, "1");
+    return String(outputPath).replace(/%(\d*)d/g, (_, w) =>
+      String(1).padStart(w ? parseInt(w, 10) : 1, "0")
+    );
   }
 
   // --- Auto-fill output path: input + per-op suffix so "output required" isn't a

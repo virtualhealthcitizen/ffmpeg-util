@@ -219,6 +219,12 @@ Packaging / tests:
       Verified E2E: fade-in makes the first frame near-black (YAVG drops).
 - [x] Extract every Nth frame as images — core `build_extract_frames_args`, CLI `frames`,
       sidecar (`/frames` + `/run/stream`), Frames tab. Verified E2E: 90 frames, every 30 -> 3 files.
+      **Bug fix (hunt):** `previewPath` replaced only bare `%d` (regex `/%d/g`), so the zero-padded
+      pattern `%04d` in the frames output spec (`OUTPUT_SPECS.frames.tag = "frame_%04d"`) was never
+      resolved — the renderer tried to display and probe the literal `%04d` filename rather than the
+      real first-frame file (`frame_0001.png`). Fixed by widening the regex to `/%(\d*)d/g` so
+      `%04d` → `"0001"`, `%3d` → `"001"`, and bare `%d` → `"1"` (backward-compatible). 2 new
+      node:tests (146 total); E2E smoke 5/5 green.
 - [x] Pad / letterbox to a target frame — core `build_pad_args` (scale-to-fit +
       centered pad), CLI `pad`, sidecar (`/pad` + `/run/stream`), Pad tab.
       Verified E2E: 320x240 -> exact 640x640 frame.

@@ -21,6 +21,8 @@ test("previewKind classifies image, video, or none", () => {
   assert.deepEqual(L.previewKind("thumbs%d.png"), { kind: "image", path: "thumbs1.png" });
   assert.deepEqual(L.previewKind("out.mp4"), { kind: "video", path: "out.mp4" });
   assert.deepEqual(L.previewKind("audio.mp3"), { kind: null, path: "audio.mp3" });
+  // frames auto-suggest uses %04d — must resolve to first padded filename
+  assert.deepEqual(L.previewKind("video.frame_%04d.png"), { kind: "image", path: "video.frame_0001.png" });
 });
 
 test("suggestOutput swaps the extension", () => {
@@ -34,6 +36,9 @@ test("previewPath replaces %d with 1", () => {
   assert.equal(L.previewPath("thumbs%d.png"), "thumbs1.png");
   assert.equal(L.previewPath("a%d-b%d.png"), "a1-b1.png");
   assert.equal(L.previewPath("thumb.png"), "thumb.png");
+  // zero-padded patterns (%04d is the default for the frames output spec)
+  assert.equal(L.previewPath("frame_%04d.png"), "frame_0001.png");
+  assert.equal(L.previewPath("frame_%3d.png"), "frame_001.png");
 });
 
 test("parseLines trims and drops blanks", () => {
