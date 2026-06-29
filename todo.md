@@ -256,7 +256,10 @@ Packaging / tests:
 - [x] Trim silence from the ends (`silenceremove`) — core `build_trim_silence_args` (threshold_db/min_duration),
       CLI `trim-silence`, sidecar (`/trim-silence` + `/run/stream` op `trim_silence`), Trim silence tab
       (threshold + min-duration sliders, Audio category). Verified E2E: 8/8 checks (tab/panel/sliders/run button
-      present, output produced via UI); pytest 117 root + 76 sidecar; node:test 144. ← next
+      present, output produced via UI); pytest 117 root + 76 sidecar; node:test 144.
+      **Bug fix (hunt):** `stop_periods=-1` removed ALL silence (including internal pauses), not just
+      leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
+      matching the documented "trim leading and trailing silence" behavior. ← next
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
