@@ -66,6 +66,20 @@ h1 { margin: 0 0 4px; font-size: 22px; }
   padding: 6px 12px;
   font-size: 12px;
 }
+
+/* Notify-on-completion toggle — sits just left of the theme button. */
+.notify-label {
+  position: fixed;
+  top: 22px;
+  right: 90px;
+  z-index: 10;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.6;
+}
+.notify-label:hover { opacity: 1; }
+.notify-label input[type="checkbox"] { margin-right: 2px; cursor: pointer; }
 .sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
 .hint-drop { margin-top: -14px; font-size: 12px; opacity: 0.75; }
 .hint-keys { margin: -8px 0 16px; font-size: 12px; opacity: 0.75; }

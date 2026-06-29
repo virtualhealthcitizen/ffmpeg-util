@@ -24,4 +24,6 @@ contextBridge.exposeInMainWorld("sidecar", {
   showItemInFolder: (p) => ipcRenderer.invoke("shell:showItemInFolder", p),
   // The current OS platform ("win32" / "darwin" / "linux"), used for UI labels.
   platform: process.platform,
+  // Show a native desktop notification (title + body string). No-op when unsupported.
+  notify: (title, body) => ipcRenderer.invoke("shell:notify", title, body),
 });
