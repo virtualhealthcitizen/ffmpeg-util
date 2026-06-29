@@ -16,7 +16,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel,
   appendConsoleLines, SLIDER_SPECS, formatSliderOut,
   revealLabel, outputBaseName,
-  runInputEntries, runOutputDirEntry } = window.FfuLogic;
+  runInputEntries, runOutputDirEntry,
+  fieldTooltip } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1933,3 +1934,25 @@ function setupSliders() {
 }
 
 setupSliders();
+
+// --- Per-field "?" tooltips ---
+// Walk every label.inline and its child input/select; insert a small ? badge next
+// to the label text for any field that has a tooltip in FIELD_TOOLTIPS. The badge
+// carries a `title` attribute so the browser shows the native OS tooltip on hover.
+// Called once at startup — the HTML is static so a single pass is enough.
+function setupFieldTooltips() {
+  document.querySelectorAll("label.inline").forEach((label) => {
+    const field = label.querySelector("input[id], select[id]");
+    if (!field) return;
+    const tip = fieldTooltip(field.id);
+    if (!tip) return;
+    const badge = document.createElement("span");
+    badge.className = "field-tip";
+    badge.title = tip;
+    badge.setAttribute("aria-label", "field help: " + tip);
+    badge.textContent = "?";
+    label.insertBefore(badge, field);
+  });
+}
+
+setupFieldTooltips();
