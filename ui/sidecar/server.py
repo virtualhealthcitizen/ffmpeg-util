@@ -943,8 +943,8 @@ class RunReq(BaseModel):
     # contact-sheet
     cols: int = 4
     rows: int = 4
-    # gif
-    fps: int = 12
+    # gif (None = use per-op default: 12 for gif, 30 for image_to_video)
+    fps: int | None = None
     dither: str = "sierra2_4a"
     loop: int = 0
     # speed
@@ -1005,7 +1005,7 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             req.input, req.output, req.width or 1000, req.height or 200
         ), None
     if op == "fps":
-        return commands.build_fps_args(req.input, req.output, req.fps), None
+        return commands.build_fps_args(req.input, req.output, req.fps or 0), None
     if op == "eq":
         return commands.build_eq_args(
             req.input, req.output,
@@ -1198,7 +1198,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 # and a progress bar over the (longer) encode pass.
                 gif_dither = req.dither if req.dither in commands.VALID_DITHERS else "sierra2_4a"
                 gif_loop = req.loop
-                filt = commands.gif_filter(req.fps, req.width or 480)
+                filt = commands.gif_filter(req.fps or 12, req.width or 480)
                 seek = ["-ss", req.start] if req.start is not None else []
                 dur = ["-t", req.duration] if req.duration is not None else []
                 gif_total = total

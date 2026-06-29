@@ -113,6 +113,13 @@ Packaging / tests:
       (`/image-to-video` + `/run/stream`), Image → video tab. Verified E2E:
       a PNG → 3s h264 320×240 clip (duration measured via ffprobe).
       (video → frames already shipped as `frames`.)
+      **Bug fix (hunt):** `RunReq.fps` defaulted to 12 (GIF's default), so calling
+      `/run/stream` with `op=image_to_video` without an explicit fps used 12 fps
+      instead of the expected 30 fps (the CLI and `/image-to-video` endpoint default).
+      Fixed by changing `fps: int = 12` to `fps: int | None = None` in `RunReq` and
+      updating the GIF path to `req.fps or 12`; the existing `req.fps or 30` guard
+      for image_to_video now works correctly. 1 new regression test (77 sidecar);
+      117 core + 77 sidecar + 144 node:test + E2E smoke all green. ← next
 - [ ] Hardware-accelerated encoding option (NVENC/QSV) when available
 
 ### Workflow
@@ -259,7 +266,7 @@ Packaging / tests:
       present, output produced via UI); pytest 117 root + 76 sidecar; node:test 144.
       **Bug fix (hunt):** `stop_periods=-1` removed ALL silence (including internal pauses), not just
       leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
-      matching the documented "trim leading and trailing silence" behavior. ← next
+      matching the documented "trim leading and trailing silence" behavior.
 - [ ] Blur or pixelate a region
 - [ ] Crossfade-concatenate two clips (`xfade`)
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next

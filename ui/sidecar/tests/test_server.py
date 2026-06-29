@@ -1149,3 +1149,39 @@ def test_trim_silence_via_run_stream(client, media, auth):
     done = [e for e in events if e["type"] == "done"]
     assert done and done[0].get("output") == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_run_stream_image_to_video_defaults_30fps(client, media, auth):
+    # Regression: RunReq.fps defaulted to 12 (GIF's value), so calling
+    # /run/stream op=image_to_video without an explicit fps used 12fps instead
+    # of the expected 30fps default (matching the CLI + /image-to-video endpoint).
+    import json as _json
+    import subprocess
+    from conftest import FFMPEG, FFPROBE
+
+    d, _ = media
+    img = d / "still_fps.png"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=blue:s=160x120", "-frames:v", "1", str(img)],
+        check=True,
+    )
+    out = d / "fromimage_fps.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "image_to_video", "input": str(img), "output": str(out),
+              "seconds": 1.0, "overwrite": True},  # no fps field — tests the default
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert events[-1]["type"] == "done"
+    assert out.exists()
+    probe = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=r_frame_rate", "-of", "json", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    fps_str = _json.loads(probe.stdout)["streams"][0]["r_frame_rate"]
+    num, den = map(int, fps_str.split("/"))
+    assert 28 <= num / den <= 32, f"expected ~30 fps default, got {fps_str}"
