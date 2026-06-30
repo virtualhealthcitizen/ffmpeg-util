@@ -587,9 +587,15 @@ Persistence / memory:
       clobbering. Verified: node:test (4 new settings unit tests, 42 total) +
       headless Electron E2E across two launches (1024×700 @120,90 + Compress tab →
       both restored).
-- [~] Recent inputs/outputs per tab; remember the last-used directory for pickers —
+- [x] Recent inputs/outputs per tab; remember the last-used directory for pickers —
       recent inputs + last-used dir DONE (see UI/UX "Recent files list"); per-tab
-      output history still open.
+      output history DONE: `setRecentOutput`/`recentOutputDir` in `logic.js`; after
+      each successful run, the output path is saved per-tab in `settings.json` under
+      `recentOutputs`; on next launch, empty output fields are seeded from history;
+      the "Save as…" dialog defaults to the last output path for the active tab.
+      Verified: node:test (178/178, +2 new fns) + headless Electron E2E 6/6 (run →
+      saved in recentOutputs; second launch → field pre-populated; other tabs not
+      affected). ← next
 - [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
       Save, a dropdown + Load/Delete) captures the active tab's option fields
       (path inputs excluded) under a name, scoped per tool, persisted in

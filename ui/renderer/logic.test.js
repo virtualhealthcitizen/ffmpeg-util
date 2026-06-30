@@ -1244,6 +1244,29 @@ test("recentDir returns the most-recent entry's directory without a trailing sep
   assert.equal(L.recentDir(["noslash.mp4"]), "");
 });
 
+test("setRecentOutput records the last output path per tab", () => {
+  assert.deepEqual(L.setRecentOutput({}, "compress", "C:\\out\\v.mp4"), { compress: "C:\\out\\v.mp4" });
+  assert.deepEqual(L.setRecentOutput(null, "gif", "x.gif"), { gif: "x.gif" });
+  // overwrites previous entry for same tab
+  assert.deepEqual(L.setRecentOutput({ compress: "old.mp4" }, "compress", "new.mp4"), { compress: "new.mp4" });
+  // preserves other tabs
+  assert.deepEqual(L.setRecentOutput({ gif: "a.gif" }, "compress", "b.mp4"), { gif: "a.gif", compress: "b.mp4" });
+  // empty/whitespace path → unchanged
+  assert.deepEqual(L.setRecentOutput({ a: "x.mp4" }, "compress", "   "), { a: "x.mp4" });
+  // missing tab → unchanged
+  assert.deepEqual(L.setRecentOutput({ a: "x.mp4" }, "", "new.mp4"), { a: "x.mp4" });
+});
+
+test("recentOutputDir extracts the directory of the last output for a tab", () => {
+  assert.equal(L.recentOutputDir({ compress: "C:\\out\\v.mp4" }, "compress"), "C:\\out");
+  assert.equal(L.recentOutputDir({ compress: "/home/u/out.mp4" }, "compress"), "/home/u");
+  assert.equal(L.recentOutputDir({}, "compress"), "");
+  assert.equal(L.recentOutputDir(null, "gif"), "");
+  assert.equal(L.recentOutputDir({ compress: "nodir.mp4" }, "compress"), "");
+  // tab not in dict → ""
+  assert.equal(L.recentOutputDir({ gif: "a.gif" }, "compress"), "");
+});
+
 test("parseSpeed reads ffmpeg's speed field, rejecting junk", () => {
   assert.equal(L.parseSpeed("1.05x"), 1.05);
   assert.equal(L.parseSpeed("0.5x"), 0.5);
