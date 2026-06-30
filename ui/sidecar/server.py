@@ -362,6 +362,40 @@ def vstack(req: HstackReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class XfadeConcatReq(BaseModel):
+    inputs: list[str]
+    output: str
+    transition: str = "fade"
+    duration: float = 1.0
+    offset: float | None = None
+    overwrite: bool = True
+
+
+@app.post("/xfade-concat")
+def xfade_concat(req: XfadeConcatReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        offset = req.offset
+        if offset is None:
+            dur = commands.probe_duration(runner, req.inputs[0])
+            if dur is None:
+                raise ValueError(
+                    "Could not probe clip duration — pass offset explicitly."
+                )
+            offset = max(0.0, dur - req.duration)
+        runner.run_ffmpeg(commands.build_xfade_args(
+            req.inputs, req.output,
+            transition=req.transition,
+            duration=req.duration,
+            offset=offset,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class BoomerangReq(BaseModel):
     input: str
     output: str
@@ -1159,6 +1193,10 @@ class RunReq(BaseModel):
     # trim-pct
     start_pct: float = 0.0
     end_pct: float = 100.0
+    # xfade-concat
+    transition: str = "fade"
+    xfade_duration: float = 1.0
+    xfade_offset: float | None = None
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1219,6 +1257,22 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_hstack_args(req.inputs or [], req.output), None
     if op == "vstack":
         return commands.build_vstack_args(req.inputs or [], req.output), None
+    if op == "xfade_concat":
+        offset = req.xfade_offset
+        if offset is None:
+            inputs = req.inputs or []
+            dur = commands.probe_duration(FfmpegRunner(), inputs[0] if inputs else "")
+            if dur is None:
+                raise ValueError(
+                    "Could not probe clip duration — pass xfade_offset explicitly."
+                )
+            offset = max(0.0, dur - req.xfade_duration)
+        return commands.build_xfade_args(
+            req.inputs or [], req.output,
+            transition=req.transition,
+            duration=req.xfade_duration,
+            offset=offset,
+        ), None
     if op == "volume":
         return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":

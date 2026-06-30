@@ -346,7 +346,7 @@ setupFavoriteStars();
 function activeInputPath() {
   const tab = currentTab();
   if (tab === "concat") return parseLines($("#concat-inputs").value)[0] || "";
-  if (tab === "hstack" || tab === "vstack") return val(tab + "-input-a");
+  if (tab === "hstack" || tab === "vstack" || tab === "xfade_concat") return val(tab + "-input-a");
   const el = $("#" + tab + "-input");
   return el ? el.value.trim() : "";
 }
@@ -554,7 +554,7 @@ document.addEventListener("input", (e) => {
 // --- Multi-input compatibility banner (hstack/vstack/concat) ---
 function multiInputPaths(tab) {
   if (tab === "concat") return parseLines($("#concat-inputs").value);
-  if (tab === "hstack" || tab === "vstack") {
+  if (tab === "hstack" || tab === "vstack" || tab === "xfade_concat") {
     return [val(tab + "-input-a"), val(tab + "-input-b")].filter(Boolean);
   }
   return [];
@@ -1738,6 +1738,17 @@ $("#run-hstack").addEventListener("click", () => {
   run("Combining side by side", "hstack", {
     inputs: [val("hstack-input-a"), val("hstack-input-b")],
     output: val("hstack-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-xfade_concat").addEventListener("click", () => {
+  if (!requireFields("xfade_concat-input-a", "xfade_concat-input-b", "xfade_concat-output")) return;
+  run("Crossfading clips", "xfade_concat", {
+    inputs: [val("xfade_concat-input-a"), val("xfade_concat-input-b")],
+    output: val("xfade_concat-output"),
+    transition: $("#xfade_concat-transition").value,
+    xfade_duration: Number($("#xfade_concat-xfade_duration").value) || 1.0,
     overwrite: true,
   });
 });

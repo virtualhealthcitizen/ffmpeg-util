@@ -532,6 +532,37 @@ def build_vstack_args(inputs: Sequence[str], output_path: str) -> list[str]:
     ]
 
 
+def build_xfade_args(
+    inputs: Sequence[str],
+    output_path: str,
+    *,
+    transition: str = "fade",
+    duration: float = 1.0,
+    offset: float,
+) -> list[str]:
+    """Crossfade-concatenate two clips with the xfade filter.
+
+    ``offset`` is the second at which the transition starts — typically
+    ``duration_of_clip1 - duration`` so the fade begins just before clip 1 ends.
+    """
+    if len(inputs) != 2:
+        raise ValueError("xfade-concat needs exactly two input files")
+    if duration <= 0:
+        raise ValueError("transition duration must be positive")
+    if offset < 0:
+        raise ValueError("offset must be >= 0")
+    fc = (
+        f"[0:v][1:v]xfade=transition={transition}"
+        f":duration={duration}:offset={offset}[v]"
+    )
+    return [
+        "-i", inputs[0], "-i", inputs[1],
+        "-filter_complex", fc,
+        "-map", "[v]", "-map", "0:a?",
+        output_path,
+    ]
+
+
 def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
     """Build args to boomerang a clip: play it forward then reversed (video only),
     so the output runs about twice the input duration."""

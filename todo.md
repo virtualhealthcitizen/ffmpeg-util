@@ -278,7 +278,10 @@ Packaging / tests:
       leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
       matching the documented "trim leading and trailing silence" behavior.
 - [x] Blur or pixelate a region — core `build_blur_region_args` (split/crop/gblur/overlay filter_complex), CLI `blur-region`, sidecar (`/blur-region` + `/run/stream` op `blur_region`), Blur region tab (Video FX category). Verified E2E: 320x240 clip → output unchanged at 320x240 with blurred 80×60 region at (40,20); tab/panel/all fields present (8/8 checks); pytest 129 root + 85 sidecar; node:test 157.
-- [ ] Crossfade-concatenate two clips (`xfade`)
+- [x] Crossfade-concatenate two clips (`xfade`) — core `build_xfade_args` (transition/duration/offset,
+      auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
+      `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +
+      96 sidecar + 162 node:test + smoke 5/5 (46 nav tabs). ← next
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
 - [ ] Stabilize shaky video (`vidstab`, two-pass)
