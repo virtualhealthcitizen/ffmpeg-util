@@ -1351,3 +1351,41 @@ def build_compress_args(
     args += ["-c:a", "aac", "-b:a", "128k"]
     args.append(output_path)
     return args
+
+
+_PIP_POSITIONS = {
+    "top-left":     ("10", "10"),
+    "top-right":    ("W-w-10", "10"),
+    "bottom-left":  ("10", "H-h-10"),
+    "bottom-right": ("W-w-10", "H-h-10"),
+}
+
+
+def build_pip_args(
+    base: str,
+    overlay: str,
+    output: str,
+    *,
+    size_pct: int = 25,
+    position: str = "bottom-right",
+) -> list[str]:
+    """Picture-in-picture: overlay a smaller video in a corner of the base clip.
+
+    The overlay is scaled to ``size_pct`` percent of the base width; height is
+    derived with ``-2`` so it stays an even number (required by libx264).  Base
+    audio is kept; overlay audio is discarded.
+    """
+    if position not in _PIP_POSITIONS:
+        raise ValueError(
+            f"position must be one of {sorted(_PIP_POSITIONS)}; got {position!r}"
+        )
+    if not 5 <= size_pct <= 75:
+        raise ValueError("size_pct must be between 5 and 75")
+    x, y = _PIP_POSITIONS[position]
+    fc = f"[1:v]scale=iw*{size_pct}/100:-2[ov];[0:v][ov]overlay={x}:{y}"
+    return [
+        "-i", base, "-i", overlay,
+        "-filter_complex", fc,
+        "-map", "0:a?",
+        output,
+    ]

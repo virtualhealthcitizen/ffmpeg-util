@@ -353,6 +353,30 @@ def eq(req: EqReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class PipReq(BaseModel):
+    input: str
+    overlay: str
+    output: str
+    size_pct: int = 25
+    position: str = "bottom-right"
+    overwrite: bool = True
+
+
+@app.post("/pip")
+def pip_op(req: PipReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_pip_args(
+            req.input, req.overlay, req.output,
+            size_pct=req.size_pct, position=req.position,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class HstackReq(BaseModel):
     inputs: list[str]
     output: str
@@ -1186,6 +1210,9 @@ class RunReq(BaseModel):
     inputs: list[str] | None = None
     # replace-audio
     audio: str | None = None
+    # pip (picture-in-picture)
+    overlay: str | None = None
+    pip_size: int = 25
     # hardsub
     subtitle: str | None = None
     # convert
@@ -1330,6 +1357,13 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             position=req.position or "bottom-right",
             color=req.color or "white", opacity=req.opacity,
             font_file=_find_system_font(),
+        ), None
+    if op == "pip":
+        if not req.overlay:
+            raise ValueError("pip requires an overlay video file")
+        return commands.build_pip_args(
+            req.input, req.overlay, req.output,
+            size_pct=req.pip_size, position=req.position or "bottom-right",
         ), None
     if op == "hardsub":
         if not req.subtitle:

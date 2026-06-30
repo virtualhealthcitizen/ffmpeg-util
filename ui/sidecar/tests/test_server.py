@@ -1604,3 +1604,54 @@ def test_run_stream_hardsub(client, media, auth, tmp_path):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream hardsub should produce output"
+
+
+def test_pip_produces_output(client, media, auth):
+    d, src = media  # 320x240 clip
+    out = d / "pip.mp4"
+    r = client.post(
+        "/pip",
+        json={"input": str(src), "overlay": str(src), "output": str(out),
+              "size_pct": 25, "position": "bottom-right", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "/pip should produce an output file"
+
+
+def test_pip_preserves_base_dims(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "pip_dims.mp4"
+    r = client.post(
+        "/pip",
+        json={"input": str(src), "overlay": str(src), "output": str(out),
+              "size_pct": 25, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 240)
+
+
+def test_pip_requires_auth(client, media):
+    d, src = media
+    r = client.post(
+        "/pip",
+        json={"input": str(src), "overlay": str(src), "output": str(d / "pip_noauth.mp4")},
+    )
+    assert r.status_code == 401
+
+
+def test_run_stream_pip_produces_output(client, media, auth):
+    d, src = media
+    out = d / "pip_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "pip", "input": str(src), "overlay": str(src),
+              "output": str(out), "pip_size": 25, "position": "top-left",
+              "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream pip should produce output"

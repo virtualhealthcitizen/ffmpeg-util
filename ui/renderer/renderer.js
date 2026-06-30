@@ -558,6 +558,7 @@ function multiInputPaths(tab) {
   if (tab === "hstack" || tab === "vstack" || tab === "xfade_concat") {
     return [val(tab + "-input-a"), val(tab + "-input-b")].filter(Boolean);
   }
+  if (tab === "pip") return [val("pip-input"), val("pip-overlay")].filter(Boolean);
   return [];
 }
 
@@ -1825,6 +1826,18 @@ $("#run-hstack").addEventListener("click", () => {
   run("Combining side by side", "hstack", {
     inputs: [val("hstack-input-a"), val("hstack-input-b")],
     output: val("hstack-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-pip").addEventListener("click", () => {
+  if (!requireFields("pip-input", "pip-overlay", "pip-output")) return;
+  run("Adding picture in picture", "pip", {
+    input: val("pip-input"),
+    overlay: val("pip-overlay"),
+    output: val("pip-output"),
+    pip_size: numOrNull("pip-size") || 25,
+    position: $("#pip-position").value || "bottom-right",
     overwrite: true,
   });
 });

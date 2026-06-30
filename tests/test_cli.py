@@ -62,3 +62,12 @@ def test_hardsub_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "subtitles=" in out and "out.mp4" in out
+
+
+def test_pip_dry_run(capsys):
+    rc = main(["pip", "base.mp4", "out.mp4", "--overlay", "overlay.mp4",
+               "--size", "30", "--position", "top-right",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "filter_complex" in out and "overlay" in out and "out.mp4" in out
