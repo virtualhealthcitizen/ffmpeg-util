@@ -1265,3 +1265,42 @@ def test_run_stream_remux(client, media, auth):
     done = [e for e in events if e.get("type") == "done"]
     assert done and done[0]["output"] == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_preview_clip(client, media, auth):
+    d, src = media
+    out = d / "preview.mp4"
+    r = client.post(
+        "/preview-clip",
+        json={"input": str(src), "output": str(out), "seconds": 1.0, "width": 160, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_preview_clip_rejects_bad_seconds(client, media, auth):
+    d, src = media
+    out = d / "bad_preview.mp4"
+    r = client.post(
+        "/preview-clip",
+        json={"input": str(src), "output": str(out), "seconds": 0, "width": 160, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
+def test_run_stream_preview_clip(client, media, auth):
+    d, src = media
+    out = d / "preview_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "preview_clip", "input": str(src), "output": str(out),
+              "seconds": 1.0, "width": 160, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    done = [e for e in events if e.get("type") == "done"]
+    assert done and done[0]["output"] == str(out)
+    assert out.exists() and out.stat().st_size > 0

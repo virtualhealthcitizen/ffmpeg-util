@@ -517,6 +517,14 @@ test("estimateOutput returns null when not applicable / no duration", () => {
   assert.equal(L.estimateOutput("speed", 10, { factor: "0" }), null); // invalid factor
 });
 
+test("estimateOutput preview_clip clips to seconds when shorter than input", () => {
+  assert.equal(L.estimateOutput("preview_clip", 30, { seconds: "5" }), "~0:05");
+});
+
+test("estimateOutput preview_clip uses input duration when shorter than requested seconds", () => {
+  assert.equal(L.estimateOutput("preview_clip", 3, { seconds: "10" }), "~0:03");
+});
+
 test("friendlyError maps common ffmpeg failures to a hint", () => {
   assert.match(
     L.friendlyError("clip.mp4: No such file or directory"),
@@ -1067,7 +1075,7 @@ const NAV_TABS = [
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
-  "image_to_video", "autocrop", "remux",
+  "image_to_video", "autocrop", "remux", "preview_clip",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {

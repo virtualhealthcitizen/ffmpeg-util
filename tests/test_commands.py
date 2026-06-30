@@ -742,3 +742,29 @@ def test_build_remux_args_preserves_output_path():
     args = c.build_remux_args("video.mp4", "video.mov")
     assert args[0] == "-i" and args[1] == "video.mp4"
     assert args[-1] == "video.mov"
+
+
+def test_build_preview_clip_args_defaults():
+    args = c.build_preview_clip_args("in.mp4", "out.mp4")
+    assert args[args.index("-t") + 1] == "5.0"
+    vf = args[args.index("-vf") + 1]
+    assert vf == "scale=320:-2"
+    assert args[-1] == "out.mp4"
+
+
+def test_build_preview_clip_args_custom():
+    args = c.build_preview_clip_args("in.mp4", "out.mp4", seconds=10.0, width=640)
+    assert args[args.index("-t") + 1] == "10.0"
+    assert args[args.index("-vf") + 1] == "scale=640:-2"
+
+
+def test_build_preview_clip_args_rejects_bad_seconds():
+    with pytest.raises(ValueError, match="seconds"):
+        c.build_preview_clip_args("in.mp4", "out.mp4", seconds=0)
+    with pytest.raises(ValueError, match="seconds"):
+        c.build_preview_clip_args("in.mp4", "out.mp4", seconds=-1)
+
+
+def test_build_preview_clip_args_rejects_bad_width():
+    with pytest.raises(ValueError, match="width"):
+        c.build_preview_clip_args("in.mp4", "out.mp4", width=0)

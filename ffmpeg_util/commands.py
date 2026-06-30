@@ -987,6 +987,33 @@ def build_remux_args(input_path: str, output_path: str) -> list[str]:
     return ["-i", input_path, "-c", "copy", output_path]
 
 
+def build_preview_clip_args(
+    input_path: str,
+    output_path: str,
+    *,
+    seconds: float = 5.0,
+    width: int = 320,
+) -> list[str]:
+    """Build args to export a short downscaled preview (first N seconds).
+
+    Places ``-t`` before ``-i`` so ffmpeg stops reading the input after
+    ``seconds`` — fast even for very long files.  ``scale=W:-2`` rescales
+    to the requested width keeping aspect ratio and rounding height to an
+    even number (required by libx264).
+    """
+    if seconds <= 0:
+        raise ValueError("seconds must be positive")
+    if width <= 0:
+        raise ValueError("width must be positive")
+    return [
+        "-t", str(seconds),
+        "-i", input_path,
+        "-vf", f"scale={width}:-2",
+        "-c:a", "copy",
+        output_path,
+    ]
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

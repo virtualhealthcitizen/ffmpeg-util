@@ -293,7 +293,7 @@ Packaging / tests:
 - [ ] Add chapters from a list
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [ ] Auto-orient from rotation metadata, then strip it
-- [ ] Export a short preview clip (first N seconds, downscaled)
+- [x] Export a short preview clip (first N seconds, downscaled) — core `build_preview_clip_args` (-t + scale=W:-2 + -c:a copy), CLI `preview-clip --seconds/--width`, sidecar (`/preview-clip` + `/run/stream` op `preview_clip`), Preview clip tab (Trim & Frames). Verified E2E: 10s clip → 3.018s output at 160px; 127 core + 84 sidecar + 154 node:test + E2E 9/9 (sidecar, endpoint, duration ≤3.5s, tab/panel present, 41 nav tabs). ← next
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [x] Change container only (remux, `-c copy`) — core `build_remux_args`, CLI `remux`, sidecar
       (`/remux` + `/run/stream` op `remux`), Remux tab (Convert category). Verified E2E: 119 core
