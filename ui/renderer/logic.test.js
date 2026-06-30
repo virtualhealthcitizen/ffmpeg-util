@@ -1137,7 +1137,7 @@ const NAV_TABS = [
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
-  "stabilize",
+  "stabilize", "watermark",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1154,7 +1154,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
+  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "blur_region"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);
@@ -1608,4 +1608,58 @@ test("validateField validates poster_frame-percent and trim_pct percentages", ()
   assert.equal(L.validateField("trim_pct-end-pct", "1"), null);
   assert.equal(L.validateField("trim_pct-end-pct", "100"), null);
   assert.ok(L.validateField("trim_pct-end-pct", "0") !== null, "0 below min 1");
+});
+
+test("watermark: OUTPUT_SPECS has wm tag", () => {
+  assert.equal(L.OUTPUT_SPECS.watermark.tag, "wm");
+});
+
+test("watermark: TOOL_HELP has non-empty entry", () => {
+  const help = L.helpForTab("watermark");
+  assert.ok(help && help.length > 0, "watermark should have a help string");
+  assert.ok(help.includes("watermark") || help.includes("text"), "help should mention watermark or text");
+});
+
+test("watermark: TOOL_CATEGORIES includes watermark in Video FX", () => {
+  const vfx = L.TOOL_CATEGORIES.find((c) => c.name === "Video FX");
+  assert.ok(vfx, "Video FX category should exist");
+  assert.ok(vfx.tabs.includes("watermark"), "watermark should be in Video FX");
+});
+
+test("watermark: FIELD_TOOLTIPS has entries for watermark fields", () => {
+  assert.ok(L.fieldTooltip("watermark-text").length > 0, "watermark-text tooltip missing");
+  assert.ok(L.fieldTooltip("watermark-font-size").length > 0, "watermark-font-size tooltip missing");
+  assert.ok(L.fieldTooltip("watermark-opacity").length > 0, "watermark-opacity tooltip missing");
+  assert.ok(L.fieldTooltip("watermark-position").length > 0, "watermark-position tooltip missing");
+  assert.ok(L.fieldTooltip("watermark-color").length > 0, "watermark-color tooltip missing");
+});
+
+test("watermark: SLIDER_SPECS includes watermark-font-size and watermark-opacity", () => {
+  const ids = L.SLIDER_SPECS.map((s) => s.id);
+  assert.ok(ids.includes("watermark-font-size"), "SLIDER_SPECS should include watermark-font-size");
+  assert.ok(ids.includes("watermark-opacity"), "SLIDER_SPECS should include watermark-opacity");
+  const opSpec = L.SLIDER_SPECS.find((s) => s.id === "watermark-opacity");
+  assert.equal(opSpec.min, 0);
+  assert.equal(opSpec.max, 1);
+});
+
+test("watermark: buildCliCommand produces correct command", () => {
+  const cmd = L.buildCliCommand("watermark", {
+    input: "in.mp4", output: "in.wm.mp4",
+    text: "© 2024", font_size: 24, opacity: 0.8,
+    position: "bottom-right", color: "white", overwrite: true,
+  });
+  assert.ok(cmd.startsWith("ffmpeg-util watermark"), "should start with ffmpeg-util watermark");
+  assert.ok(cmd.includes("in.mp4"), "should include input");
+  assert.ok(cmd.includes("--font-size 24"), "should include --font-size");
+  assert.ok(cmd.includes("--opacity 0.8"), "should include --opacity");
+  assert.ok(cmd.includes("-y"), "overwrite flag should append -y");
+});
+
+test("watermark: validateField validates watermark-opacity via SLIDER_SPECS", () => {
+  assert.equal(L.validateField("watermark-opacity", "0"), null);
+  assert.equal(L.validateField("watermark-opacity", "1"), null);
+  assert.equal(L.validateField("watermark-opacity", "0.5"), null);
+  assert.ok(L.validateField("watermark-opacity", "1.1") !== null, "1.1 exceeds max 1");
+  assert.ok(L.validateField("watermark-opacity", "-0.1") !== null, "-0.1 below min 0");
 });

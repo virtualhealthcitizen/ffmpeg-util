@@ -570,6 +570,34 @@ def timecode(req: TimecodeReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class WatermarkReq(BaseModel):
+    input: str
+    output: str
+    text: str
+    font_size: int = 24
+    position: str = "bottom-right"
+    color: str = "white"
+    opacity: float = 1.0
+    overwrite: bool = True
+
+
+@app.post("/watermark")
+def watermark(req: WatermarkReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_watermark_args(
+            req.input, req.output,
+            text=req.text, font_size=req.font_size,
+            position=req.position, color=req.color, opacity=req.opacity,
+            font_file=_find_system_font(),
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FadeReq(BaseModel):
     input: str
     output: str
@@ -1181,10 +1209,13 @@ class RunReq(BaseModel):
     amount: float = 1.5
     # denoise
     strength: float = 4.0
-    # timecode
+    # timecode / watermark
     font_size: int = 24
     position: str = "top-left"
     color: str = "white"
+    # watermark
+    text: str = ""
+    opacity: float = 1.0
     # crop-aspect
     aspect: str = "16:9"
     # blur-pad
@@ -1269,6 +1300,14 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_timecode_args(
             req.input, req.output,
             font_size=req.font_size, position=req.position, color=req.color,
+            font_file=_find_system_font(),
+        ), None
+    if op == "watermark":
+        return commands.build_watermark_args(
+            req.input, req.output,
+            text=req.text or "", font_size=req.font_size,
+            position=req.position or "bottom-right",
+            color=req.color or "white", opacity=req.opacity,
             font_file=_find_system_font(),
         ), None
     if op == "sharpen":
