@@ -197,7 +197,15 @@ Packaging / tests:
       (threshold + optional width), CLI `scene-thumbs --threshold/--width`, sidecar
       (`/scene-thumbs` + `/run/stream` op `scene_thumbs`), Scene thumbs tab (Trim & Frames
       category). Verified E2E: red→blue hard-cut clip → ≥1 PNG at threshold 0.1 (standalone
-      + streaming); pytest 123 root + 81 sidecar; node:test 152; smoke 5/5 (40 tabs). ← next
+      + streaming); pytest 123 root + 81 sidecar; node:test 152; smoke 5/5 (40 tabs).
+      **Bug fix (hunt):** `scene_thumbs` panel in `index.html` used hyphen-format element IDs
+      (`scene-thumbs-input/output/threshold/width`) while every logic.js function that derives
+      IDs from the tab name concatenates underscores (`tab + "-input"` → `scene_thumbs-input`),
+      so drag-and-drop, source preview, output auto-fill, and field highlights were all silently
+      broken on the Scene thumbs tab. Fixed by standardising all 7 element IDs/data-* attributes
+      in `index.html` + the 5 hardcoded strings in `renderer.js` + 2 FIELD_TOOLTIPS keys in
+      `logic.js`; test assertions in `logic.test.js` updated to match. Verified: 190 node:test
+      + headless Electron E2E ok=True. ← next
 - [ ] Trim multiple segments and join them in one go
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.

@@ -1455,8 +1455,8 @@
     // Frames
     "frames-every":    "Extract one frame every N frames (e.g. 30 on a 30 fps clip = one frame per second). Use %04d in the output path.",
     // Scene thumbs
-    "scene-thumbs-threshold": "Scene-change score threshold (0–1). Lower values catch more cuts: 0.1 for soft transitions, 0.3 for typical cuts, 0.4 for hard cuts only.",
-    "scene-thumbs-width":     "Scale each thumbnail to this width in pixels; height scales proportionally. Leave blank to keep the source resolution.",
+    "scene_thumbs-threshold": "Scene-change score threshold (0–1). Lower values catch more cuts: 0.1 for soft transitions, 0.3 for typical cuts, 0.4 for hard cuts only.",
+    "scene_thumbs-width":     "Scale each thumbnail to this width in pixels; height scales proportionally. Leave blank to keep the source resolution.",
     // Volume
     "volume-gain":     "Gain in decibels: +6 dB ≈ double loudness, -6 dB ≈ half. Typical adjustments are ±3–12 dB.",
     // Fade
