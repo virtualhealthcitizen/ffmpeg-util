@@ -12,7 +12,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
-  addRecentFile, recentFileLabel, recentDir, reorderList,
+  addRecentFile, recentFileLabel, recentDir, setRecentOutput, recentOutputDir, reorderList,
   resolveTheme, nextTheme, themeToggleLabel, helpForTab, etaLabel,
   appendConsoleLines, SLIDER_SPECS, formatSliderOut,
   revealLabel, outputBaseName,
@@ -950,6 +950,11 @@ $("#source-img").addEventListener("load", renderCropOverlay);
 // dropdown and seeds the file picker's defaultPath with the last-used dir.
 let recentData = [];
 
+// --- Per-tab output history: remember the last output path used on each tab ---
+// A dict of tab→path persisted in settings.json. On load, empty output fields
+// are seeded from this history; the save dialog also defaults to the saved path.
+let recentOutputData = {};
+
 function refreshRecentSelect() {
   const sel = $("#recent-select");
   const box = $("#recent");
@@ -969,6 +974,13 @@ function refreshRecentSelect() {
 
 async function persistRecent() {
   try { await setSettings({ recentFiles: recentData }); } catch (_) { /* non-fatal */ }
+}
+
+// Record the output path used on a given tab and persist to settings.
+async function recordRecentOutput(tab, path) {
+  if (!tab || !path) return;
+  recentOutputData = setRecentOutput(recentOutputData, tab, path);
+  try { await setSettings({ recentOutputs: recentOutputData }); } catch (_) { /* non-fatal */ }
 }
 
 // Record a freshly-loaded input path. No-op when it's empty or already at the
@@ -1050,8 +1062,13 @@ document.addEventListener("change", (e) => {
 
 document.querySelectorAll(".pick-save").forEach((btn) => {
   btn.addEventListener("click", async () => {
-    const p = await saveFile(suggestOutput("", ""));
-    if (p) $("#" + btn.dataset.target).value = p;
+    const tab = currentTab();
+    const lastOut = recentOutputData[tab] || "";
+    const p = await saveFile(lastOut || suggestOutput("", ""));
+    if (p) {
+      const el = $("#" + btn.dataset.target);
+      if (el) { el.value = p; delete el.dataset.auto; }
+    }
   });
 });
 
@@ -1111,6 +1128,11 @@ async function loadSettings() {
     presetsData = s.presets && typeof s.presets === "object" ? s.presets : {};
     recentData = Array.isArray(s.recentFiles) ? s.recentFiles.filter((x) => typeof x === "string" && x.trim()) : [];
     refreshRecentSelect();
+    recentOutputData = s.recentOutputs && typeof s.recentOutputs === "object" ? s.recentOutputs : {};
+    for (const [tab, path] of Object.entries(recentOutputData)) {
+      const el = document.getElementById(tab + "-output");
+      if (el && !el.value.trim()) el.value = path; // restore only if still empty
+    }
     favoritesData = normalizeFavorites(s.favorites);
     layoutNavGroups(); // re-lay-out so pinned tools lead the nav
     refreshFavoriteStars();
@@ -1576,6 +1598,7 @@ async function run(label, op, body) {
     const notifyPayload = notifyComplete(doneBasename, notifyEnabled);
     if (notifyPayload) notify(notifyPayload.title, notifyPayload.body).catch(() => {});
     if (result && result.output) {
+      recordRecentOutput(currentTab(), result.output); // persist output history for this tab
       showPreview(result.output);
       // Compare the output back to the primary input (single-input ops, else first).
       showSummary(body.input || (body.inputs && body.inputs[0]) || null, result.output);

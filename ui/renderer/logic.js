@@ -244,6 +244,22 @@
     return splitPath(arr[0]).dir.replace(/[\\/]+$/, "");
   }
 
+  // Per-tab output history: remember the last output path used on each tab,
+  // persisted in settings.json so the save dialog and output field are seeded
+  // on next launch. Returns a NEW dict (immutable update).
+  function setRecentOutput(dict, tab, path) {
+    const p = String(path || "").trim();
+    if (!tab || !p) return dict || {};
+    return Object.assign({}, dict || {}, { [tab]: p });
+  }
+
+  // The directory of the last output for a tab (no trailing separator), for
+  // seeding the save dialog's defaultPath; "" when there is no history.
+  function recentOutputDir(dict, tab) {
+    const p = dict && tab ? dict[tab] : "";
+    return p ? splitPath(p).dir.replace(/[\\/]+$/, "") : "";
+  }
+
   // Move the item at index `from` to index `to`, returning a NEW array (the
   // input is untouched). Out-of-range or equal indices yield a plain copy, so a
   // drag that lands on itself or off the ends can never corrupt the list. Used
@@ -1578,6 +1594,8 @@
     addRecentFile,
     recentFileLabel,
     recentDir,
+    setRecentOutput,
+    recentOutputDir,
     reorderList,
     SLIDER_SPECS,
     formatSliderOut,
