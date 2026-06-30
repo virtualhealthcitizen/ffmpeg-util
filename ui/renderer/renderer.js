@@ -1080,6 +1080,8 @@ const STICKY = [
   "output-template",
   "sharpen-amount",
   "denoise-strength",
+  "stabilize-shakiness",
+  "stabilize-smoothing",
   "timecode-font-size",
   "trim_silence-threshold",
   "trim_silence-min-duration",
@@ -2070,6 +2072,17 @@ $("#run-auto_orient").addEventListener("click", () => {
   run("Auto-orienting", "auto_orient", {
     input: val("auto_orient-input"),
     output: val("auto_orient-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-stabilize").addEventListener("click", () => {
+  if (!requireFields("stabilize-input", "stabilize-output")) return;
+  run("Stabilizing", "stabilize", {
+    input: val("stabilize-input"),
+    output: val("stabilize-output"),
+    shakiness: numOrNull("stabilize-shakiness") ?? 5,
+    smoothing: numOrNull("stabilize-smoothing") ?? 10,
     overwrite: true,
   });
 });

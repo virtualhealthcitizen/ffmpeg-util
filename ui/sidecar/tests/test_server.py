@@ -421,6 +421,19 @@ def test_denoise_produces_output(client, media, auth):
     assert out.exists(), "denoise should produce an output file"
 
 
+def test_stabilize_produces_output(client, media, auth):
+    d, src = media
+    out = d / "stabilized.mp4"
+    r = client.post(
+        "/stabilize",
+        json={"input": str(src), "output": str(out),
+              "shakiness": 5, "smoothing": 10, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "stabilize should produce an output file"
+
+
 def test_timecode_produces_output(client, media, auth):
     d, src = media
     out = d / "timecoded.mp4"

@@ -207,6 +207,16 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Noise reduction strength 1–10 (default 4).")
     _add_global_flags(p)
 
+    # stabilize
+    p = sub.add_parser("stabilize", help="Stabilize shaky video via two-pass vidstab (detect + transform).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--shakiness", type=int, default=5,
+                   help="Motion aggressiveness 1–10 (default 5; use 8–10 for very shaky footage).")
+    p.add_argument("--smoothing", type=int, default=10,
+                   help="Smoothing window in frames (default 10; higher = steadier but wider virtual crop).")
+    _add_global_flags(p)
+
     # fade
     p = sub.add_parser("fade", help="Fade in from / out to black (video + audio).")
     p.add_argument("input")
@@ -573,6 +583,11 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "denoise":
         runner.run_ffmpeg(commands.build_denoise_args(args.input, args.output, args.strength))
+        return 0
+
+    if args.command == "stabilize":
+        commands.stabilize(runner, args.input, args.output,
+                           shakiness=args.shakiness, smoothing=args.smoothing)
         return 0
 
     if args.command == "fade":

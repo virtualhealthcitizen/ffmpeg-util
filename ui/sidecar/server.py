@@ -267,6 +267,27 @@ def autocrop(req: AutocropReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class StabilizeReq(BaseModel):
+    input: str
+    output: str
+    shakiness: int = 5
+    smoothing: int = 10
+    overwrite: bool = True
+
+
+@app.post("/stabilize")
+def stabilize(req: StabilizeReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        commands.stabilize(runner, req.input, req.output,
+                           shakiness=req.shakiness, smoothing=req.smoothing)
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FpsReq(BaseModel):
     input: str
     output: str
@@ -1197,6 +1218,9 @@ class RunReq(BaseModel):
     transition: str = "fade"
     xfade_duration: float = 1.0
     xfade_offset: float | None = None
+    # stabilize
+    shakiness: int = 5
+    smoothing: int = 10
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1541,6 +1565,86 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                         os.remove(palette)
                     except OSError:
                         pass
+                yield _sse({"type": "done", "output": req.output})
+                return
+            if req.op == "stabilize":
+                # Two-pass vidstab: pass 1 (detect) on a background thread with
+                # heartbeat, then pass 2 (transform) with streaming progress.
+                # A private temp dir keeps the trf filename bare (no drive colon)
+                # so ffmpeg's filter option parser handles it correctly on Windows.
+                import shutil as _shutil
+                trf_dir = tempfile.mkdtemp(prefix="ffstab_")
+                trf_name = "transforms.trf"
+                log_q: queue.Queue = queue.Queue()
+                try:
+                    yield _sse({"type": "log", "line": "Pass 1/2: analysing motion (reads the whole clip)…"})
+                    stab_state: dict = {}
+
+                    def _detect() -> None:
+                        try:
+                            for _ in runner.iter_ffmpeg_progress(
+                                commands.build_vidstab_detect_args(
+                                    req.input, trf_name,
+                                    shakiness=req.shakiness, accuracy=15,
+                                ),
+                                on_log=log_q.put,
+                                cwd=trf_dir,
+                            ):
+                                pass
+                        except Exception as exc:
+                            stab_state["error"] = exc
+                        finally:
+                            stab_state["done"] = True
+
+                    det_thread = threading.Thread(target=_detect, daemon=True)
+                    det_thread.start()
+                    det_started = time.monotonic()
+                    while not stab_state.get("done"):
+                        emitted = False
+                        while not log_q.empty():
+                            yield _sse({"type": "log", "line": log_q.get_nowait()})
+                            emitted = True
+                        if not emitted:
+                            elapsed = int(time.monotonic() - det_started)
+                            yield _sse({"type": "log",
+                                        "line": f"  …detecting motion ({elapsed}s)…"})
+                            yield _sse({"type": "progress", "percent": None, "phase": "detect",
+                                        "speed": None, "out_time": None, "total": None})
+                        det_thread.join(timeout=1.2)
+                    while not log_q.empty():
+                        yield _sse({"type": "log", "line": log_q.get_nowait()})
+                    if stab_state.get("error") is not None:
+                        raise stab_state["error"]
+
+                    yield _sse({"type": "log", "line": "Pass 2/2: stabilizing…"})
+                    for fields in runner.iter_ffmpeg_progress(
+                        commands.build_vidstab_transform_args(
+                            req.input, req.output, trf_name, smoothing=req.smoothing
+                        ),
+                        on_log=log_q.put,
+                        cwd=trf_dir,
+                    ):
+                        while not log_q.empty():
+                            yield _sse({"type": "log", "line": log_q.get_nowait()})
+                        out_us = fields.get("out_time_us") or fields.get("out_time_ms")
+                        out_time = None
+                        if out_us:
+                            try:
+                                out_time = int(out_us) / 1_000_000
+                            except ValueError:
+                                out_time = None
+                        percent = None
+                        if total and out_time is not None:
+                            percent = max(0.0, min(100.0, round(out_time / total * 100, 1)))
+                        yield _sse({
+                            "type": "progress", "percent": percent,
+                            "speed": fields.get("speed"), "phase": fields.get("progress"),
+                            "out_time": out_time, "total": total,
+                        })
+                    while not log_q.empty():
+                        yield _sse({"type": "log", "line": log_q.get_nowait()})
+                finally:
+                    _shutil.rmtree(trf_dir, ignore_errors=True)
                 yield _sse({"type": "done", "output": req.output})
                 return
             if req.op in ("speed", "reverse", "fade"):

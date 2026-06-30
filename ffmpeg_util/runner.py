@@ -96,10 +96,12 @@ class FfmpegRunner:
         """Render a command list as a copy-pasteable shell string."""
         return subprocess.list2cmdline(list(cmd))
 
-    def run_ffmpeg(self, args: Sequence[str]) -> subprocess.CompletedProcess | None:
+    def run_ffmpeg(
+        self, args: Sequence[str], *, cwd: str | None = None
+    ) -> subprocess.CompletedProcess | None:
         """Run an ffmpeg command. Returns None in dry-run mode."""
         cmd = self.build_ffmpeg_args(args)
-        return self._run(cmd)
+        return self._run(cmd, cwd=cwd)
 
     def run_ffprobe(self, args: Sequence[str]) -> subprocess.CompletedProcess | None:
         """Run an ffprobe command. Returns None in dry-run mode."""
@@ -126,7 +128,11 @@ class FfmpegRunner:
         return subprocess.run(list(cmd), capture_output=True, text=True)
 
     def iter_ffmpeg_progress(
-        self, args: Sequence[str], *, on_log: Callable[[str], None] | None = None
+        self,
+        args: Sequence[str],
+        *,
+        on_log: Callable[[str], None] | None = None,
+        cwd: str | None = None,
     ):
         """Run ffmpeg with ``-progress`` and yield each progress block as a dict.
 
@@ -169,6 +175,7 @@ class FfmpegRunner:
             stdout=subprocess.PIPE,
             stderr=err_file if on_log is None else subprocess.PIPE,
             text=True,
+            cwd=cwd,
         )
         reader = None
         if on_log is not None:
@@ -242,7 +249,9 @@ class FfmpegRunner:
             if err_file is not None:
                 err_file.close()
 
-    def _run(self, cmd: Sequence[str]) -> subprocess.CompletedProcess | None:
+    def _run(
+        self, cmd: Sequence[str], *, cwd: str | None = None
+    ) -> subprocess.CompletedProcess | None:
         rendered = self.format_command(cmd)
         if self.dry_run:
             print(rendered)
@@ -253,6 +262,7 @@ class FfmpegRunner:
             list(cmd),
             capture_output=True,
             text=True,
+            cwd=cwd,
         )
         if proc.returncode != 0:
             raise FfmpegError(

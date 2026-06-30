@@ -87,6 +87,7 @@
     preview_clip: { tag: "preview" },
     poster_frame: { tag: "poster", ext: ".png" },
     auto_orient: { tag: "oriented" },
+    stabilize: { tag: "stable" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -304,6 +305,7 @@
     preview_clip: "short preview sample quick look downscale first seconds thumbnail clip small",
     poster_frame: "poster frame still grab percentage midpoint cover art representative image",
     auto_orient: "rotate orientation sideways fix rotation metadata display matrix portrait landscape phone camera",
+    stabilize: "stabilize shaky deshake smooth handheld vibration motion blur vidstab gyro steady camera jitter",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -316,7 +318,7 @@
     { name: "Convert", tabs: ["convert", "remux"] },
     { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
-    { name: "Video FX", tabs: ["transform", "auto_orient", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
+    { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat"] },
@@ -397,6 +399,7 @@
     preview_clip: "Export the first N seconds at a reduced width — quick sanity-check for long recordings. Example: 5 s · 320 px wide.",
     poster_frame: "Grab one representative frame at a % of the clip's duration. Example: 10% for a near-start cover; 50% for the midpoint; 90% for near the end.",
     auto_orient: "Bake rotation metadata into pixels and strip the tag — fixes videos shot sideways on a phone. No options needed, just run.",
+    stabilize: "Remove camera shake with two-pass vidstab. Example: Shakiness 5 + Smoothing 10 for handheld footage; raise Smoothing to 20–50 for very bumpy clips.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
@@ -1195,6 +1198,8 @@
     { id: "timecode-font-size",         min: 6,   max: 72,  step: 2,   def: 24,   unit: " pt" },
     { id: "trim_silence-threshold",     min: -80, max: -20, step: 1,   def: -50,  unit: " dB" },
     { id: "trim_silence-min-duration",  min: 0.1, max: 3.0, step: 0.1, def: 0.5,  unit: "s" },
+    { id: "stabilize-shakiness",        min: 1,   max: 10,  step: 1,   def: 5,    unit: "" },
+    { id: "stabilize-smoothing",        min: 1,   max: 50,  step: 1,   def: 10,   unit: "" },
   ];
 
   // Format a (already-valid, finite) slider value for its live readout label.
@@ -1389,6 +1394,9 @@
     // Crossfade
     "xfade_concat-transition":    "The visual transition style. 'Fade' is a standard cross-dissolve; wipe/slide variants push from one direction.",
     "xfade_concat-xfade_duration": "How long the transition takes in seconds. Example: 1.0 for a 1-second crossfade; 0.5 for a quick cut.",
+    // Stabilize
+    "stabilize-shakiness": "Motion detection aggressiveness 1–10: 1 = barely moving, 5 = normal handheld, 8–10 = very shaky or running footage.",
+    "stabilize-smoothing": "Smoothing window in frames: higher = steadier result but crops more edge pixels. 10 suits walking shots; 30–50 for very bumpy footage.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.

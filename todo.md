@@ -281,10 +281,10 @@ Packaging / tests:
 - [x] Crossfade-concatenate two clips (`xfade`) — core `build_xfade_args` (transition/duration/offset,
       auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
       `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +
-      96 sidecar + 162 node:test + smoke 5/5 (46 nav tabs). ← next
+      96 sidecar + 162 node:test + smoke 5/5 (46 nav tabs).
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
-- [ ] Stabilize shaky video (`vidstab`, two-pass)
+- [x] Stabilize shaky video (`vidstab`, two-pass) — core `build_vidstab_detect_args` / `build_vidstab_transform_args` / `stabilize` (mkdtemp + bare trf filename + cwd to avoid Windows drive-colon filter-parse bug), CLI `stabilize --shakiness/--smoothing`, sidecar (`/stabilize` + `/run/stream` op `stabilize` with two-pass streaming: thread-based detect + heartbeat SSE + pass 2 progress), Stabilize tab (Video FX, after Auto-orient). Verified E2E: 155 core + 97 sidecar + 168 node:test + smoke 5/5 (47 nav tabs). ← next
 - [ ] Convert to a specific pixel format / 10-bit
 - [x] Generate a waveform PNG from audio (`showwavespic`) — core `build_waveform_args`, CLI `waveform`, sidecar (`/waveform` + `/run/stream`), Waveform tab. Verified E2E: 640x120 image.
 
