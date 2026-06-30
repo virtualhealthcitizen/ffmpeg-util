@@ -1210,6 +1210,91 @@
     return parseFloat(v.toFixed(10)) + spec.unit;
   }
 
+  // --- Inline per-field validation ---
+  // Maps field id → validator(rawString) → null | short error string.
+  // Empty / blank values always pass — required-field checking happens at run-time.
+  // Slider-backed fields inherit their range from SLIDER_SPECS automatically.
+  const FIELD_VALIDATORS = (() => {
+    const v = {};
+    for (const s of SLIDER_SPECS) {
+      const { id, min, max } = s;
+      v[id] = (raw) => {
+        if (!raw.trim()) return null;
+        const n = Number(raw);
+        if (!isFinite(n)) return "Must be a number";
+        if (n < min || n > max) return `Must be ${min}–${max}`;
+        return null;
+      };
+    }
+    v["compress-crf"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 0 && n <= 51 ? null : "Must be 0–51";
+    };
+    v["compress-target"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
+    v["gif-fps"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 1 ? null : "Must be ≥ 1";
+    };
+    v["gif-width"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 1 ? null : "Must be ≥ 1";
+    };
+    v["gif-loop"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= -1 ? null : "Must be ≥ −1";
+    };
+    v["loop-count"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 1 ? null : "Must be ≥ 1";
+    };
+    const timecodeErr = "Use seconds or HH:MM:SS";
+    for (const id of ["trim-start", "trim-end", "trim-duration", "gif-start", "gif-duration"]) {
+      v[id] = (raw) => (raw.trim() && parseTimeToSeconds(raw) === null ? timecodeErr : null);
+    }
+    v["trim_pct-start-pct"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n >= 0 && n <= 99 ? null : "Must be 0–99";
+    };
+    v["trim_pct-end-pct"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n >= 1 && n <= 100 ? null : "Must be 1–100";
+    };
+    v["poster_frame-percent"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n >= 0 && n <= 100 ? null : "Must be 0–100";
+    };
+    v["preview_clip-seconds"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
+    v["preview_clip-width"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 2 ? null : "Must be ≥ 2";
+    };
+    return v;
+  })();
+
+  // Validate a single field's raw string value. Returns null (valid) or a short
+  // error string. Empty values always return null.
+  function validateField(id, value) {
+    const fn = FIELD_VALIDATORS[id];
+    return fn ? fn(String(value ?? "")) : null;
+  }
+
   // --- Pre-run path validation helpers ---
 
   // [path, fieldId] pairs for every input of a run body so the renderer can
@@ -1503,6 +1588,8 @@
     FIELD_TOOLTIPS,
     fieldTooltip,
     notifyComplete,
+    FIELD_VALIDATORS,
+    validateField,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

@@ -17,7 +17,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   appendConsoleLines, SLIDER_SPECS, formatSliderOut,
   revealLabel, outputBaseName,
   runInputEntries, runOutputDirEntry,
-  fieldTooltip, notifyComplete } = window.FfuLogic;
+  fieldTooltip, notifyComplete,
+  FIELD_VALIDATORS, validateField } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -669,10 +670,12 @@ function refreshDimWarning() {
   }
 }
 
-// Live-update the warning as the user edits any tab's width/height field.
+// Live-update the warning as the user edits any tab's width/height field, and
+// run inline validation for any field that has a registered FIELD_VALIDATORS entry.
 document.addEventListener("input", (e) => {
   const id = e.target && e.target.id;
   if (id && /-(width|height)$/.test(id)) refreshDimWarning();
+  if (id && FIELD_VALIDATORS[id]) refreshFieldValidation(e.target);
 });
 
 // Refresh both the source card and the multi-input compatibility banner.
@@ -1436,11 +1439,34 @@ async function checkExists(path) {
 
 // Highlight a form field as invalid; clearFieldErrors removes all highlights.
 function clearFieldErrors() {
-  document.querySelectorAll(".field-error").forEach((el) => el.classList.remove("field-error"));
+  document.querySelectorAll(".field-error").forEach((el) => {
+    el.classList.remove("field-error");
+    const label = el.closest("label");
+    if (label) delete label.dataset.fieldErr;
+  });
 }
 function markFieldError(fieldId) {
   const el = document.getElementById(fieldId);
   if (el) el.classList.add("field-error");
+}
+
+// Inline per-field validation: highlight a field and show a short error message
+// on its parent <label> in real-time as the user types.
+function markFieldInvalid(el, msg) {
+  el.classList.add("field-error");
+  const label = el.closest("label");
+  if (label) label.dataset.fieldErr = msg;
+}
+function clearFieldInvalid(el) {
+  el.classList.remove("field-error");
+  const label = el.closest("label");
+  if (label) delete label.dataset.fieldErr;
+}
+function refreshFieldValidation(el) {
+  if (!el || !el.id) return;
+  const msg = validateField(el.id, el.value);
+  if (msg) markFieldInvalid(el, msg);
+  else clearFieldInvalid(el);
 }
 
 // Confirm before clobbering an existing output file.
@@ -1455,6 +1481,16 @@ async function confirmOverwrite(output) {
 // Best-effort: a sidecar error always returns {ok: true} so the run still fires.
 async function validateRunPaths(tab, body) {
   clearFieldErrors();
+  // Block the run if any visible validated field has an invalid value.
+  for (const id of Object.keys(FIELD_VALIDATORS)) {
+    const el = document.getElementById(id);
+    if (!el || el.offsetParent === null) continue; // not in the active panel
+    const msg = validateField(id, el.value);
+    if (msg) {
+      markFieldInvalid(el, msg);
+      return { ok: false, message: (fieldLabel(id) || id) + ": " + msg };
+    }
+  }
   for (const [path, fieldId] of runInputEntries(tab, body)) {
     if (!(await checkExists(path))) {
       markFieldError(fieldId);

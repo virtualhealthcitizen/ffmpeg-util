@@ -314,6 +314,13 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
   border-color: var(--err) !important;
   outline: 1px solid var(--err);
 }
+/* Inline per-field validation: show a short error message after the label text. */
+label.inline[data-field-err]::after {
+  content: " — " attr(data-field-err);
+  color: var(--err);
+  font-size: 0.78em;
+  font-weight: normal;
+}
 
 /* Estimated-output readout (predicted duration/size from current settings). */
 .estimate {

@@ -385,7 +385,16 @@ Workflow / feedback components:
 - [ ] Job history strip — recent runs with re-run / reveal-in-Explorer.
 - [ ] "Reveal in Explorer" / open-output button on completion.
 - [ ] Before/after size + duration summary on completion.
-- [ ] Inline per-field validation (highlight the offending field, not just the status line).
+- [x] Inline per-field validation (highlight the offending field, not just the status line) —
+      `FIELD_VALIDATORS` map in `logic.js` (auto-derived from SLIDER_SPECS + 14 hand-written
+      rules: CRF 0–51, timecodes, trim_pct/poster_frame percentages, gif-fps/loop, etc.);
+      `validateField(id, value)` pure fn; real-time `input` listener calls `markFieldInvalid`
+      (adds `.field-error` + `data-field-err` on parent label rendered by CSS `::after`);
+      `validateRunPaths` blocks the run if any visible validated field is invalid and names the
+      field in the status line. Verified: node:test 176/176 (8 new) + headless Electron E2E 6/6
+      (invalid CRF 99 → field-error + "Must be 0–51" label; fixed to 28 → cleared; bad timecode
+      → "Use seconds or HH:MM:SS"; run blocked with status "start: Use seconds or HH:MM:SS";
+      empty optional field not flagged; smoke 5/5). ← next
 - [x] System notification on completion — a 🔔 checkbox in the header fires a native desktop
       notification (via Electron's `Notification` class in the main process) when an op finishes.
       Toggle persists in `settings.json` (shallow-merge). Light/dark theme + window size/position already done.
