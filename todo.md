@@ -107,7 +107,8 @@ Packaging / tests:
       Verified E2E: swap in a 22050 Hz track -> output audio is 22050 Hz, video
       stream-copied unchanged (320x240 h264). (mix/strip still open; strip = `mute`.)
 - [ ] Subtitles: burn-in (hardsub) or mux soft subs; extract subtitles
-- [x] Watermark / text overlay (drawtext text= with position/opacity/color/font-size) — core `build_watermark_args`, CLI `watermark`, sidecar (`/watermark` + `/run/stream` op `watermark`), Watermark tab (Video FX, after Timecode). Verified E2E: 185 node:test + 164 root pytest + 101 sidecar pytest + smoke 5/5 (48 nav tabs). ← next
+- [x] Watermark / text overlay (drawtext text= with position/opacity/color/font-size) — core `build_watermark_args`, CLI `watermark`, sidecar (`/watermark` + `/run/stream` op `watermark`), Watermark tab (Video FX, after Timecode). Verified E2E: 185 node:test + 164 root pytest + 101 sidecar pytest + smoke 5/5 (48 nav tabs).
+      **Bug fix (hunt):** `watermark` was never registered as a CLI subcommand — `build_parser()` had no `add_parser("watermark", …)` entry and `_dispatch()` had no matching branch, so `ffmpeg-util watermark …` failed with "invalid choice: watermark" and the renderer's "Copy as CLI" produced a non-functional command. Fixed by adding the `watermark` subparser (`--text`, `--font-size`, `--position`, `--color`, `--opacity`) and dispatch case; 1 new CLI dry-run regression test. 165 root + 101 sidecar + 185 node:test + smoke 5/5 green. ← next
 - [x] Image → video: loop a still image into a fixed-length clip — core
       `build_image_to_video_args`, CLI `image-to-video --seconds/--fps`, sidecar
       (`/image-to-video` + `/run/stream`), Image → video tab. Verified E2E:

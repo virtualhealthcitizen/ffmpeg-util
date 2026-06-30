@@ -402,6 +402,23 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Text color: a name (white, yellow) or hex #rrggbb (default white).")
     _add_global_flags(p)
 
+    # watermark
+    p = sub.add_parser("watermark", help="Burn a static text watermark onto the video (drawtext).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--text", required=True, help="Watermark text to burn in.")
+    p.add_argument("--font-size", type=int, default=24, help="Font size in points (default 24).")
+    p.add_argument(
+        "--position", default="bottom-right",
+        choices=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
+        help="Overlay corner (default bottom-right).",
+    )
+    p.add_argument("--color", default="white",
+                   help="Text color: a name (white, yellow) or hex #rrggbb (default white).")
+    p.add_argument("--opacity", type=float, default=1.0,
+                   help="Text opacity 0.0–1.0 (default 1.0, fully opaque).")
+    _add_global_flags(p)
+
     # remux
     p = sub.add_parser("remux", help="Change container without re-encoding (-c copy).")
     p.add_argument("input")
@@ -694,6 +711,14 @@ def _dispatch(args: argparse.Namespace) -> int:
         runner.run_ffmpeg(commands.build_timecode_args(
             args.input, args.output,
             font_size=args.font_size, position=args.position, color=args.color,
+        ))
+        return 0
+
+    if args.command == "watermark":
+        runner.run_ffmpeg(commands.build_watermark_args(
+            args.input, args.output,
+            text=args.text, font_size=args.font_size,
+            position=args.position, color=args.color, opacity=args.opacity,
         ))
         return 0
 

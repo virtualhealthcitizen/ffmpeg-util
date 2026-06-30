@@ -46,3 +46,11 @@ def test_autocrop_dry_run(capsys):
                "--ffmpeg", "ffmpeg", "--dry-run"])
     assert rc == 0
     assert "cropdetect=limit=16" in capsys.readouterr().out
+
+
+def test_watermark_dry_run(capsys):
+    rc = main(["watermark", "in.mp4", "out.mp4", "--text", "© 2024",
+               "--position", "bottom-right", "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "drawtext" in out and "out.mp4" in out
