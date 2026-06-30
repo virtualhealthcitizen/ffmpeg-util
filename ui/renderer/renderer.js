@@ -1103,6 +1103,8 @@ const STICKY = [
   "stabilize-shakiness",
   "stabilize-smoothing",
   "timecode-font-size",
+  "watermark-font-size",
+  "watermark-opacity",
   "trim_silence-threshold",
   "trim_silence-min-duration",
   "blur_region-sigma",
@@ -1715,6 +1717,20 @@ $("#run-timecode").addEventListener("click", () => {
     font_size: numOrNull("timecode-font-size") ?? 24,
     position: val("timecode-position") || "top-left",
     color: val("timecode-color") || "white",
+    overwrite: true,
+  });
+});
+
+$("#run-watermark").addEventListener("click", () => {
+  if (!requireFields("watermark-input", "watermark-output", "watermark-text")) return;
+  run("Burning watermark", "watermark", {
+    input: val("watermark-input"),
+    output: val("watermark-output"),
+    text: val("watermark-text"),
+    font_size: numOrNull("watermark-font-size") ?? 24,
+    opacity: numOrNull("watermark-opacity") ?? 1.0,
+    position: val("watermark-position") || "bottom-right",
+    color: val("watermark-color") || "white",
     overwrite: true,
   });
 });

@@ -57,6 +57,7 @@
       <button data-tab="grayscale">Grayscale</button>
       <button data-tab="invert">Invert</button>
       <button data-tab="timecode">Timecode</button>
+      <button data-tab="watermark">Watermark</button>
       <button data-tab="deinterlace">Deinterlace</button>
       <button data-tab="sharpen">Sharpen</button>
       <button data-tab="denoise">Denoise</button>
@@ -647,6 +648,60 @@
       </div>
       <p class="hint">Burns a running HH:MM:SS.ms timecode overlay onto the video. Audio is copied unchanged.</p>
       <div class="row"><button class="primary" id="run-timecode">Burn timecode</button></div>
+    </section>
+
+    <!-- Watermark -->
+    <section class="card panel" id="panel-watermark">
+      <label>Input file</label>
+      <div class="row">
+        <input id="watermark-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="watermark-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="watermark-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="watermark-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="watermark-output">Save as…</button>
+      </div>
+      <label class="inline">Watermark text
+        <input id="watermark-text" type="text" placeholder="© 2024 My Name" style="flex:1" />
+      </label>
+      <div class="row wrap">
+        <label class="inline">Font size
+          <div class="sl-group">
+            <input type="range" id="watermark-font-size-sl" min="6" max="72" step="2" value="24" />
+            <span class="sl-out" id="watermark-font-size-out">24</span>
+            <input id="watermark-font-size" type="number" step="2" min="6" class="sl-num" />
+          </div>
+        </label>
+        <label class="inline">Opacity
+          <div class="sl-group">
+            <input type="range" id="watermark-opacity-sl" min="0" max="1" step="0.05" value="1" />
+            <span class="sl-out" id="watermark-opacity-out">1</span>
+            <input id="watermark-opacity" type="number" step="0.05" min="0" max="1" class="sl-num" />
+          </div>
+        </label>
+        <label class="inline">Position
+          <select id="watermark-position">
+            <option value="bottom-right">Bottom-right</option>
+            <option value="bottom-left">Bottom-left</option>
+            <option value="top-left">Top-left</option>
+            <option value="top-right">Top-right</option>
+            <option value="center">Center</option>
+          </select>
+        </label>
+        <label class="inline">Color
+          <select id="watermark-color">
+            <option value="white">White</option>
+            <option value="yellow">Yellow</option>
+            <option value="black">Black</option>
+            <option value="red">Red</option>
+            <option value="cyan">Cyan</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">Burns a static text watermark onto the video (drawtext). Audio is copied unchanged.</p>
+      <div class="row"><button class="primary" id="run-watermark">Burn watermark</button></div>
     </section>
 
     <!-- Deinterlace -->

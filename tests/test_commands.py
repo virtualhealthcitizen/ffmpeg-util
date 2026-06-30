@@ -978,3 +978,68 @@ def test_build_vidstab_transform_args_custom_smoothing():
 def test_build_vidstab_transform_args_rejects_bad_smoothing():
     with pytest.raises(ValueError, match="smoothing"):
         c.build_vidstab_transform_args("in.mp4", "out.mp4", "t.trf", smoothing=0)
+
+
+def test_build_watermark_args_default():
+    args = c.build_watermark_args("in.mp4", "out.mp4", text="© 2024")
+    vf = args[args.index("-vf") + 1]
+    assert "drawtext" in vf
+    assert "© 2024" in vf
+    assert "fontsize=24" in vf
+    assert "w-tw-10" in vf and "h-th-10" in vf  # bottom-right
+    assert "fontcolor=white" in vf
+    assert args[-1] == "out.mp4"
+    assert "-c:a" in args and "copy" in args
+
+
+def test_build_watermark_args_positions():
+    for pos, (x, y) in [
+        ("top-left", ("10", "10")),
+        ("top-right", ("w-tw-10", "10")),
+        ("bottom-left", ("10", "h-th-10")),
+        ("center", ("(w-tw)/2", "(h-th)/2")),
+    ]:
+        args = c.build_watermark_args("in.mp4", "out.mp4", text="hi", position=pos)
+        vf = args[args.index("-vf") + 1]
+        assert x in vf and y in vf, f"position={pos}: expected {x},{y} in {vf}"
+
+
+def test_build_watermark_args_opacity():
+    args = c.build_watermark_args("in.mp4", "out.mp4", text="hi", opacity=0.5)
+    vf = args[args.index("-vf") + 1]
+    assert "fontcolor=white@0.50" in vf
+
+
+def test_build_watermark_args_opacity_1_no_alpha():
+    args = c.build_watermark_args("in.mp4", "out.mp4", text="hi", opacity=1.0)
+    vf = args[args.index("-vf") + 1]
+    # Fully opaque: no @alpha suffix on color
+    assert "fontcolor=white" in vf
+    assert "fontcolor=white@" not in vf
+
+
+def test_build_watermark_args_escapes_colon_in_text():
+    args = c.build_watermark_args("in.mp4", "out.mp4", text="https://example.com")
+    vf = args[args.index("-vf") + 1]
+    # Colon must be escaped so drawtext doesn't treat it as option separator
+    assert "https\\://example.com" in vf or "https" in vf
+
+
+def test_build_watermark_args_rejects_empty_text():
+    with pytest.raises(ValueError, match="text"):
+        c.build_watermark_args("in.mp4", "out.mp4", text="")
+
+
+def test_build_watermark_args_rejects_small_font():
+    with pytest.raises(ValueError, match="font_size"):
+        c.build_watermark_args("in.mp4", "out.mp4", text="hi", font_size=3)
+
+
+def test_build_watermark_args_rejects_bad_position():
+    with pytest.raises(ValueError, match="position"):
+        c.build_watermark_args("in.mp4", "out.mp4", text="hi", position="nowhere")
+
+
+def test_build_watermark_args_rejects_bad_color():
+    with pytest.raises(ValueError, match="color"):
+        c.build_watermark_args("in.mp4", "out.mp4", text="hi", color="white; rm -rf /")

@@ -88,6 +88,7 @@
     poster_frame: { tag: "poster", ext: ".png" },
     auto_orient: { tag: "oriented" },
     stabilize: { tag: "stable" },
+    watermark: { tag: "wm" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -322,6 +323,7 @@
     poster_frame: "poster frame still grab percentage midpoint cover art representative image",
     auto_orient: "rotate orientation sideways fix rotation metadata display matrix portrait landscape phone camera",
     stabilize: "stabilize shaky deshake smooth handheld vibration motion blur vidstab gyro steady camera jitter",
+    watermark: "watermark text overlay label copyright brand stamp drawtext caption logo burn overlay",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -334,7 +336,7 @@
     { name: "Convert", tabs: ["convert", "remux"] },
     { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
-    { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
+    { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat"] },
@@ -390,6 +392,7 @@
     grayscale: "Desaturate to black & white (hue=s=0). No options to set — just run.",
     invert: "Invert colours (photo negative). No options to set — just run.",
     timecode: "Burn a running HH:MM:SS.ms timecode into the video (drawtext). Example: Font 24, top-left, white.",
+    watermark: "Burn a static text label onto the video. Example: '© 2024 My Name', Font 24, bottom-right, white, Opacity 0.8.",
     deinterlace: "Remove interlacing artefacts via yadif. Safe on progressive sources — no options needed, just run.",
     sharpen: "Sharpen edges with the unsharp mask filter. Example: Amount 1.5 for moderate sharpening; negative values soften instead.",
     denoise: "Reduce film grain / sensor noise via hqdn3d. Example: Strength 4 for moderate noise reduction; 8–10 for heavy smoothing.",
@@ -1211,7 +1214,9 @@
     { id: "loudnorm-target", min: -70, max: -5,  step: 0.5, def: -16, unit: " LUFS" },
     { id: "sharpen-amount",  min: -1.5, max: 5,  step: 0.1, def: 1.5, unit: "" },
     { id: "denoise-strength",   min: 1,  max: 10,  step: 0.5, def: 4,   unit: "" },
-    { id: "timecode-font-size",         min: 6,   max: 72,  step: 2,   def: 24,   unit: " pt" },
+    { id: "timecode-font-size",          min: 6,   max: 72,  step: 2,    def: 24,  unit: " pt" },
+    { id: "watermark-font-size",         min: 6,   max: 72,  step: 2,    def: 24,  unit: " pt" },
+    { id: "watermark-opacity",           min: 0,   max: 1,   step: 0.05, def: 1,   unit: "" },
     { id: "trim_silence-threshold",     min: -80, max: -20, step: 1,   def: -50,  unit: " dB" },
     { id: "trim_silence-min-duration",  min: 0.1, max: 3.0, step: 0.1, def: 0.5,  unit: "s" },
     { id: "stabilize-shakiness",        min: 1,   max: 10,  step: 1,   def: 5,    unit: "" },
@@ -1481,6 +1486,12 @@
     "timecode-font-size": "Font size in points for the timecode overlay (6–72). Default 24 suits 720p+; use 36+ for 1080p.",
     "timecode-position":  "Corner of the frame to place the timecode: top-left, top-right, bottom-left, bottom-right.",
     "timecode-color":     "Text colour: white/yellow are most legible on dark subjects; black works on bright backgrounds.",
+    // Watermark
+    "watermark-text":      "The label to burn in — e.g. '© 2024 My Name' or a channel handle. Colons and backslashes are escaped automatically.",
+    "watermark-font-size": "Font size in points (6–72). Default 24 suits 720p+; use 36+ for 1080p.",
+    "watermark-opacity":   "Text opacity 0–1: 1.0 = fully opaque, 0.8 = slightly see-through. The backing box also scales with opacity.",
+    "watermark-position":  "Where to place the watermark: bottom-right is the conventional default; center for a full-frame stamp.",
+    "watermark-color":     "Text colour: white/yellow are legible on most footage; black suits bright/light backgrounds.",
     // Trim silence
     "trim_silence-threshold":    "Audio below this level is treated as silence. -50 dB is a safe default; try -40 for noisy rooms, -60 for very quiet pads.",
     "trim_silence-min-duration": "Minimum run of silence (seconds) before it is removed. 0.5 trims any half-second or longer quiet section.",

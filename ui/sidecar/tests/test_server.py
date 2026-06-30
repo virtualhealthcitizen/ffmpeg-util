@@ -1514,3 +1514,43 @@ def test_run_stream_trim_pct_reencode_duration(client, media, auth):
     dur = float(probe.stdout.strip())
     # 25%–75% of 3s = 1.5s; with the bug the output was ~2.25s (75% of 3s)
     assert dur <= 2.0, f"trim-pct reencode output was {dur:.2f}s; expected ~1.5s (used -to instead of -t)"
+
+
+def test_watermark_produces_output(client, media, auth):
+    d, src = media
+    out = d / "watermarked.mp4"
+    r = client.post(
+        "/watermark",
+        json={"input": str(src), "output": str(out), "text": "© Test",
+              "font_size": 24, "position": "bottom-right",
+              "color": "white", "opacity": 1.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "watermark should produce an output file"
+
+
+def test_watermark_requires_auth(client, media):
+    d, src = media
+    out = d / "wm_noauth.mp4"
+    r = client.post(
+        "/watermark",
+        json={"input": str(src), "output": str(out), "text": "hi"},
+    )
+    assert r.status_code == 401
+
+
+def test_run_stream_watermark(client, media, auth):
+    d, src = media
+    out = d / "wm_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "watermark", "input": str(src), "output": str(out),
+              "text": "© Stream", "font_size": 20, "position": "top-left",
+              "color": "yellow", "opacity": 0.8, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream watermark should produce output"

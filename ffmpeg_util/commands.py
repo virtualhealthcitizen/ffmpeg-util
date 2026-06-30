@@ -1008,6 +1008,75 @@ def build_timecode_args(
     return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
 
 
+_WATERMARK_POSITIONS = {
+    "top-left":     ("10",          "10"),
+    "top-right":    ("w-tw-10",     "10"),
+    "bottom-left":  ("10",          "h-th-10"),
+    "bottom-right": ("w-tw-10",     "h-th-10"),
+    "center":       ("(w-tw)/2",    "(h-th)/2"),
+}
+
+
+def _escape_drawtext_text(text: str) -> str:
+    """Escape user text for a drawtext filter text= value.
+
+    We wrap the value in single quotes in the filter string, so backslash,
+    colon (option separator), and single-quote all need escaping.  Applied to
+    the Python string fed to subprocess — not shell quoting.
+    """
+    text = text.replace("\\", "\\\\")
+    text = text.replace(":", "\\:")
+    text = text.replace("'", "\\'")
+    return text
+
+
+def build_watermark_args(
+    input_path: str,
+    output_path: str,
+    *,
+    text: str,
+    font_size: int = 24,
+    position: str = "bottom-right",
+    color: str = "white",
+    opacity: float = 1.0,
+    font_file: str | None = None,
+) -> list[str]:
+    """Build args to burn a static text watermark onto a video.
+
+    Uses ffmpeg's ``drawtext`` filter with a semi-transparent black box.
+    Audio is stream-copied unchanged.
+    ``text`` is the watermark string.
+    ``position`` is one of top-left / top-right / bottom-left / bottom-right / center.
+    ``opacity`` is 0.0–1.0 (1.0 = fully opaque).
+    ``color`` is any ffmpeg color name or hex.
+    ``font_file`` is an optional absolute path to a TTF/OTF font.
+    """
+    if not text:
+        raise ValueError("text must not be empty")
+    if font_size < 6:
+        raise ValueError("font_size must be >= 6")
+    if position not in _WATERMARK_POSITIONS:
+        raise ValueError(
+            f"position must be one of {sorted(_WATERMARK_POSITIONS)}; got {position!r}"
+        )
+    color = str(color).strip()
+    if not color or not _TIMECODE_COLOR_RE.match(color):
+        raise ValueError(
+            "color must be a valid ffmpeg color name or hex value (e.g. white, #ffffff)"
+        )
+    opacity = max(0.0, min(1.0, float(opacity)))
+    x_expr, y_expr = _WATERMARK_POSITIONS[position]
+    fontfile_opt = f"fontfile='{_drawtext_escape_path(font_file)}':" if font_file else ""
+    color_with_alpha = f"{color}@{opacity:.2f}" if opacity < 1.0 else color
+    escaped = _escape_drawtext_text(text)
+    vf = (
+        f"drawtext={fontfile_opt}text='{escaped}':"
+        f"fontsize={font_size}:x={x_expr}:y={y_expr}:"
+        f"fontcolor={color_with_alpha}:box=1:boxcolor=black@0.4:boxborderw=4"
+    )
+    return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
+
+
 def build_scene_thumbs_args(
     input_path: str,
     output_pattern: str,
