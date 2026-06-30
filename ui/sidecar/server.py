@@ -598,6 +598,25 @@ def watermark(req: WatermarkReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class HardsubReq(BaseModel):
+    input: str
+    subtitle: str
+    output: str
+    overwrite: bool = True
+
+
+@app.post("/hardsub")
+def hardsub(req: HardsubReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_hardsub_args(req.input, req.subtitle, req.output))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class FadeReq(BaseModel):
     input: str
     output: str
@@ -1167,6 +1186,8 @@ class RunReq(BaseModel):
     inputs: list[str] | None = None
     # replace-audio
     audio: str | None = None
+    # hardsub
+    subtitle: str | None = None
     # convert
     vcodec: str | None = None
     acodec: str | None = None
@@ -1310,6 +1331,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             color=req.color or "white", opacity=req.opacity,
             font_file=_find_system_font(),
         ), None
+    if op == "hardsub":
+        if not req.subtitle:
+            raise ValueError("hardsub requires a subtitle file")
+        return commands.build_hardsub_args(req.input, req.subtitle, req.output), None
     if op == "sharpen":
         return commands.build_sharpen_args(req.input, req.output, req.amount), None
     if op == "denoise":

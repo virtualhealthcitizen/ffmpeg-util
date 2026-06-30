@@ -1137,7 +1137,7 @@ const NAV_TABS = [
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
-  "stabilize", "watermark",
+  "stabilize", "watermark", "hardsub",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1154,7 +1154,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "blur_region"]);
+  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "hardsub", "blur_region"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);
@@ -1662,4 +1662,43 @@ test("watermark: validateField validates watermark-opacity via SLIDER_SPECS", ()
   assert.equal(L.validateField("watermark-opacity", "0.5"), null);
   assert.ok(L.validateField("watermark-opacity", "1.1") !== null, "1.1 exceeds max 1");
   assert.ok(L.validateField("watermark-opacity", "-0.1") !== null, "-0.1 below min 0");
+});
+
+test("hardsub: OUTPUT_SPECS has sub tag", () => {
+  assert.equal(L.OUTPUT_SPECS.hardsub.tag, "sub");
+});
+
+test("hardsub: TOOL_HELP has non-empty entry", () => {
+  const help = L.helpForTab("hardsub");
+  assert.ok(help && help.length > 0, "hardsub should have a help string");
+  assert.ok(help.includes("subtitle") || help.includes("hardsub"), "help should mention subtitle or hardsub");
+});
+
+test("hardsub: TOOL_CATEGORIES includes hardsub in Video FX", () => {
+  const vfx = L.TOOL_CATEGORIES.find((c) => c.name === "Video FX");
+  assert.ok(vfx, "Video FX category should exist");
+  assert.ok(vfx.tabs.includes("hardsub"), "hardsub should be in Video FX");
+});
+
+test("hardsub: runInputEntries returns both video and subtitle entries", () => {
+  const entries = L.runInputEntries("hardsub", {
+    input: "/videos/clip.mp4",
+    subtitle: "/subs/movie.srt",
+    output: "/out/clip.sub.mp4",
+  });
+  const fields = entries.map(([, id]) => id);
+  assert.ok(fields.includes("hardsub-input"), "should include hardsub-input field");
+  assert.ok(fields.includes("hardsub-subtitle"), "should include hardsub-subtitle field");
+});
+
+test("hardsub: buildCliCommand produces correct command", () => {
+  const cmd = L.buildCliCommand("hardsub", {
+    input: "clip.mp4",
+    subtitle: "movie.srt",
+    output: "clip.sub.mp4",
+    overwrite: true,
+  });
+  assert.ok(cmd.startsWith("ffmpeg-util hardsub"), "should start with ffmpeg-util hardsub");
+  assert.ok(cmd.includes("--subtitle"), "should include --subtitle flag");
+  assert.ok(cmd.includes("movie.srt"), "should include subtitle path");
 });

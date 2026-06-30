@@ -419,6 +419,13 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Text opacity 0.0–1.0 (default 1.0, fully opaque).")
     _add_global_flags(p)
 
+    # hardsub
+    p = sub.add_parser("hardsub", help="Burn subtitle text into a video (hardsub).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--subtitle", required=True, help="Subtitle file (SRT, ASS, WebVTT).")
+    _add_global_flags(p)
+
     # remux
     p = sub.add_parser("remux", help="Change container without re-encoding (-c copy).")
     p.add_argument("input")
@@ -720,6 +727,11 @@ def _dispatch(args: argparse.Namespace) -> int:
             text=args.text, font_size=args.font_size,
             position=args.position, color=args.color, opacity=args.opacity,
         ))
+        return 0
+
+    if args.command == "hardsub":
+        runner.run_ffmpeg(commands.build_hardsub_args(
+            args.input, args.subtitle, args.output))
         return 0
 
     if args.command == "remux":
