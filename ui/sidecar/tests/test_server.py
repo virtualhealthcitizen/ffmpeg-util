@@ -1485,3 +1485,32 @@ def test_run_stream_trim_pct_reencode(client, media, auth):
     done = [e for e in events if e.get("type") == "done"]
     assert done and done[0]["output"] == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_run_stream_trim_pct_reencode_duration(client, media, auth):
+    # Regression: build_trim_pct_args used -to end_s with reencode=True. Since
+    # input-seeking (-ss before -i) resets output PTS to 0 during re-encode,
+    # -to end_s produced end_s seconds instead of (end_s - start_s).
+    # Fix: use -t (end_s - start_s) for the reencode path.
+    import shutil
+    import subprocess
+    d, src = media
+    out = d / "trim_pct_reencode_dur.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_pct", "input": str(src), "output": str(out),
+              "start_pct": 25.0, "end_pct": 75.0, "reencode": True, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    ffprobe = shutil.which("ffprobe")
+    probe = subprocess.run(
+        [ffprobe, "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=nw=1:nk=1", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    dur = float(probe.stdout.strip())
+    # 25%–75% of 3s = 1.5s; with the bug the output was ~2.25s (75% of 3s)
+    assert dur <= 2.0, f"trim-pct reencode output was {dur:.2f}s; expected ~1.5s (used -to instead of -t)"

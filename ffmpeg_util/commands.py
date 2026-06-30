@@ -1094,8 +1094,16 @@ def build_trim_pct_args(
         raise ValueError("duration_s must be positive")
     start_s = duration_s * start_pct / 100.0
     end_s = duration_s * end_pct / 100.0
-    args: list[str] = ["-ss", f"{start_s:.6f}", "-i", input_path, "-to", f"{end_s:.6f}"]
-    args += [] if reencode else ["-c", "copy"]
+    args: list[str] = ["-ss", f"{start_s:.6f}", "-i", input_path]
+    if reencode:
+        # Input-seeking with -ss before -i resets output PTS to 0 during re-encode,
+        # so -to end_s would produce end_s seconds instead of the intended
+        # (end_s - start_s). Use -t (duration) which is PTS-reset-safe.
+        args += ["-t", f"{(end_s - start_s):.6f}"]
+    else:
+        # Stream copy preserves the original timestamps, so -to references the
+        # input clock and correctly stops at end_s.
+        args += ["-to", f"{end_s:.6f}", "-c", "copy"]
     args.append(output_path)
     return args
 
