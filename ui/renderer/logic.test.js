@@ -198,6 +198,21 @@ test("helpForTab returns a one-line hint for a known tab, '' for unknown", () =>
   assert.equal(L.helpForTab(undefined), "");
 });
 
+test("auto_orient tab is in Video FX category and has aliases + help", () => {
+  const fxGroup = L.TOOL_CATEGORIES.find((g) => g.name === "Video FX");
+  assert.ok(fxGroup.tabs.includes("auto_orient"), "auto_orient should be in Video FX category");
+  const tools = Object.keys(L.TOOL_ALIASES).map((tab) => ({
+    tab,
+    label: tab,
+    keywords: L.TOOL_ALIASES[tab],
+  }));
+  assert.ok(L.filterTools("rotation", tools).includes("auto_orient"), "alias 'rotation' should match auto_orient");
+  assert.ok(L.filterTools("sideways", tools).includes("auto_orient"), "alias 'sideways' should match auto_orient");
+  assert.ok(L.helpForTab("auto_orient").length > 0, "auto_orient should have help text");
+  const outputSpec = L.OUTPUT_SPECS["auto_orient"];
+  assert.ok(outputSpec && outputSpec.tag === "oriented", "auto_orient OUTPUT_SPECS tag should be 'oriented'");
+});
+
 test("deinterlace tab is in Color category and has aliases + help", () => {
   const colorGroup = L.TOOL_CATEGORIES.find((g) => g.name === "Color");
   assert.ok(colorGroup.tabs.includes("deinterlace"), "deinterlace should be in Color category");
@@ -1106,7 +1121,7 @@ const NAV_TABS = [
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
-  "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame",
+  "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1123,7 +1138,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
+  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);

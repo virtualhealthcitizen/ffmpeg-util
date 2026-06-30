@@ -85,6 +85,7 @@
     remux: { tag: "remux" },
     preview_clip: { tag: "preview" },
     poster_frame: { tag: "poster", ext: ".png" },
+    auto_orient: { tag: "oriented" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -300,6 +301,7 @@
     remux: "container format change mkv mp4 mov avi webm repackage rewrap copy codec",
     preview_clip: "short preview sample quick look downscale first seconds thumbnail clip small",
     poster_frame: "poster frame still grab percentage midpoint cover art representative image",
+    auto_orient: "rotate orientation sideways fix rotation metadata display matrix portrait landscape phone camera",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -312,7 +314,7 @@
     { name: "Convert", tabs: ["convert", "remux"] },
     { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
-    { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
+    { name: "Video FX", tabs: ["transform", "auto_orient", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
@@ -391,6 +393,7 @@
     remux: "Change the container without re-encoding (-c copy). Example: in.mkv → in.mp4 — fast and lossless when the codecs are container-compatible.",
     preview_clip: "Export the first N seconds at a reduced width — quick sanity-check for long recordings. Example: 5 s · 320 px wide.",
     poster_frame: "Grab one representative frame at a % of the clip's duration. Example: 10% for a near-start cover; 50% for the midpoint; 90% for near the end.",
+    auto_orient: "Bake rotation metadata into pixels and strip the tag — fixes videos shot sideways on a phone. No options needed, just run.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.

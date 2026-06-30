@@ -289,10 +289,10 @@ Packaging / tests:
 - [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.
 - [x] Extract a poster frame at a percentage of the duration — `build_poster_frame_args` (core), CLI `poster-frame --percent`, sidecar (`/poster-frame` + `/run/stream` op `poster_frame`), Poster frame tab (Trim & Frames). Verified E2E: 6/6 (tab+panel present, 3s clip at 50% → PNG output, "Done" status); 134 core + 88 sidecar + 157 node:test + smoke 5/5 (43 tabs).
 - [ ] Two-up compare grid (input vs output, hstack)
-- [x] Trim by percentage (e.g. middle 50%) — core `build_trim_pct_args` (duration-based timestamps), CLI `trim-pct --start-pct/--end-pct`, sidecar (`/trim-pct` + `/run/stream` op `trim_pct`), Trim % tab. Verified: 142 core + 91 sidecar + 159 node:test + E2E smoke 5/5 (44 tabs). ← next
+- [x] Trim by percentage (e.g. middle 50%) — core `build_trim_pct_args` (duration-based timestamps), CLI `trim-pct --start-pct/--end-pct`, sidecar (`/trim-pct` + `/run/stream` op `trim_pct`), Trim % tab. Verified: 142 core + 91 sidecar + 159 node:test + E2E smoke 5/5 (44 tabs).
 - [ ] Add chapters from a list
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
-- [ ] Auto-orient from rotation metadata, then strip it
+- [x] Auto-orient from rotation metadata, then strip it — core `build_autorotate_args` (-vf null forces decode-through-filter-graph applying the display matrix; -metadata:s:v:0 rotate=0 strips the tag), CLI `auto-orient`, sidecar (`/autorotate` + `/run/stream` op `auto_orient`), Auto-orient tab (Video FX). Verified E2E: 143 core + 92 sidecar + 160 node:test + smoke 5/5 (45 tabs). ← next
 - [x] Export a short preview clip (first N seconds, downscaled) — core `build_preview_clip_args` (-t + scale=W:-2 + -c:a copy), CLI `preview-clip --seconds/--width`, sidecar (`/preview-clip` + `/run/stream` op `preview_clip`), Preview clip tab (Trim & Frames). Verified E2E: 10s clip → 3.018s output at 160px; 127 core + 84 sidecar + 154 node:test + E2E 9/9 (sidecar, endpoint, duration ≤3.5s, tab/panel present, 41 nav tabs). ← next
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [x] Change container only (remux, `-c copy`) — core `build_remux_args`, CLI `remux`, sidecar
