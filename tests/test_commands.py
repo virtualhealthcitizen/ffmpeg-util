@@ -822,3 +822,55 @@ def test_build_poster_frame_args_rejects_bad_percent():
 def test_build_poster_frame_args_rejects_bad_duration():
     with pytest.raises(ValueError, match="duration"):
         c.build_poster_frame_args("in.mp4", "out.png", duration_s=0)
+
+
+def test_build_trim_pct_args_basic():
+    # 10s clip, 25%–75% → start=2.5s, end=7.5s
+    args = c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=25.0, end_pct=75.0, duration_s=10.0)
+    assert "-ss" in args
+    ss_val = args[args.index("-ss") + 1]
+    assert float(ss_val) == pytest.approx(2.5)
+    assert "-to" in args
+    to_val = args[args.index("-to") + 1]
+    assert float(to_val) == pytest.approx(7.5)
+    assert "-i" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_build_trim_pct_args_stream_copy_default():
+    args = c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=50.0, duration_s=10.0)
+    assert "-c" in args and args[args.index("-c") + 1] == "copy"
+
+
+def test_build_trim_pct_args_reencode():
+    args = c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=50.0, duration_s=10.0, reencode=True)
+    assert "-c" not in args
+
+
+def test_build_trim_pct_args_rejects_bad_start_pct():
+    with pytest.raises(ValueError, match="start_pct"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=-1, end_pct=50.0, duration_s=10.0)
+    with pytest.raises(ValueError, match="start_pct"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=101, end_pct=50.0, duration_s=10.0)
+
+
+def test_build_trim_pct_args_rejects_bad_end_pct():
+    with pytest.raises(ValueError, match="end_pct"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=101, duration_s=10.0)
+
+
+def test_build_trim_pct_args_rejects_start_ge_end():
+    with pytest.raises(ValueError, match="start_pct must be less than end_pct"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=50.0, end_pct=50.0, duration_s=10.0)
+    with pytest.raises(ValueError, match="start_pct must be less than end_pct"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=75.0, end_pct=25.0, duration_s=10.0)
+
+
+def test_build_trim_pct_args_requires_duration():
+    with pytest.raises(ValueError, match="duration_s is required"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=25.0, end_pct=75.0)
+
+
+def test_build_trim_pct_args_rejects_bad_duration():
+    with pytest.raises(ValueError, match="duration_s must be positive"):
+        c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=50.0, duration_s=0)

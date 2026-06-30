@@ -525,6 +525,17 @@ test("estimateOutput preview_clip uses input duration when shorter than requeste
   assert.equal(L.estimateOutput("preview_clip", 3, { seconds: "10" }), "~0:03");
 });
 
+test("estimateOutput trim_pct computes output duration from percentage range", () => {
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "25", "end-pct": "75" }), "~0:05");
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "0", "end-pct": "50" }), "~0:05");
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "0", "end-pct": "100" }), "~0:10");
+});
+
+test("estimateOutput trim_pct returns null when start >= end", () => {
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "50", "end-pct": "25" }), null);
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "50", "end-pct": "50" }), null);
+});
+
 test("friendlyError maps common ffmpeg failures to a hint", () => {
   assert.match(
     L.friendlyError("clip.mp4: No such file or directory"),
@@ -1091,7 +1102,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 // The canonical nav order from index.html — the category map must cover exactly
 // these, each once. (Kept in sync with the <nav class="tabs"> buttons.)
 const NAV_TABS = [
-  "convert", "trim", "concat", "thumbnail", "compress", "gif", "speed", "transform",
+  "convert", "trim", "trim_pct", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",

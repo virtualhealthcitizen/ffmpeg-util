@@ -81,6 +81,7 @@
     image_to_video: { tag: "clip", ext: ".mp4" },
     autocrop: { tag: "autocrop" },
     trim_silence: { tag: "trimmed" },
+    trim_pct: { tag: "trimmed" },
     remux: { tag: "remux" },
     preview_clip: { tag: "preview" },
     poster_frame: { tag: "poster", ext: ".png" },
@@ -295,6 +296,7 @@
     blur_pad: "blurred fill background letterbox frame fit no bars",
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
     trim_silence: "silence strip trim audio ends start trailing leading remove quiet padding",
+    trim_pct: "trim cut percentage percent middle half section portion relative start end",
     remux: "container format change mkv mp4 mov avi webm repackage rewrap copy codec",
     preview_clip: "short preview sample quick look downscale first seconds thumbnail clip small",
     poster_frame: "poster frame still grab percentage midpoint cover art representative image",
@@ -308,7 +310,7 @@
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
     { name: "Convert", tabs: ["convert", "remux"] },
-    { name: "Trim & Frames", tabs: ["trim", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
+    { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
@@ -385,6 +387,7 @@
     image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
     autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
     trim_silence: "Strip leading and trailing silence (silenceremove). Example: Threshold -50 dB, Min 0.5s removes quiet pads from recordings.",
+    trim_pct: "Trim by position percentage instead of exact timestamps. Example: Start 25 + End 75 keeps the middle half; Start 0 + End 50 keeps the first half.",
     remux: "Change the container without re-encoding (-c copy). Example: in.mkv → in.mp4 — fast and lossless when the codecs are container-compatible.",
     preview_clip: "Export the first N seconds at a reduced width — quick sanity-check for long recordings. Example: 5 s · 320 px wide.",
     poster_frame: "Grab one representative frame at a % of the clip's duration. Example: 10% for a near-start cover; 50% for the midpoint; 90% for near the end.",
@@ -822,6 +825,12 @@
     } else if (tab === "preview_clip") {
       const secs = Number(f.seconds);
       if (isFinite(secs) && secs > 0) out = Math.min(inDur, secs);
+    } else if (tab === "trim_pct") {
+      const startPct = Number(f["start-pct"] ?? 0);
+      const endPct = Number(f["end-pct"] ?? 100);
+      if (isFinite(startPct) && isFinite(endPct) && endPct > startPct) {
+        out = inDur * (endPct - startPct) / 100;
+      }
     } else {
       return null;
     }
@@ -1356,6 +1365,9 @@
     // Trim silence
     "trim_silence-threshold":    "Audio below this level is treated as silence. -50 dB is a safe default; try -40 for noisy rooms, -60 for very quiet pads.",
     "trim_silence-min-duration": "Minimum run of silence (seconds) before it is removed. 0.5 trims any half-second or longer quiet section.",
+    // Trim %
+    "trim_pct-start-pct": "Start of the kept segment as a percentage of the clip's total duration (0–99). Example: 0 = from the very start; 25 = a quarter in; 50 = the midpoint.",
+    "trim_pct-end-pct":   "End of the kept segment as a percentage of the clip's total duration (1–100). Example: 75 + Start 25 keeps the middle half; 100 = to the very end.",
     // Preview clip
     "preview_clip-seconds": "How many seconds to keep from the start of the file. Example: 5 for a 5-second preview; 30 for a 30-second sample.",
     "preview_clip-width":   "Output width in pixels; height scales proportionally (rounded to even). Example: 320 for a small preview, 640 for medium.",

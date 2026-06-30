@@ -1356,3 +1356,42 @@ def test_run_stream_poster_frame(client, media, auth):
     done = [e for e in events if e.get("type") == "done"]
     assert done and done[0]["output"] == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_trim_pct(client, media, auth):
+    d, src = media
+    out = d / "trim_pct.mp4"
+    r = client.post(
+        "/trim-pct",
+        json={"input": str(src), "output": str(out), "start_pct": 25.0, "end_pct": 75.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_trim_pct_rejects_bad_pct(client, media, auth):
+    d, src = media
+    out = d / "trim_pct_bad.mp4"
+    r = client.post(
+        "/trim-pct",
+        json={"input": str(src), "output": str(out), "start_pct": 75.0, "end_pct": 25.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
+def test_run_stream_trim_pct(client, media, auth):
+    d, src = media
+    out = d / "trim_pct_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_pct", "input": str(src), "output": str(out),
+              "start_pct": 25.0, "end_pct": 75.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    done = [e for e in events if e.get("type") == "done"]
+    assert done and done[0]["output"] == str(out)
+    assert out.exists() and out.stat().st_size > 0

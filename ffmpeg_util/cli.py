@@ -68,6 +68,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # trim-pct
+    p = sub.add_parser("trim-pct", help="Trim a clip by start/end as percentages of the total duration.")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--start-pct", type=float, default=0.0,
+                   help="Start position as %% of total duration (default 0).")
+    p.add_argument("--end-pct", type=float, default=100.0,
+                   help="End position as %% of total duration (default 100).")
+    p.add_argument("--reencode", action="store_true",
+                   help="Re-encode for frame-accurate cuts (slower; default is stream-copy).")
+    _add_global_flags(p)
+
     # poster-frame
     p = sub.add_parser("poster-frame", help="Extract a single frame at a percentage of the duration.")
     p.add_argument("input")
@@ -445,6 +457,19 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "trim-pct":
+        dur = commands.probe_duration(runner, args.input)
+        if dur is None and not runner.dry_run:
+            print("Could not probe duration; cannot compute percentage timestamps.")
+            return 1
+        runner.run_ffmpeg(commands.build_trim_pct_args(
+            args.input, args.output,
+            start_pct=args.start_pct, end_pct=args.end_pct,
+            duration_s=dur or 0.0,
+            reencode=args.reencode,
+        ))
         return 0
 
     if args.command == "poster-frame":

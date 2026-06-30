@@ -1083,6 +1083,8 @@ const STICKY = [
   "trim_silence-min-duration",
   "blur_region-sigma",
   "poster_frame-percent",
+  "trim_pct-start-pct",
+  "trim_pct-end-pct",
 ];
 
 async function loadSettings() {
@@ -2013,6 +2015,18 @@ $("#run-remux").addEventListener("click", () => {
   run("Remuxing", "remux", {
     input: val("remux-input"),
     output: val("remux-output"),
+    overwrite: true,
+  });
+});
+
+$("#run-trim_pct").addEventListener("click", () => {
+  if (!requireFields("trim_pct-input", "trim_pct-output")) return;
+  run("Trimming by percentage", "trim_pct", {
+    input: val("trim_pct-input"),
+    output: val("trim_pct-output"),
+    start_pct: numOrNull("trim_pct-start-pct") ?? 0,
+    end_pct: numOrNull("trim_pct-end-pct") ?? 100,
+    reencode: !!$("#trim_pct-reencode")?.checked,
     overwrite: true,
   });
 });
