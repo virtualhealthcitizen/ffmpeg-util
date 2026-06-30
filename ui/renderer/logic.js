@@ -76,6 +76,7 @@
     sample_rate: { tag: "resample" },
     hstack: { tag: "hstack" },
     vstack: { tag: "vstack" },
+    xfade_concat: { tag: "xfade" },
     blur_region: { tag: "blurred" },
     blur_pad: { tag: "blurpad" },
     image_to_video: { tag: "clip", ext: ".mp4" },
@@ -197,7 +198,7 @@
   function inputTargetForTab(tab) {
     if (!tab) return null;
     if (tab === "concat") return { id: "concat-inputs", append: true };
-    if (tab === "hstack" || tab === "vstack") return { id: tab + "-input-a", append: false };
+    if (tab === "hstack" || tab === "vstack" || tab === "xfade_concat") return { id: tab + "-input-a", append: false };
     return { id: tab + "-input", append: false };
   }
 
@@ -293,6 +294,7 @@
     sample_rate: "audio hz khz resample rate 44100 48000",
     hstack: "side by side horizontal compare two videos",
     vstack: "stacked vertical top bottom two videos",
+    xfade_concat: "crossfade transition join blend two clips fade wipe slide dissolve",
     blur_region: "blur region area face censor pixelate rectangle mosaic privacy redact",
     blur_pad: "blurred fill background letterbox frame fit no bars",
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
@@ -317,7 +319,7 @@
     { name: "Video FX", tabs: ["transform", "auto_orient", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
-    { name: "Combine", tabs: ["concat", "hstack", "vstack"] },
+    { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat"] },
     { name: "Metadata", tabs: ["title"] },
   ];
 
@@ -384,6 +386,7 @@
     sample_rate: "Resample audio. Example: Rate 22050 down-samples a 44100 Hz track.",
     hstack: "Place two videos side by side (equal heights). Output width is the sum of both.",
     vstack: "Stack two videos top-and-bottom (equal widths). Output height is the sum of both.",
+    xfade_concat: "Crossfade-concatenate two clips with a smooth transition. Example: Fade + 1s blends the end of clip 1 into the start of clip 2.",
     blur_region: "Blur a rectangle within the video — blur faces, plates, or sensitive text. Example: X=40 Y=10 W=80 H=60 blurs the top-left corner region.",
     blur_pad: "Pad to a target frame, filling the bars with a blurred copy of the video (no solid bars). Example: 320×240 → 480×480.",
     image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
@@ -672,9 +675,9 @@
   // Check whether the inputs for a multi-input op are compatible, given each
   // input's dims ({w,h}|null) in order. Returns { ok, message } or null when the
   // check doesn't apply (not a multi-input tab, or fewer than two probed inputs).
-  // hstack needs equal heights, vstack equal widths, concat matching size.
+  // hstack needs equal heights, vstack equal widths, concat/xfade_concat matching size.
   function compatReport(tab, dimsList) {
-    if (tab !== "hstack" && tab !== "vstack" && tab !== "concat") return null;
+    if (tab !== "hstack" && tab !== "vstack" && tab !== "concat" && tab !== "xfade_concat") return null;
     const valid = (dimsList || []).filter(Boolean);
     if (valid.length < 2) return null;
     if (tab === "hstack") {
@@ -690,6 +693,13 @@
         return { ok: false, message: `Widths differ (${ws.join(" vs ")}px). Stacking needs equal widths — pad or scale one first.` };
       }
       return { ok: true, message: `Widths match (${ws[0]}px) — ready to stack.` };
+    }
+    if (tab === "xfade_concat") {
+      const sizes = valid.map((d) => `${d.w}×${d.h}`);
+      if (new Set(sizes).size > 1) {
+        return { ok: false, message: `Clips differ in size (${sizes.join(" vs ")}px). Crossfade needs matching resolution — pad or scale one first.` };
+      }
+      return { ok: true, message: `Both clips are ${sizes[0]} — ready to crossfade.` };
     }
     const sizes = valid.map((d) => `${d.w}×${d.h}`);
     const uniq = [...new Set(sizes)];
@@ -1202,7 +1212,7 @@
   // omitted — requireFields already catches missing values before the run starts.
   function runInputEntries(tab, body) {
     const b = body || {};
-    if (tab === "hstack" || tab === "vstack") {
+    if (tab === "hstack" || tab === "vstack" || tab === "xfade_concat") {
       const arr = Array.isArray(b.inputs) ? b.inputs : [];
       return [
         [String(arr[0] || "").trim(), tab + "-input-a"],
@@ -1376,6 +1386,9 @@
     "preview_clip-width":   "Output width in pixels; height scales proportionally (rounded to even). Example: 320 for a small preview, 640 for medium.",
     // Poster frame
     "poster_frame-percent": "Position in the clip as a percentage of its total duration (0–100). Example: 10 grabs a frame near the start; 50 the midpoint; 90 near the end.",
+    // Crossfade
+    "xfade_concat-transition":    "The visual transition style. 'Fade' is a standard cross-dissolve; wipe/slide variants push from one direction.",
+    "xfade_concat-xfade_duration": "How long the transition takes in seconds. Example: 1.0 for a 1-second crossfade; 0.5 for a quick cut.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.

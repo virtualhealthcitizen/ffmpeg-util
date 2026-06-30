@@ -411,6 +411,21 @@ test("compatReport checks concat size match", () => {
   assert.match(L.compatReport("concat", [a, { w: 640, h: 480 }]).message, /differ in size \(320×240, 640×480\)/);
 });
 
+test("xfade_concat is in Combine category and has aliases + help", () => {
+  const combineGroup = L.TOOL_CATEGORIES.find((g) => g.name === "Combine");
+  assert.ok(combineGroup.tabs.includes("xfade_concat"), "xfade_concat should be in Combine category");
+  assert.ok(typeof L.TOOL_ALIASES["xfade_concat"] === "string", "xfade_concat should have an alias");
+  assert.ok(L.helpForTab("xfade_concat").length > 0, "xfade_concat should have help text");
+});
+
+test("compatReport flags xfade_concat size mismatch", () => {
+  const a = { w: 320, h: 240 };
+  const b = { w: 640, h: 480 };
+  assert.equal(L.compatReport("xfade_concat", [a, a]).ok, true);
+  assert.match(L.compatReport("xfade_concat", [a, b]).message, /differ in size/);
+  assert.equal(L.compatReport("xfade_concat", [a, b]).ok, false);
+});
+
 test("compatReport returns null when it doesn't apply", () => {
   assert.equal(L.compatReport("convert", [{ w: 1, h: 1 }, { w: 2, h: 2 }]), null); // not multi-input
   assert.equal(L.compatReport("hstack", [{ w: 320, h: 240 }]), null); // only one input
@@ -1120,7 +1135,7 @@ const NAV_TABS = [
   "convert", "trim", "trim_pct", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
-  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
+  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
 ];
 

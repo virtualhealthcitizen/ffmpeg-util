@@ -525,6 +525,54 @@ def test_hstack_requires_two_400(client, media, auth):
     assert r.status_code == 400
 
 
+def test_xfade_concat_produces_output(client, media, auth):
+    d, src = media  # 3s 320x240 clip
+    out = d / "xfade.mp4"
+    # offset 2.0: transition starts 2s into the 3s first clip (3 - 1 = 2)
+    r = client.post(
+        "/xfade-concat",
+        json={
+            "inputs": [str(src), str(src)],
+            "output": str(out),
+            "transition": "fade",
+            "duration": 1.0,
+            "offset": 2.0,
+            "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200, r.text
+    assert out.exists()
+    assert _dims(out) == (320, 240)
+
+
+def test_xfade_concat_auto_offset(client, media, auth):
+    d, src = media  # 3s 320x240 clip
+    out = d / "xfade_auto.mp4"
+    # omit offset — sidecar probes clip 1 and computes it
+    r = client.post(
+        "/xfade-concat",
+        json={
+            "inputs": [str(src), str(src)],
+            "output": str(out),
+            "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200, r.text
+    assert out.exists()
+
+
+def test_xfade_concat_requires_two_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/xfade-concat",
+        json={"inputs": [str(src)], "output": str(d / "x.mp4"), "offset": 2.0},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def test_boomerang_doubles_duration(client, media, auth):
     d, src = media
     out = d / "boomerang.mp4"

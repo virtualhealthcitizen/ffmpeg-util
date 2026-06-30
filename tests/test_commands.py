@@ -196,6 +196,38 @@ def test_hstack_args_requires_two():
         c.build_hstack_args(["only.mp4"], "out.mp4")
 
 
+def test_xfade_args_basic():
+    args = c.build_xfade_args(["a.mp4", "b.mp4"], "out.mp4", offset=3.0)
+    assert args.count("-i") == 2
+    fc = args[args.index("-filter_complex") + 1]
+    assert "xfade=transition=fade:duration=1.0:offset=3.0" in fc
+    assert args[-1] == "out.mp4"
+
+
+def test_xfade_args_custom_transition():
+    args = c.build_xfade_args(["a.mp4", "b.mp4"], "out.mp4",
+                               transition="wipeleft", duration=0.5, offset=2.5)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "transition=wipeleft" in fc
+    assert "duration=0.5" in fc
+    assert "offset=2.5" in fc
+
+
+def test_xfade_args_requires_two():
+    with pytest.raises(ValueError):
+        c.build_xfade_args(["only.mp4"], "out.mp4", offset=2.0)
+
+
+def test_xfade_args_rejects_nonpositive_duration():
+    with pytest.raises(ValueError):
+        c.build_xfade_args(["a.mp4", "b.mp4"], "out.mp4", duration=0.0, offset=2.0)
+
+
+def test_xfade_args_rejects_negative_offset():
+    with pytest.raises(ValueError):
+        c.build_xfade_args(["a.mp4", "b.mp4"], "out.mp4", duration=1.0, offset=-1.0)
+
+
 def test_boomerang_args_forward_then_reverse():
     args = c.build_boomerang_args("in.mp4", "out.mp4")
     fc = args[args.index("-filter_complex") + 1]

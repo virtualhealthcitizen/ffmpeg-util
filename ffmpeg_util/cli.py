@@ -131,6 +131,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-o", "--output", required=True, help="Output file.")
     _add_global_flags(p)
 
+    # xfade-concat (crossfade transition)
+    p = sub.add_parser("xfade-concat", help="Crossfade-concatenate two clips.")
+    p.add_argument("inputs", nargs=2, help="Two input files.")
+    p.add_argument("-o", "--output", required=True, help="Output file.")
+    p.add_argument("--transition", default="fade",
+                   help="xfade transition name (default: fade).")
+    p.add_argument("--duration", type=float, default=1.0,
+                   help="Transition duration in seconds (default: 1.0).")
+    p.add_argument("--offset", type=float, required=True,
+                   help="Second at which the transition starts (typically "
+                        "clip1_duration - transition_duration).")
+    _add_global_flags(p)
+
     # image-to-video
     p = sub.add_parser("image-to-video", help="Make a video from a still image.")
     p.add_argument("input", help="Input image (e.g. photo.png).")
@@ -511,6 +524,15 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "vstack":
         runner.run_ffmpeg(commands.build_vstack_args(args.inputs, args.output))
+        return 0
+
+    if args.command == "xfade-concat":
+        runner.run_ffmpeg(commands.build_xfade_args(
+            args.inputs, args.output,
+            transition=args.transition,
+            duration=args.duration,
+            offset=args.offset,
+        ))
         return 0
 
     if args.command == "image-to-video":
