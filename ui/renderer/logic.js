@@ -89,6 +89,7 @@
     auto_orient: { tag: "oriented" },
     stabilize: { tag: "stable" },
     watermark: { tag: "wm" },
+    hardsub: { tag: "sub" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -324,6 +325,7 @@
     auto_orient: "rotate orientation sideways fix rotation metadata display matrix portrait landscape phone camera",
     stabilize: "stabilize shaky deshake smooth handheld vibration motion blur vidstab gyro steady camera jitter",
     watermark: "watermark text overlay label copyright brand stamp drawtext caption logo burn overlay",
+    hardsub: "subtitle subtitles burn hardsub srt ass vtt text render caption burn-in embedded hard",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -336,7 +338,7 @@
     { name: "Convert", tabs: ["convert", "remux"] },
     { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
-    { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "blur_region"] },
+    { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "hardsub", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat"] },
@@ -419,6 +421,7 @@
     poster_frame: "Grab one representative frame at a % of the clip's duration. Example: 10% for a near-start cover; 50% for the midpoint; 90% for near the end.",
     auto_orient: "Bake rotation metadata into pixels and strip the tag — fixes videos shot sideways on a phone. No options needed, just run.",
     stabilize: "Remove camera shake with two-pass vidstab. Example: Shakiness 5 + Smoothing 10 for handheld footage; raise Smoothing to 20–50 for very bumpy clips.",
+    hardsub: "Burn subtitle text into video frames (hardsub). Pick an SRT, ASS, or WebVTT file — text is baked into the pixels, audio copied unchanged.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
@@ -1343,6 +1346,14 @@
       if (vid) entries.push([vid, "replace_audio-input"]);
       const aud = String(b.audio || "").trim();
       if (aud) entries.push([aud, "replace_audio-audio"]);
+      return entries;
+    }
+    if (tab === "hardsub") {
+      const entries = [];
+      const vid = String(b.input || "").trim();
+      if (vid) entries.push([vid, "hardsub-input"]);
+      const sub = String(b.subtitle || "").trim();
+      if (sub) entries.push([sub, "hardsub-subtitle"]);
       return entries;
     }
     const p = String(b.input || "").trim();

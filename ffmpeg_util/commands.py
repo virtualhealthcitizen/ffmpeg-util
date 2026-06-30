@@ -1077,6 +1077,36 @@ def build_watermark_args(
     return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
 
 
+def _escape_subtitle_path(path: str) -> str:
+    """Escape a subtitle file path for use in the subtitles= filter value.
+
+    The subtitles filter uses ':' as an option separator.  Forward slashes
+    are safe on all platforms; backslashes and drive colons need escaping.
+    Single quotes are also escaped because the value is wrapped in single
+    quotes in the filter string.
+    """
+    p = str(path).replace("\\", "/")
+    p = p.replace(":", "\\:")
+    p = p.replace("'", "\\'")
+    return p
+
+
+def build_hardsub_args(
+    input_path: str,
+    subtitle_path: str,
+    output_path: str,
+) -> list[str]:
+    """Burn subtitle text into video frames (hardsub).
+
+    Uses ffmpeg's ``subtitles`` filter to render an SRT, ASS/SSA, or WebVTT
+    file directly onto the video.  Audio is stream-copied unchanged.
+    The output file must be a video container (not .srt/.ass).
+    """
+    escaped = _escape_subtitle_path(subtitle_path)
+    vf = f"subtitles='{escaped}'"
+    return ["-i", input_path, "-vf", vf, "-c:a", "copy", output_path]
+
+
 def build_scene_thumbs_args(
     input_path: str,
     output_pattern: str,

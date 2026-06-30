@@ -1043,3 +1043,28 @@ def test_build_watermark_args_rejects_bad_position():
 def test_build_watermark_args_rejects_bad_color():
     with pytest.raises(ValueError, match="color"):
         c.build_watermark_args("in.mp4", "out.mp4", text="hi", color="white; rm -rf /")
+
+
+def test_build_hardsub_args_basic():
+    args = c.build_hardsub_args("in.mp4", "subs.srt", "out.mp4")
+    assert args[0] == "-i" and args[1] == "in.mp4"
+    vf_idx = args.index("-vf")
+    assert "subtitles=" in args[vf_idx + 1]
+    assert "subs.srt" in args[vf_idx + 1]
+    assert args[-1] == "out.mp4"
+    assert "-c:a" in args and "copy" in args
+
+
+def test_build_hardsub_args_escapes_windows_path():
+    args = c.build_hardsub_args("in.mp4", r"C:\Users\me\subs.srt", "out.mp4")
+    vf_idx = args.index("-vf")
+    vf = args[vf_idx + 1]
+    assert "C\\:" in vf or "C/" in vf
+    assert "\\" not in vf.replace("\\:", "").replace("\\'", "")
+
+
+def test_build_hardsub_args_escapes_colon_in_path():
+    args = c.build_hardsub_args("in.mp4", "/path/with:colon/subs.srt", "out.mp4")
+    vf_idx = args.index("-vf")
+    vf = args[vf_idx + 1]
+    assert "\\:" in vf

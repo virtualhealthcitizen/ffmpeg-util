@@ -1735,6 +1735,16 @@ $("#run-watermark").addEventListener("click", () => {
   });
 });
 
+$("#run-hardsub").addEventListener("click", () => {
+  if (!requireFields("hardsub-input", "hardsub-subtitle", "hardsub-output")) return;
+  run("Burning subtitles", "hardsub", {
+    input: val("hardsub-input"),
+    subtitle: val("hardsub-subtitle"),
+    output: val("hardsub-output"),
+    overwrite: true,
+  });
+});
+
 $("#run-deinterlace").addEventListener("click", () => {
   if (!requireFields("deinterlace-input", "deinterlace-output")) return;
   run("Deinterlacing", "deinterlace", {

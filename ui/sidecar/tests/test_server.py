@@ -1554,3 +1554,53 @@ def test_run_stream_watermark(client, media, auth):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream watermark should produce output"
+
+
+def _make_srt(path):
+    """Write a minimal valid SRT subtitle file."""
+    path.write_text(
+        "1\n00:00:00,000 --> 00:00:02,000\nTest subtitle\n\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_hardsub_produces_output(client, media, auth, tmp_path):
+    d, src = media
+    srt = _make_srt(tmp_path / "subs.srt")
+    out = tmp_path / "hardsub.mp4"
+    r = client.post(
+        "/hardsub",
+        json={"input": str(src), "subtitle": str(srt), "output": str(out),
+              "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "/hardsub should produce an output file"
+
+
+def test_hardsub_requires_auth(client, media, tmp_path):
+    d, src = media
+    srt = _make_srt(tmp_path / "subs_noauth.srt")
+    out = tmp_path / "hardsub_noauth.mp4"
+    r = client.post(
+        "/hardsub",
+        json={"input": str(src), "subtitle": str(srt), "output": str(out)},
+    )
+    assert r.status_code == 401
+
+
+def test_run_stream_hardsub(client, media, auth, tmp_path):
+    d, src = media
+    srt = _make_srt(tmp_path / "subs_stream.srt")
+    out = tmp_path / "hardsub_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "hardsub", "input": str(src), "subtitle": str(srt),
+              "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream hardsub should produce output"

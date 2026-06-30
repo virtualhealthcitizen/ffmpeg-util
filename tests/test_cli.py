@@ -54,3 +54,11 @@ def test_watermark_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "drawtext" in out and "out.mp4" in out
+
+
+def test_hardsub_dry_run(capsys):
+    rc = main(["hardsub", "in.mp4", "out.mp4", "--subtitle", "subs.srt",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "subtitles=" in out and "out.mp4" in out
