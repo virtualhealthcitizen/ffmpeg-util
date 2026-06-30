@@ -1036,6 +1036,35 @@ def build_preview_clip_args(
     ]
 
 
+def build_poster_frame_args(
+    input_path: str,
+    output_path: str,
+    *,
+    percent: float = 10.0,
+    duration_s: float | None = None,
+    width: int | None = None,
+) -> list[str]:
+    """Build args to extract a single frame at ``percent``% of the clip duration.
+
+    When ``duration_s`` is supplied the timestamp is computed here; otherwise
+    ``-ss`` uses a percent-syntax string (``<pct>%``) that ffmpeg 5+ accepts.
+    Outputs a PNG/JPEG depending on the output extension.
+    """
+    if not 0 <= percent <= 100:
+        raise ValueError("percent must be in [0, 100]")
+    if duration_s is not None:
+        if duration_s <= 0:
+            raise ValueError("duration_s must be positive")
+        ts = str(duration_s * percent / 100.0)
+    else:
+        ts = f"{percent}%"
+    args: list[str] = ["-ss", ts, "-i", input_path, "-frames:v", "1"]
+    if width:
+        args += ["-vf", f"scale={width}:-1"]
+    args.append(output_path)
+    return args
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

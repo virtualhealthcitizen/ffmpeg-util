@@ -1095,7 +1095,7 @@ const NAV_TABS = [
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
-  "image_to_video", "autocrop", "remux", "preview_clip", "blur_region",
+  "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {

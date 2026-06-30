@@ -1082,6 +1082,7 @@ const STICKY = [
   "trim_silence-threshold",
   "trim_silence-min-duration",
   "blur_region-sigma",
+  "poster_frame-percent",
 ];
 
 async function loadSettings() {
@@ -2023,6 +2024,16 @@ $("#run-preview_clip").addEventListener("click", () => {
     output: val("preview_clip-output"),
     seconds: numOrNull("preview_clip-seconds") ?? 5,
     width: numOrNull("preview_clip-width") ?? 320,
+    overwrite: true,
+  });
+});
+
+$("#run-poster_frame").addEventListener("click", () => {
+  if (!requireFields("poster_frame-input", "poster_frame-output")) return;
+  run("Extracting poster frame", "poster_frame", {
+    input: val("poster_frame-input"),
+    output: val("poster_frame-output"),
+    percent: numOrNull("poster_frame-percent") ?? 10,
     overwrite: true,
   });
 });
