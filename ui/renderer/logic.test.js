@@ -1001,6 +1001,26 @@ test("buildCliCommand handles inputs-list ops with -o output", () => {
   );
 });
 
+test("TOOL_CATEGORIES Video FX includes blur_region", () => {
+  const vfx = L.TOOL_CATEGORIES.find(g => g.name === "Video FX");
+  assert.ok(vfx, "Video FX category exists");
+  assert.ok(vfx.tabs.includes("blur_region"), "Video FX includes blur_region");
+});
+
+test("suggestOutputForTab uses .blurred tag for blur_region", () => {
+  assert.equal(L.suggestOutputForTab("clip.mp4", "blur_region"), "clip.blurred.mp4");
+});
+
+test("buildCliCommand handles blur_region with x/y/width/height/sigma", () => {
+  assert.equal(
+    L.buildCliCommand("blur_region", {
+      input: "in.mp4", output: "in.blurred.mp4",
+      x: 10, y: 20, width: 80, height: 60, sigma: 15, overwrite: true,
+    }),
+    "ffmpeg-util blur-region in.mp4 in.blurred.mp4 --x 10 --y 20 --width 80 --height 60 --sigma 15 -y"
+  );
+});
+
 test("buildCliCommand places --audio after positionals for replace_audio", () => {
   assert.equal(
     L.buildCliCommand("replace_audio", {
@@ -1075,7 +1095,7 @@ const NAV_TABS = [
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "blur_pad",
-  "image_to_video", "autocrop", "remux", "preview_clip",
+  "image_to_video", "autocrop", "remux", "preview_clip", "blur_region",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1092,7 +1112,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"]);
+  assert.deepEqual(fx.tabs, ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);

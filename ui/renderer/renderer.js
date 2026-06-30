@@ -1081,6 +1081,7 @@ const STICKY = [
   "timecode-font-size",
   "trim_silence-threshold",
   "trim_silence-min-duration",
+  "blur_region-sigma",
 ];
 
 async function loadSettings() {
@@ -1677,6 +1678,20 @@ $("#run-denoise").addEventListener("click", () => {
     input: val("denoise-input"),
     output: val("denoise-output"),
     strength: numOrNull("denoise-strength") ?? 4.0,
+    overwrite: true,
+  });
+});
+
+$("#run-blur_region").addEventListener("click", () => {
+  if (!requireFields("blur_region-input", "blur_region-output", "blur_region-width", "blur_region-height")) return;
+  run("Blurring region", "blur_region", {
+    input: val("blur_region-input"),
+    output: val("blur_region-output"),
+    x: numOrNull("blur_region-x") ?? 0,
+    y: numOrNull("blur_region-y") ?? 0,
+    width: numOrNull("blur_region-width"),
+    height: numOrNull("blur_region-height"),
+    sigma: numOrNull("blur_region-sigma") ?? 10,
     overwrite: true,
   });
 });

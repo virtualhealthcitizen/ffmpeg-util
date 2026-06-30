@@ -623,6 +623,19 @@ def test_loop_multiplies_duration(client, media, auth):
     assert 2.6 <= ratio <= 3.4, f"ratio={ratio:.2f}"  # ~3x, generous tolerance
 
 
+def test_blur_region_produces_same_dimensions(client, media, auth):
+    d, src = media  # 320x240
+    out = d / "blurred_region.mp4"
+    r = client.post(
+        "/blur-region",
+        json={"input": str(src), "output": str(out),
+              "x": 40, "y": 20, "width": 80, "height": 60, "sigma": 10, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert _dims(out) == (320, 240)  # output frame unchanged
+
+
 def test_blur_pad_produces_target_frame(client, media, auth):
     d, src = media  # 320x240
     out = d / "blurpad.mp4"

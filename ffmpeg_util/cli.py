@@ -225,6 +225,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--height", type=int, required=True, help="Target frame height.")
     _add_global_flags(p)
 
+    # blur-region
+    p = sub.add_parser("blur-region", help="Blur a rectangular region of the video (Gaussian).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--x", type=int, default=0, help="Left edge of the region (default 0).")
+    p.add_argument("--y", type=int, default=0, help="Top edge of the region (default 0).")
+    p.add_argument("--width", type=int, required=True, help="Region width in pixels.")
+    p.add_argument("--height", type=int, required=True, help="Region height in pixels.")
+    p.add_argument("--sigma", type=float, default=10, help="Gaussian blur strength (default 10).")
+    _add_global_flags(p)
+
     # blur-pad
     p = sub.add_parser("blur-pad", help="Fit into a frame over a blurred background fill.")
     p.add_argument("input")
@@ -523,6 +534,11 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "pad":
         runner.run_ffmpeg(commands.build_pad_args(args.input, args.output, args.width, args.height))
+        return 0
+
+    if args.command == "blur-region":
+        runner.run_ffmpeg(commands.build_blur_region_args(
+            args.input, args.output, args.x, args.y, args.width, args.height, sigma=args.sigma))
         return 0
 
     if args.command == "blur-pad":

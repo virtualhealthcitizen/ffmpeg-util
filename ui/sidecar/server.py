@@ -631,6 +631,33 @@ def loop(req: LoopReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class BlurRegionReq(BaseModel):
+    input: str
+    output: str
+    x: int = 0
+    y: int = 0
+    width: int
+    height: int
+    sigma: float = 10
+    overwrite: bool = True
+
+
+@app.post("/blur-region")
+def blur_region(req: BlurRegionReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(
+            commands.build_blur_region_args(
+                req.input, req.output, req.x, req.y, req.width, req.height, sigma=req.sigma
+            )
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class BlurPadReq(BaseModel):
     input: str
     output: str
@@ -1118,6 +1145,12 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         if not req.width or not req.height:
             raise ValueError("pad requires width and height")
         return commands.build_pad_args(req.input, req.output, req.width, req.height), None
+    if op == "blur_region":
+        if not req.width or not req.height:
+            raise ValueError("blur-region requires width and height")
+        return commands.build_blur_region_args(
+            req.input, req.output, req.x, req.y, req.width, req.height, sigma=req.sigma
+        ), None
     if op == "blur_pad":
         if not req.width or not req.height:
             raise ValueError("blur-pad requires width and height")
