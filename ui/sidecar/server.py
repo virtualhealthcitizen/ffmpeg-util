@@ -958,6 +958,28 @@ def remux(req: RemuxReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class PreviewClipReq(BaseModel):
+    input: str
+    output: str
+    seconds: float = 5.0
+    width: int = 320
+    overwrite: bool = True
+
+
+@app.post("/preview-clip")
+def preview_clip_op(req: PreviewClipReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_preview_clip_args(
+            req.input, req.output, seconds=req.seconds, width=req.width,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1043,6 +1065,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
     op = req.op
     if op == "remux":
         return commands.build_remux_args(req.input, req.output), None
+    if op == "preview_clip":
+        return commands.build_preview_clip_args(
+            req.input, req.output, seconds=req.seconds, width=req.width or 320
+        ), None
     if op == "waveform":
         return commands.build_waveform_args(
             req.input, req.output, req.width or 1000, req.height or 200
@@ -1194,6 +1220,9 @@ def _expected_output_duration(
     if op == "image_to_video":
         # A still image has no input duration; the output runs for `seconds`.
         return seconds
+    if op == "preview_clip":
+        s = seconds if seconds is not None else 5.0
+        return min(total, s) if total else s
     if not total:
         return total
     if op == "speed" and factor:

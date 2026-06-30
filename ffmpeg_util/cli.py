@@ -347,6 +347,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output", help="Output file; extension sets the container (e.g. .mp4, .mkv).")
     _add_global_flags(p)
 
+    # preview-clip
+    p = sub.add_parser("preview-clip", help="Export a short downscaled preview (first N seconds).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument("--seconds", type=float, default=5.0, help="Clip duration in seconds (default 5).")
+    p.add_argument("--width", type=int, default=320,
+                   help="Output width in pixels, height scales automatically (default 320).")
+    _add_global_flags(p)
+
     # compress
     p = sub.add_parser("compress", help="Compress and/or resize a video.")
     p.add_argument("input")
@@ -587,6 +596,12 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "remux":
         runner.run_ffmpeg(commands.build_remux_args(args.input, args.output))
+        return 0
+
+    if args.command == "preview-clip":
+        runner.run_ffmpeg(commands.build_preview_clip_args(
+            args.input, args.output, seconds=args.seconds, width=args.width,
+        ))
         return 0
 
     if args.command == "compress":

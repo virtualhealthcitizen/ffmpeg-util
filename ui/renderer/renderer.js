@@ -2001,6 +2001,17 @@ $("#run-remux").addEventListener("click", () => {
   });
 });
 
+$("#run-preview_clip").addEventListener("click", () => {
+  if (!requireFields("preview_clip-input", "preview_clip-output")) return;
+  run("Exporting preview", "preview_clip", {
+    input: val("preview_clip-input"),
+    output: val("preview_clip-output"),
+    seconds: numOrNull("preview_clip-seconds") ?? 5,
+    width: numOrNull("preview_clip-width") ?? 320,
+    overwrite: true,
+  });
+});
+
 // --- Sliders with live readouts ---
 // Sync all sliders from their paired number inputs (called after preset load).
 function refreshSliders() {

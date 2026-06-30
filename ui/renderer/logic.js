@@ -81,6 +81,7 @@
     autocrop: { tag: "autocrop" },
     trim_silence: { tag: "trimmed" },
     remux: { tag: "remux" },
+    preview_clip: { tag: "preview" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -292,6 +293,7 @@
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
     trim_silence: "silence strip trim audio ends start trailing leading remove quiet padding",
     remux: "container format change mkv mp4 mov avi webm repackage rewrap copy codec",
+    preview_clip: "short preview sample quick look downscale first seconds thumbnail clip small",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -302,7 +304,7 @@
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
     { name: "Convert", tabs: ["convert", "remux"] },
-    { name: "Trim & Frames", tabs: ["trim", "thumbnail", "frames", "scene_thumbs", "gif"] },
+    { name: "Trim & Frames", tabs: ["trim", "preview_clip", "thumbnail", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
@@ -379,6 +381,7 @@
     autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
     trim_silence: "Strip leading and trailing silence (silenceremove). Example: Threshold -50 dB, Min 0.5s removes quiet pads from recordings.",
     remux: "Change the container without re-encoding (-c copy). Example: in.mkv → in.mp4 — fast and lossless when the codecs are container-compatible.",
+    preview_clip: "Export the first N seconds at a reduced width — quick sanity-check for long recordings. Example: 5 s · 320 px wide.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
@@ -810,6 +813,9 @@
       if (isFinite(count) && count >= 1) out = inDur * count;
     } else if (tab === "boomerang") {
       out = inDur * 2;
+    } else if (tab === "preview_clip") {
+      const secs = Number(f.seconds);
+      if (isFinite(secs) && secs > 0) out = Math.min(inDur, secs);
     } else {
       return null;
     }
@@ -1338,6 +1344,9 @@
     // Trim silence
     "trim_silence-threshold":    "Audio below this level is treated as silence. -50 dB is a safe default; try -40 for noisy rooms, -60 for very quiet pads.",
     "trim_silence-min-duration": "Minimum run of silence (seconds) before it is removed. 0.5 trims any half-second or longer quiet section.",
+    // Preview clip
+    "preview_clip-seconds": "How many seconds to keep from the start of the file. Example: 5 for a 5-second preview; 30 for a 30-second sample.",
+    "preview_clip-width":   "Output width in pixels; height scales proportionally (rounded to even). Example: 320 for a small preview, 640 for medium.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.
