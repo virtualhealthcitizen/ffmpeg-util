@@ -1501,8 +1501,8 @@ test("TOOL_ALIASES has scene detection keywords for scene_thumbs", () => {
 });
 
 test("fieldTooltip returns non-empty blurbs for scene_thumbs fields", () => {
-  assert.ok(L.fieldTooltip("scene-thumbs-threshold").length > 0);
-  assert.ok(L.fieldTooltip("scene-thumbs-width").length > 0);
+  assert.ok(L.fieldTooltip("scene_thumbs-threshold").length > 0);
+  assert.ok(L.fieldTooltip("scene_thumbs-width").length > 0);
 });
 
 test("stabilize is in OUTPUT_SPECS with tag 'stable'", () => {

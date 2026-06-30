@@ -1955,12 +1955,12 @@ $("#run-frames").addEventListener("click", () => {
 });
 
 $("#run-scene-thumbs").addEventListener("click", () => {
-  if (!requireFields("scene-thumbs-input", "scene-thumbs-output")) return;
+  if (!requireFields("scene_thumbs-input", "scene_thumbs-output")) return;
   run("Extracting scene thumbnails", "scene_thumbs", {
-    input: val("scene-thumbs-input"),
-    output: val("scene-thumbs-output"),
-    threshold: numOrNull("scene-thumbs-threshold") ?? 0.3,
-    width: numOrNull("scene-thumbs-width") || null,
+    input: val("scene_thumbs-input"),
+    output: val("scene_thumbs-output"),
+    threshold: numOrNull("scene_thumbs-threshold") ?? 0.3,
+    width: numOrNull("scene_thumbs-width") || null,
     overwrite: true,
   });
 });
