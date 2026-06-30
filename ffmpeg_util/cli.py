@@ -419,6 +419,18 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Text opacity 0.0–1.0 (default 1.0, fully opaque).")
     _add_global_flags(p)
 
+    # pip (picture-in-picture)
+    p = sub.add_parser("pip", help="Overlay a smaller picture-in-picture video onto a base clip.")
+    p.add_argument("input", help="Base (background) video.")
+    p.add_argument("output")
+    p.add_argument("--overlay", required=True, help="The smaller overlay video.")
+    p.add_argument("--size", type=int, default=25,
+                   help="Overlay size as %% of base width (5–75; default 25).")
+    p.add_argument("--position", default="bottom-right",
+                   choices=["top-left", "top-right", "bottom-left", "bottom-right"],
+                   help="Corner to place the overlay (default bottom-right).")
+    _add_global_flags(p)
+
     # hardsub
     p = sub.add_parser("hardsub", help="Burn subtitle text into a video (hardsub).")
     p.add_argument("input")
@@ -726,6 +738,13 @@ def _dispatch(args: argparse.Namespace) -> int:
             args.input, args.output,
             text=args.text, font_size=args.font_size,
             position=args.position, color=args.color, opacity=args.opacity,
+        ))
+        return 0
+
+    if args.command == "pip":
+        runner.run_ffmpeg(commands.build_pip_args(
+            args.input, args.overlay, args.output,
+            size_pct=args.size, position=args.position,
         ))
         return 0
 

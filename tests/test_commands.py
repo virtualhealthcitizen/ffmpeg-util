@@ -1068,3 +1068,40 @@ def test_build_hardsub_args_escapes_colon_in_path():
     vf_idx = args.index("-vf")
     vf = args[vf_idx + 1]
     assert "\\:" in vf
+
+
+def test_build_pip_args_two_inputs():
+    args = c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4")
+    assert args.count("-i") == 2
+    assert args[args.index("-i") + 1] == "base.mp4"
+    assert "overlay.mp4" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_build_pip_args_filter_complex():
+    args = c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4", size_pct=30, position="top-left")
+    fc = args[args.index("-filter_complex") + 1]
+    assert "scale=iw*30/100:-2[ov]" in fc
+    assert "overlay=10:10" in fc
+
+
+def test_build_pip_args_bottom_right():
+    args = c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4", position="bottom-right")
+    fc = args[args.index("-filter_complex") + 1]
+    assert "overlay=W-w-10:H-h-10" in fc
+
+
+def test_build_pip_args_invalid_position():
+    with pytest.raises(ValueError, match="position must be"):
+        c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4", position="center")
+
+
+def test_build_pip_args_invalid_size():
+    with pytest.raises(ValueError, match="size_pct"):
+        c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4", size_pct=80)
+
+
+def test_build_pip_args_keeps_base_audio():
+    args = c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4")
+    assert "-map" in args
+    assert "0:a?" in args

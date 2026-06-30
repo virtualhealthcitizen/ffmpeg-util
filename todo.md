@@ -106,7 +106,7 @@ Packaging / tests:
       (`/replace-audio` + `/run/stream` op `replace_audio`), Replace audio tab.
       Verified E2E: swap in a 22050 Hz track -> output audio is 22050 Hz, video
       stream-copied unchanged (320x240 h264). (mix/strip still open; strip = `mute`.)
-- [x] Subtitles: burn-in (hardsub) — core `build_hardsub_args` (`subtitles=` filter, Windows path escaping), CLI `hardsub --subtitle`, sidecar (`/hardsub` + `/run/stream` op `hardsub`), Hardsub tab (Video FX, after Watermark). Verified E2E: 169 root pytest + 104 sidecar pytest + 190 node:test + smoke 5/5 (49 nav tabs). ← next
+- [x] Subtitles: burn-in (hardsub) — core `build_hardsub_args` (`subtitles=` filter, Windows path escaping), CLI `hardsub --subtitle`, sidecar (`/hardsub` + `/run/stream` op `hardsub`), Hardsub tab (Video FX, after Watermark). Verified E2E: 169 root pytest + 104 sidecar pytest + 190 node:test + smoke 5/5 (49 nav tabs).
 - [x] Watermark / text overlay (drawtext text= with position/opacity/color/font-size) — core `build_watermark_args`, CLI `watermark`, sidecar (`/watermark` + `/run/stream` op `watermark`), Watermark tab (Video FX, after Timecode). Verified E2E: 185 node:test + 164 root pytest + 101 sidecar pytest + smoke 5/5 (48 nav tabs).
       **Bug fix (hunt):** `watermark` was never registered as a CLI subcommand — `build_parser()` had no `add_parser("watermark", …)` entry and `_dispatch()` had no matching branch, so `ffmpeg-util watermark …` failed with "invalid choice: watermark" and the renderer's "Copy as CLI" produced a non-functional command. Fixed by adding the `watermark` subparser (`--text`, `--font-size`, `--position`, `--color`, `--opacity`) and dispatch case; 1 new CLI dry-run regression test. 165 root + 101 sidecar + 185 node:test + smoke 5/5 green.
 - [x] Image → video: loop a still image into a fixed-length clip — core
@@ -269,7 +269,7 @@ Packaging / tests:
       `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
-- [ ] Picture-in-picture overlay
+- [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs). ← next
 - [ ] Still image → video (image + duration, optional audio)
 - [x] Replace the audio track with an external audio file (see `replace-audio` above)
 - [ ] Set / clear metadata title

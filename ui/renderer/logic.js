@@ -77,6 +77,7 @@
     hstack: { tag: "hstack" },
     vstack: { tag: "vstack" },
     xfade_concat: { tag: "xfade" },
+    pip: { tag: "pip" },
     blur_region: { tag: "blurred" },
     blur_pad: { tag: "blurpad" },
     image_to_video: { tag: "clip", ext: ".mp4" },
@@ -314,6 +315,7 @@
     hstack: "side by side horizontal compare two videos",
     vstack: "stacked vertical top bottom two videos",
     xfade_concat: "crossfade transition join blend two clips fade wipe slide dissolve",
+    pip: "picture in picture overlay corner inset insert small video over base",
     blur_region: "blur region area face censor pixelate rectangle mosaic privacy redact",
     blur_pad: "blurred fill background letterbox frame fit no bars",
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
@@ -341,7 +343,7 @@
     { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "hardsub", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
-    { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat"] },
+    { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat", "pip"] },
     { name: "Metadata", tabs: ["title"] },
   ];
 
@@ -410,6 +412,7 @@
     hstack: "Place two videos side by side (equal heights). Output width is the sum of both.",
     vstack: "Stack two videos top-and-bottom (equal widths). Output height is the sum of both.",
     xfade_concat: "Crossfade-concatenate two clips with a smooth transition. Example: Fade + 1s blends the end of clip 1 into the start of clip 2.",
+    pip: "Overlay a smaller video in a corner of the base clip. Example: 25% size at bottom-right for a classic picture-in-picture.",
     blur_region: "Blur a rectangle within the video — blur faces, plates, or sensitive text. Example: X=40 Y=10 W=80 H=60 blurs the top-left corner region.",
     blur_pad: "Pad to a target frame, filling the bars with a blurred copy of the video (no solid bars). Example: 320×240 → 480×480.",
     image_to_video: "Loop a still image into a fixed-length clip. Example: photo.png + Seconds 3 → a 3s video.",
@@ -1120,6 +1123,7 @@
     transform: "op", // Transform tab sends `transform`; the CLI flag is --op
     target_i: "target", // Loudnorm sends `target_i`; the CLI flag is --target
     threshold_db: "threshold", // Trim-silence sends `threshold_db`; the CLI flag is --threshold
+    pip_size: "size", // PiP tab sends `pip_size`; the CLI flag is --size
   };
   // Body keys that aren't CLI options (positionals or transport-only).
   const CLI_SKIP_KEYS = new Set(["input", "output", "inputs", "overwrite", "op"]);
@@ -1224,6 +1228,7 @@
     { id: "trim_silence-min-duration",  min: 0.1, max: 3.0, step: 0.1, def: 0.5,  unit: "s" },
     { id: "stabilize-shakiness",        min: 1,   max: 10,  step: 1,   def: 5,    unit: "" },
     { id: "stabilize-smoothing",        min: 1,   max: 50,  step: 1,   def: 10,   unit: "" },
+    { id: "pip-size",                   min: 5,   max: 75,  step: 5,   def: 25,   unit: "%" },
   ];
 
   // Format a (already-valid, finite) slider value for its live readout label.
@@ -1339,6 +1344,14 @@
         .map((p) => String(p || "").trim())
         .filter(Boolean)
         .map((p) => [p, fieldId]);
+    }
+    if (tab === "pip") {
+      const entries = [];
+      const base = String(b.input || "").trim();
+      if (base) entries.push([base, "pip-input"]);
+      const ov = String(b.overlay || "").trim();
+      if (ov) entries.push([ov, "pip-overlay"]);
+      return entries;
     }
     if (tab === "replace_audio") {
       const entries = [];
@@ -1520,6 +1533,9 @@
     // Stabilize
     "stabilize-shakiness": "Motion detection aggressiveness 1–10: 1 = barely moving, 5 = normal handheld, 8–10 = very shaky or running footage.",
     "stabilize-smoothing": "Smoothing window in frames: higher = steadier result but crops more edge pixels. 10 suits walking shots; 30–50 for very bumpy footage.",
+    // Picture in picture
+    "pip-size":     "Size of the overlay as a percentage of the base video's width (5–75). Example: 25 makes the overlay one quarter of the base width.",
+    "pip-position": "Which corner to place the overlay. Bottom-right is the classic PiP position.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.

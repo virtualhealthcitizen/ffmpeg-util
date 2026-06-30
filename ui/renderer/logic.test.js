@@ -1135,7 +1135,7 @@ const NAV_TABS = [
   "convert", "trim", "trim_pct", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
-  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "blur_pad",
+  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "pip", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
   "stabilize", "watermark", "hardsub",
 ];
@@ -1701,4 +1701,47 @@ test("hardsub: buildCliCommand produces correct command", () => {
   assert.ok(cmd.startsWith("ffmpeg-util hardsub"), "should start with ffmpeg-util hardsub");
   assert.ok(cmd.includes("--subtitle"), "should include --subtitle flag");
   assert.ok(cmd.includes("movie.srt"), "should include subtitle path");
+});
+
+test("pip: OUTPUT_SPECS has pip tag", () => {
+  assert.ok(L.OUTPUT_SPECS.pip, "pip should be in OUTPUT_SPECS");
+  assert.equal(L.OUTPUT_SPECS.pip.tag, "pip");
+});
+
+test("pip: TOOL_CATEGORIES includes pip in Combine", () => {
+  const combine = L.TOOL_CATEGORIES.find((c) => c.name === "Combine");
+  assert.ok(combine, "Combine category should exist");
+  assert.ok(combine.tabs.includes("pip"), "pip should be in Combine");
+});
+
+test("pip: helpForTab returns non-empty string", () => {
+  const h = L.helpForTab("pip");
+  assert.ok(typeof h === "string" && h.length > 0, "pip should have help text");
+});
+
+test("pip: runInputEntries returns both input and overlay entries", () => {
+  const entries = L.runInputEntries("pip", {
+    input: "/videos/base.mp4",
+    overlay: "/videos/overlay.mp4",
+    output: "/out/pip.mp4",
+  });
+  const fields = entries.map(([, id]) => id);
+  assert.ok(fields.includes("pip-input"), "should include pip-input field");
+  assert.ok(fields.includes("pip-overlay"), "should include pip-overlay field");
+});
+
+test("pip: buildCliCommand maps pip_size to --size flag", () => {
+  const cmd = L.buildCliCommand("pip", {
+    input: "base.mp4",
+    overlay: "ov.mp4",
+    output: "out.mp4",
+    pip_size: 30,
+    position: "top-right",
+    overwrite: true,
+  });
+  assert.ok(cmd.startsWith("ffmpeg-util pip"), "should start with ffmpeg-util pip");
+  assert.ok(cmd.includes("--size"), "pip_size should map to --size");
+  assert.ok(cmd.includes("30"), "size value should appear");
+  assert.ok(cmd.includes("--overlay"), "overlay path should use --overlay flag");
+  assert.ok(cmd.includes("--position"), "position should appear");
 });
