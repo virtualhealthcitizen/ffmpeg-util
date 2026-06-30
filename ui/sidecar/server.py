@@ -1172,7 +1172,7 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_trim_pct_args(
             req.input, req.output,
             start_pct=req.start_pct, end_pct=req.end_pct,
-            duration_s=total,
+            duration_s=total, reencode=req.reencode,
         ), None
     if op == "poster_frame":
         return commands.build_poster_frame_args(

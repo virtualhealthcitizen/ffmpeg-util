@@ -290,6 +290,7 @@ Packaging / tests:
 - [x] Extract a poster frame at a percentage of the duration — `build_poster_frame_args` (core), CLI `poster-frame --percent`, sidecar (`/poster-frame` + `/run/stream` op `poster_frame`), Poster frame tab (Trim & Frames). Verified E2E: 6/6 (tab+panel present, 3s clip at 50% → PNG output, "Done" status); 134 core + 88 sidecar + 157 node:test + smoke 5/5 (43 tabs).
 - [ ] Two-up compare grid (input vs output, hstack)
 - [x] Trim by percentage (e.g. middle 50%) — core `build_trim_pct_args` (duration-based timestamps), CLI `trim-pct --start-pct/--end-pct`, sidecar (`/trim-pct` + `/run/stream` op `trim_pct`), Trim % tab. Verified: 142 core + 91 sidecar + 159 node:test + E2E smoke 5/5 (44 tabs).
+      **Bug fix (hunt):** `_build_op_args` in server.py built `trim_pct` args without forwarding `reencode=req.reencode`, so the "Re-encode (frame-accurate)" checkbox in the UI was silently ignored on the streaming path — the operation always used stream-copy regardless. Fixed by adding `reencode=req.reencode` to the `trim_pct` branch; 1 new regression test (`test_run_stream_trim_pct_reencode`); 143 core + 93 sidecar + 160 node:test + smoke 5/5 green.
 - [ ] Add chapters from a list
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [x] Auto-orient from rotation metadata, then strip it — core `build_autorotate_args` (-vf null forces decode-through-filter-graph applying the display matrix; -metadata:s:v:0 rotate=0 strips the tag), CLI `auto-orient`, sidecar (`/autorotate` + `/run/stream` op `auto_orient`), Auto-orient tab (Video FX). Verified E2E: 143 core + 92 sidecar + 160 node:test + smoke 5/5 (45 tabs). ← next
@@ -297,7 +298,7 @@ Packaging / tests:
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [x] Change container only (remux, `-c copy`) — core `build_remux_args`, CLI `remux`, sidecar
       (`/remux` + `/run/stream` op `remux`), Remux tab (Convert category). Verified E2E: 119 core
-      + 79 sidecar + 142 logic:test + E2E smoke 5/5 (39 nav tabs). ← next
+      + 79 sidecar + 142 logic:test + E2E smoke 5/5 (39 nav tabs).
 
 ### UI/UX components (round 7) — specialized components to ease individual tools
 > Theme: the app now has ~30 near-identical "input / output / fields / run" tabs in
