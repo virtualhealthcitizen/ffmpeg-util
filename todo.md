@@ -277,7 +277,7 @@ Packaging / tests:
       **Bug fix (hunt):** `stop_periods=-1` removed ALL silence (including internal pauses), not just
       leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
       matching the documented "trim leading and trailing silence" behavior.
-- [x] Blur or pixelate a region — core `build_blur_region_args` (split/crop/gblur/overlay filter_complex), CLI `blur-region`, sidecar (`/blur-region` + `/run/stream` op `blur_region`), Blur region tab (Video FX category). Verified E2E: 320x240 clip → output unchanged at 320x240 with blurred 80×60 region at (40,20); tab/panel/all fields present (8/8 checks); pytest 129 root + 85 sidecar; node:test 157. ← next
+- [x] Blur or pixelate a region — core `build_blur_region_args` (split/crop/gblur/overlay filter_complex), CLI `blur-region`, sidecar (`/blur-region` + `/run/stream` op `blur_region`), Blur region tab (Video FX category). Verified E2E: 320x240 clip → output unchanged at 320x240 with blurred 80×60 region at (40,20); tab/panel/all fields present (8/8 checks); pytest 129 root + 85 sidecar; node:test 157.
 - [ ] Crossfade-concatenate two clips (`xfade`)
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
@@ -287,7 +287,7 @@ Packaging / tests:
 
 ### More ideas (round 6)
 - [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.
-- [ ] Extract a poster frame at a percentage of the duration
+- [x] Extract a poster frame at a percentage of the duration — `build_poster_frame_args` (core), CLI `poster-frame --percent`, sidecar (`/poster-frame` + `/run/stream` op `poster_frame`), Poster frame tab (Trim & Frames). Verified E2E: 6/6 (tab+panel present, 3s clip at 50% → PNG output, "Done" status); 134 core + 88 sidecar + 157 node:test + smoke 5/5 (43 tabs). ← next
 - [ ] Two-up compare grid (input vs output, hstack)
 - [ ] Trim by percentage (e.g. middle 50%)
 - [ ] Add chapters from a list

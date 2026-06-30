@@ -1007,6 +1007,29 @@ def preview_clip_op(req: PreviewClipReq, _: None = Depends(require_token)) -> di
     return {"output": req.output}
 
 
+class PosterFrameReq(BaseModel):
+    input: str
+    output: str
+    percent: float = 10.0
+    width: int | None = None
+    overwrite: bool = True
+
+
+@app.post("/poster-frame")
+def poster_frame_op(req: PosterFrameReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        dur = commands.probe_duration(runner, req.input)
+        runner.run_ffmpeg(commands.build_poster_frame_args(
+            req.input, req.output, percent=req.percent, duration_s=dur, width=req.width,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1085,6 +1108,8 @@ class RunReq(BaseModel):
     target_size: float | None = None
     height: int | None = None
     preset: str = "medium"
+    # poster-frame
+    percent: float = 10.0
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1092,6 +1117,10 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
     op = req.op
     if op == "remux":
         return commands.build_remux_args(req.input, req.output), None
+    if op == "poster_frame":
+        return commands.build_poster_frame_args(
+            req.input, req.output, percent=req.percent, duration_s=total, width=req.width,
+        ), None
     if op == "preview_clip":
         return commands.build_preview_clip_args(
             req.input, req.output, seconds=req.seconds, width=req.width or 320

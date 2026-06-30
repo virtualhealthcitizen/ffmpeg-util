@@ -1317,3 +1317,42 @@ def test_run_stream_preview_clip(client, media, auth):
     done = [e for e in events if e.get("type") == "done"]
     assert done and done[0]["output"] == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_poster_frame(client, media, auth):
+    d, src = media
+    out = d / "poster.png"
+    r = client.post(
+        "/poster-frame",
+        json={"input": str(src), "output": str(out), "percent": 50.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_poster_frame_rejects_bad_percent(client, media, auth):
+    d, src = media
+    out = d / "bad_poster.png"
+    r = client.post(
+        "/poster-frame",
+        json={"input": str(src), "output": str(out), "percent": 150.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
+def test_run_stream_poster_frame(client, media, auth):
+    d, src = media
+    out = d / "poster_stream.png"
+    r = client.post(
+        "/run/stream",
+        json={"op": "poster_frame", "input": str(src), "output": str(out),
+              "percent": 25.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    done = [e for e in events if e.get("type") == "done"]
+    assert done and done[0]["output"] == str(out)
+    assert out.exists() and out.stat().st_size > 0

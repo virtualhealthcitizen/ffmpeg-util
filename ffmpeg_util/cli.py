@@ -68,6 +68,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--width", type=int, help="Scale width (keeps aspect).")
     _add_global_flags(p)
 
+    # poster-frame
+    p = sub.add_parser("poster-frame", help="Extract a single frame at a percentage of the duration.")
+    p.add_argument("input")
+    p.add_argument("output", help="Output image (e.g. poster.png).")
+    p.add_argument("--percent", type=float, default=10.0,
+                   help="Position as %% of total duration (default 10).")
+    p.add_argument("--width", type=int, help="Scale width in pixels (keeps aspect).")
+    _add_global_flags(p)
+
     # waveform
     p = sub.add_parser("waveform", help="Render the audio waveform as an image.")
     p.add_argument("input")
@@ -436,6 +445,12 @@ def _dispatch(args: argparse.Namespace) -> int:
             time=args.time, count=args.count, width=args.width,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "poster-frame":
+        runner.run_ffmpeg(commands.build_poster_frame_args(
+            args.input, args.output, percent=args.percent, width=args.width,
+        ))
         return 0
 
     if args.command == "waveform":

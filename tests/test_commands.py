@@ -789,3 +789,36 @@ def test_build_preview_clip_args_rejects_bad_seconds():
 def test_build_preview_clip_args_rejects_bad_width():
     with pytest.raises(ValueError, match="width"):
         c.build_preview_clip_args("in.mp4", "out.mp4", width=0)
+
+
+def test_build_poster_frame_args_percent_syntax():
+    # Without duration_s, ffmpeg receives the raw "<pct>%" string.
+    args = c.build_poster_frame_args("in.mp4", "out.png", percent=50.0)
+    assert args[args.index("-ss") + 1] == "50.0%"
+    assert "-frames:v" in args
+    assert args[args.index("-frames:v") + 1] == "1"
+    assert args[-1] == "out.png"
+
+
+def test_build_poster_frame_args_with_duration():
+    # With duration_s=10, percent=25 → timestamp = 2.5 s.
+    args = c.build_poster_frame_args("in.mp4", "out.png", percent=25.0, duration_s=10.0)
+    assert args[args.index("-ss") + 1] == "2.5"
+
+
+def test_build_poster_frame_args_with_width():
+    args = c.build_poster_frame_args("in.mp4", "out.png", percent=10.0, width=640)
+    assert "-vf" in args
+    assert "scale=640:-1" in args[args.index("-vf") + 1]
+
+
+def test_build_poster_frame_args_rejects_bad_percent():
+    with pytest.raises(ValueError, match="percent"):
+        c.build_poster_frame_args("in.mp4", "out.png", percent=-1)
+    with pytest.raises(ValueError, match="percent"):
+        c.build_poster_frame_args("in.mp4", "out.png", percent=101)
+
+
+def test_build_poster_frame_args_rejects_bad_duration():
+    with pytest.raises(ValueError, match="duration"):
+        c.build_poster_frame_args("in.mp4", "out.png", duration_s=0)
