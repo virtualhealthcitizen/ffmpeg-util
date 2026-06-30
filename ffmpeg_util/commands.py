@@ -634,6 +634,28 @@ def build_loop_args(input_path: str, output_path: str, count: int) -> list[str]:
     return ["-stream_loop", str(count - 1), "-i", input_path, "-c", "copy", output_path]
 
 
+def build_blur_region_args(
+    input_path: str, output_path: str, x: int, y: int, w: int, h: int, *, sigma: float = 10
+) -> list[str]:
+    """Build args to blur a rectangular region of the video using a Gaussian blur.
+
+    Splits the video, crops the region, blurs it, then composites it back at
+    the original position. Audio is stream-copied.
+    """
+    if w < 1 or h < 1:
+        raise ValueError("blur-region width and height must be >= 1")
+    if x < 0 or y < 0:
+        raise ValueError("blur-region x and y must be >= 0")
+    if sigma <= 0:
+        raise ValueError("blur-region sigma must be > 0")
+    fc = (
+        f"[0:v]split=2[main][tmp];"
+        f"[tmp]crop={w}:{h}:{x}:{y},gblur=sigma={sigma}[blurred];"
+        f"[main][blurred]overlay={x}:{y}[v]"
+    )
+    return ["-i", input_path, "-filter_complex", fc, "-map", "[v]", "-map", "0:a?", "-c:a", "copy", output_path]
+
+
 def build_blur_pad_args(
     input_path: str, output_path: str, width: int, height: int, sigma: float = 20
 ) -> list[str]:

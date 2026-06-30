@@ -395,6 +395,27 @@ def test_loop_args_reject_zero():
         c.build_loop_args("in.mp4", "out.mp4", 0)
 
 
+def test_blur_region_args_build_filter():
+    args = c.build_blur_region_args("in.mp4", "out.mp4", 10, 20, 80, 60, sigma=15)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "split=2[main][tmp]" in fc
+    assert "crop=80:60:10:20" in fc
+    assert "gblur=sigma=15" in fc
+    assert "overlay=10:20[v]" in fc
+    assert args[args.index("-map") + 1] == "[v]"
+    assert "-c:a" in args
+    assert "copy" in args
+
+
+def test_blur_region_args_reject_bad_values():
+    with pytest.raises(ValueError):
+        c.build_blur_region_args("in.mp4", "out.mp4", 0, 0, 0, 60)  # w=0
+    with pytest.raises(ValueError):
+        c.build_blur_region_args("in.mp4", "out.mp4", -1, 0, 80, 60)  # x<0
+    with pytest.raises(ValueError):
+        c.build_blur_region_args("in.mp4", "out.mp4", 0, 0, 80, 60, sigma=0)  # sigma<=0
+
+
 def test_blur_pad_args_build_filter():
     args = c.build_blur_pad_args("in.mp4", "out.mp4", 1080, 1920, sigma=15)
     fc = args[args.index("-filter_complex") + 1]
