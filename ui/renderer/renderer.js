@@ -521,6 +521,8 @@ function estimateFields(tab) {
   if (tab === "loop") return { count: v("loop-count") };
   if (tab === "boomerang") return {};
   if (tab === "compress") return { bitrate: v("compress-bitrate"), target: v("compress-target"), crf: v("compress-crf") };
+  if (tab === "preview_clip") return { seconds: v("preview_clip-seconds") };
+  if (tab === "trim_pct") return { "start-pct": v("trim_pct-start-pct"), "end-pct": v("trim_pct-end-pct") };
   return null;
 }
 
@@ -544,7 +546,7 @@ function refreshEstimate() {
 document.addEventListener("input", (e) => {
   const id = e.target && e.target.id;
   if (!id) return;
-  if (/^(trim-(start|end|duration)|speed-factor|loop-count|compress-(bitrate|target|crf))$/.test(id)) {
+  if (/^(trim-(start|end|duration)|speed-factor|loop-count|compress-(bitrate|target|crf)|preview_clip-seconds|trim_pct-(start|end)-pct)$/.test(id)) {
     refreshEstimate();
   }
 });

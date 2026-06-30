@@ -428,6 +428,14 @@ Make the probe data actionable (the source card is read-only today):
       `logic.js`, fed by the probed source duration. Verified: node:test (5 new) +
       headless Electron E2E vs the real sidecar (2s clip → speed 2× ~0:01, loop ×3
       ~0:06, trim dur 1 ~0:01, compress target 5 → ~5.0 MB, CRF-only/convert hidden).
+      **Bug fix (hunt):** `estimateFields(tab)` in `renderer.js` returned `null` for
+      `preview_clip` and `trim_pct` (the two newest tabs), and the live-refresh input
+      listener regex didn't cover their fields — so the "Estimated output: ~…" readout
+      never appeared on those tabs despite `logic.js` having correct `estimateOutput`
+      logic and passing unit tests. Fixed by adding two cases to `estimateFields` and
+      extending the listener regex to include `preview_clip-seconds`,
+      `trim_pct-start-pct`, `trim_pct-end-pct`. node:test 159/159 + headless E2E
+      smoke green. ← next
 
 Direct manipulation on the embedded source player (it's already there):
 - [x] **Scrub-to-set-time** — a "Set from playhead:" button row under the source
