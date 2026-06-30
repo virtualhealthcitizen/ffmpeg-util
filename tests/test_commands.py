@@ -917,3 +917,57 @@ def test_build_trim_pct_args_requires_duration():
 def test_build_trim_pct_args_rejects_bad_duration():
     with pytest.raises(ValueError, match="duration_s must be positive"):
         c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=50.0, duration_s=0)
+
+
+def test_build_vidstab_detect_args_defaults():
+    args = c.build_vidstab_detect_args("in.mp4", "out.trf")
+    assert args[args.index("-i") + 1] == "in.mp4"
+    vf = args[args.index("-vf") + 1]
+    assert "vidstabdetect" in vf
+    assert "shakiness=5" in vf
+    assert "accuracy=15" in vf
+    assert "out.trf" in vf
+    assert args[-1] == "-"
+
+
+def test_build_vidstab_detect_args_custom():
+    args = c.build_vidstab_detect_args("in.mp4", "t.trf", shakiness=8, accuracy=10)
+    vf = args[args.index("-vf") + 1]
+    assert "shakiness=8" in vf
+    assert "accuracy=10" in vf
+
+
+def test_build_vidstab_detect_args_rejects_bad_shakiness():
+    with pytest.raises(ValueError, match="shakiness"):
+        c.build_vidstab_detect_args("in.mp4", "t.trf", shakiness=0)
+    with pytest.raises(ValueError, match="shakiness"):
+        c.build_vidstab_detect_args("in.mp4", "t.trf", shakiness=11)
+
+
+def test_build_vidstab_detect_args_rejects_bad_accuracy():
+    with pytest.raises(ValueError, match="accuracy"):
+        c.build_vidstab_detect_args("in.mp4", "t.trf", accuracy=0)
+    with pytest.raises(ValueError, match="accuracy"):
+        c.build_vidstab_detect_args("in.mp4", "t.trf", accuracy=16)
+
+
+def test_build_vidstab_transform_args_defaults():
+    args = c.build_vidstab_transform_args("in.mp4", "out.mp4", "t.trf")
+    assert args[args.index("-i") + 1] == "in.mp4"
+    vf = args[args.index("-vf") + 1]
+    assert "vidstabtransform" in vf
+    assert "smoothing=10" in vf
+    assert "t.trf" in vf
+    assert "unsharp" in vf
+    assert args[-1] == "out.mp4"
+
+
+def test_build_vidstab_transform_args_custom_smoothing():
+    args = c.build_vidstab_transform_args("in.mp4", "out.mp4", "t.trf", smoothing=25)
+    vf = args[args.index("-vf") + 1]
+    assert "smoothing=25" in vf
+
+
+def test_build_vidstab_transform_args_rejects_bad_smoothing():
+    with pytest.raises(ValueError, match="smoothing"):
+        c.build_vidstab_transform_args("in.mp4", "out.mp4", "t.trf", smoothing=0)

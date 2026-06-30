@@ -1146,6 +1146,79 @@ def build_autorotate_args(input_path: str, output_path: str) -> list[str]:
     ]
 
 
+def build_vidstab_detect_args(
+    input_path: str, trf_name: str, *, shakiness: int = 5, accuracy: int = 15
+) -> list[str]:
+    """Pass 1 of vidstab: analyse motion and write transform data.
+
+    ``trf_name`` must be a bare filename (no directory separators or drive
+    letter) so that ffmpeg's filter-option parser doesn't mis-interpret a
+    Windows drive colon as an option delimiter. The caller is responsible for
+    running ffmpeg with ``cwd`` set to the directory that should contain the
+    trf file.
+    """
+    if not 1 <= shakiness <= 10:
+        raise ValueError("shakiness must be 1–10")
+    if not 1 <= accuracy <= 15:
+        raise ValueError("accuracy must be 1–15")
+    return [
+        "-i", input_path,
+        "-vf", f"vidstabdetect=shakiness={shakiness}:accuracy={accuracy}:result={trf_name}",
+        "-f", "null", "-",
+    ]
+
+
+def build_vidstab_transform_args(
+    input_path: str, output_path: str, trf_name: str, *, smoothing: int = 10
+) -> list[str]:
+    """Pass 2 of vidstab: apply stabilization from trf_name and sharpen slightly.
+
+    Like :func:`build_vidstab_detect_args`, ``trf_name`` must be a bare
+    filename; run ffmpeg with ``cwd`` pointing at the directory holding it.
+    """
+    if smoothing < 1:
+        raise ValueError("smoothing must be >= 1")
+    return [
+        "-i", input_path,
+        "-vf", f"vidstabtransform=input={trf_name}:smoothing={smoothing},unsharp=5:5:0.8:3:3:0.4",
+        output_path,
+    ]
+
+
+def stabilize(
+    runner: "FfmpegRunner",
+    input_path: str,
+    output_path: str,
+    *,
+    shakiness: int = 5,
+    accuracy: int = 15,
+    smoothing: int = 10,
+) -> None:
+    """Two-pass video stabilization using vidstab (detect → transform).
+
+    Creates a private temp directory as the working directory for both ffmpeg
+    passes so the trf filename used in filter options is a bare name with no
+    drive-letter colon (which ffmpeg's filter parser would mis-interpret as an
+    option separator on Windows).
+    """
+    import shutil as _shutil
+    require_output_extension(output_path)
+    require_output_dir(output_path)
+    trf_dir = tempfile.mkdtemp(prefix="ffstab_")
+    trf_name = "transforms.trf"
+    try:
+        runner.run_ffmpeg(
+            build_vidstab_detect_args(input_path, trf_name, shakiness=shakiness, accuracy=accuracy),
+            cwd=trf_dir,
+        )
+        runner.run_ffmpeg(
+            build_vidstab_transform_args(input_path, output_path, trf_name, smoothing=smoothing),
+            cwd=trf_dir,
+        )
+    finally:
+        _shutil.rmtree(trf_dir, ignore_errors=True)
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,

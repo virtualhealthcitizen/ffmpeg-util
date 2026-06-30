@@ -1137,6 +1137,7 @@ const NAV_TABS = [
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
+  "stabilize",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1153,7 +1154,7 @@ test("groupTabs orders categories, keeps tab order, and drops empty groups", () 
   assert.deepEqual(groups.map((g) => g.name), L.TOOL_CATEGORIES.map((c) => c.name));
   // within a category, the configured tab order is kept
   const fx = groups.find((g) => g.name === "Video FX");
-  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
+  assert.deepEqual(fx.tabs, ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "blur_region"]);
   // a partial set keeps only the categories that still have a visible tab
   const some = L.groupTabs(["convert", "eq", "title"], L.TOOL_CATEGORIES);
   assert.deepEqual(some.map((g) => g.name), ["Convert", "Color", "Metadata"]);
@@ -1479,4 +1480,39 @@ test("TOOL_ALIASES has scene detection keywords for scene_thumbs", () => {
 test("fieldTooltip returns non-empty blurbs for scene_thumbs fields", () => {
   assert.ok(L.fieldTooltip("scene-thumbs-threshold").length > 0);
   assert.ok(L.fieldTooltip("scene-thumbs-width").length > 0);
+});
+
+test("stabilize is in OUTPUT_SPECS with tag 'stable'", () => {
+  const spec = L.OUTPUT_SPECS["stabilize"];
+  assert.ok(spec, "stabilize must be in OUTPUT_SPECS");
+  assert.equal(spec.tag, "stable");
+});
+
+test("stabilize is in TOOL_CATEGORIES Video FX group", () => {
+  const grp = L.TOOL_CATEGORIES.find((c) => c.name === "Video FX");
+  assert.ok(grp, "Video FX category must exist");
+  assert.ok(grp.tabs.includes("stabilize"), "stabilize must be in Video FX tabs");
+});
+
+test("helpForTab returns non-empty help for stabilize", () => {
+  const h = L.helpForTab("stabilize");
+  assert.ok(h && h.length > 0, "stabilize must have a help entry");
+  assert.ok(h.includes("vidstab"), "help must mention vidstab");
+});
+
+test("TOOL_ALIASES has shake/steady keywords for stabilize", () => {
+  const alias = L.TOOL_ALIASES["stabilize"];
+  assert.ok(alias && alias.length > 0, "stabilize must have aliases");
+  assert.ok(alias.includes("shaky"), "alias must include 'shaky'");
+  assert.ok(alias.includes("smooth"), "alias must include 'smooth'");
+});
+
+test("fieldTooltip returns non-empty blurbs for stabilize fields", () => {
+  assert.ok(L.fieldTooltip("stabilize-shakiness").length > 0, "shakiness tooltip must exist");
+  assert.ok(L.fieldTooltip("stabilize-smoothing").length > 0, "smoothing tooltip must exist");
+});
+
+test("suggestOutputForTab uses 'stable' tag for stabilize", () => {
+  const out = L.suggestOutputForTab("C:\\clips\\handheld.mp4", "stabilize");
+  assert.ok(out.includes("stable"), "output path should contain 'stable' tag");
 });
