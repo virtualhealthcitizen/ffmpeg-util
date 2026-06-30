@@ -1516,3 +1516,73 @@ test("suggestOutputForTab uses 'stable' tag for stabilize", () => {
   const out = L.suggestOutputForTab("C:\\clips\\handheld.mp4", "stabilize");
   assert.ok(out.includes("stable"), "output path should contain 'stable' tag");
 });
+
+// --- validateField ---
+
+test("validateField returns null for empty or blank values (always valid)", () => {
+  assert.equal(L.validateField("compress-crf", ""), null);
+  assert.equal(L.validateField("trim-start", ""), null);
+  assert.equal(L.validateField("volume-gain", "  "), null);
+  assert.equal(L.validateField("gif-fps", ""), null);
+});
+
+test("validateField returns null for unknown field ids", () => {
+  assert.equal(L.validateField("no-such-field", "999"), null);
+  assert.equal(L.validateField("compress-input", "bad/path"), null);
+  assert.equal(L.validateField("", "0"), null);
+});
+
+test("validateField validates CRF range 0–51", () => {
+  assert.equal(L.validateField("compress-crf", "28"), null);
+  assert.equal(L.validateField("compress-crf", "0"), null);
+  assert.equal(L.validateField("compress-crf", "51"), null);
+  assert.ok(L.validateField("compress-crf", "52") !== null, "52 is out of range");
+  assert.ok(L.validateField("compress-crf", "-1") !== null, "negative is invalid");
+  assert.ok(L.validateField("compress-crf", "1.5") !== null, "float is invalid");
+});
+
+test("validateField validates timecode fields", () => {
+  assert.equal(L.validateField("trim-start", "5"), null);
+  assert.equal(L.validateField("trim-start", "00:01:30"), null);
+  assert.equal(L.validateField("trim-end", "1:30.5"), null);
+  assert.ok(L.validateField("trim-start", "abc") !== null, "non-numeric is invalid");
+  assert.ok(L.validateField("gif-duration", "not:a:timecode:extra") !== null, "4-part is invalid");
+});
+
+test("validateField validates gif-fps (must be positive integer)", () => {
+  assert.equal(L.validateField("gif-fps", "12"), null);
+  assert.equal(L.validateField("gif-fps", "1"), null);
+  assert.ok(L.validateField("gif-fps", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("gif-fps", "2.5") !== null, "float is invalid");
+});
+
+test("validateField validates gif-loop (integer ≥ −1)", () => {
+  assert.equal(L.validateField("gif-loop", "0"), null);
+  assert.equal(L.validateField("gif-loop", "-1"), null);
+  assert.equal(L.validateField("gif-loop", "5"), null);
+  assert.ok(L.validateField("gif-loop", "-2") !== null, "-2 is invalid");
+  assert.ok(L.validateField("gif-loop", "1.5") !== null, "float is invalid");
+});
+
+test("validateField validates slider-backed fields against SLIDER_SPECS range", () => {
+  assert.equal(L.validateField("volume-gain", "0"), null);
+  assert.equal(L.validateField("volume-gain", "-60"), null);
+  assert.equal(L.validateField("volume-gain", "30"), null);
+  assert.ok(L.validateField("volume-gain", "31") !== null, "31 dB exceeds max");
+  assert.ok(L.validateField("volume-gain", "-61") !== null, "-61 dB below min");
+  assert.equal(L.validateField("speed-factor", "1"), null);
+  assert.ok(L.validateField("speed-factor", "0") !== null, "0× is below min");
+});
+
+test("validateField validates poster_frame-percent and trim_pct percentages", () => {
+  assert.equal(L.validateField("poster_frame-percent", "50"), null);
+  assert.equal(L.validateField("poster_frame-percent", "0"), null);
+  assert.equal(L.validateField("poster_frame-percent", "100"), null);
+  assert.ok(L.validateField("poster_frame-percent", "101") !== null, "101 out of range");
+  assert.equal(L.validateField("trim_pct-start-pct", "0"), null);
+  assert.equal(L.validateField("trim_pct-start-pct", "99"), null);
+  assert.ok(L.validateField("trim_pct-start-pct", "100") !== null, "100 exceeds max 99");
+  assert.equal(L.validateField("trim_pct-end-pct", "1"), null);
+  assert.equal(L.validateField("trim_pct-end-pct", "100"), null);
+  assert.ok(L.validateField("trim_pct-end-pct", "0") !== null, "0 below min 1");
+});
