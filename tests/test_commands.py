@@ -251,6 +251,17 @@ def test_invert_args_build_filter():
     assert args[-1] == "out.mp4"
 
 
+def test_autorotate_args_strips_rotate_tag():
+    args = c.build_autorotate_args("in.mp4", "out.mp4")
+    assert "-vf" in args
+    assert args[args.index("-vf") + 1] == "null"
+    assert "-metadata:s:v:0" in args
+    assert args[args.index("-metadata:s:v:0") + 1] == "rotate=0"
+    assert "-c:a" in args
+    assert args[args.index("-c:a") + 1] == "copy"
+    assert args[-1] == "out.mp4"
+
+
 def test_deinterlace_args_build_filter():
     args = c.build_deinterlace_args("in.mp4", "out.mp4")
     assert args[args.index("-vf") + 1] == "yadif"

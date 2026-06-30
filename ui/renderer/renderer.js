@@ -2054,6 +2054,15 @@ $("#run-poster_frame").addEventListener("click", () => {
   });
 });
 
+$("#run-auto_orient").addEventListener("click", () => {
+  if (!requireFields("auto_orient-input", "auto_orient-output")) return;
+  run("Auto-orienting", "auto_orient", {
+    input: val("auto_orient-input"),
+    output: val("auto_orient-output"),
+    overwrite: true,
+  });
+});
+
 // --- Sliders with live readouts ---
 // Sync all sliders from their paired number inputs (called after preset load).
 function refreshSliders() {

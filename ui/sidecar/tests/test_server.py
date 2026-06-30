@@ -373,6 +373,18 @@ def test_invert_negates_luma(client, media, auth):
     assert abs((base + inverted) - 255) < 25, f"base={base} inverted={inverted}"
 
 
+def test_autorotate_produces_output(client, media, auth):
+    d, src = media
+    out = d / "oriented.mp4"
+    r = client.post(
+        "/autorotate",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "autorotate should produce an output file"
+
+
 def test_deinterlace_produces_output(client, media, auth):
     d, src = media
     out = d / "deinterlaced.mp4"

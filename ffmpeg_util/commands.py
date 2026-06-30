@@ -1098,6 +1098,23 @@ def build_poster_frame_args(
     return args
 
 
+def build_autorotate_args(input_path: str, output_path: str) -> list[str]:
+    """Build args to bake rotation metadata into pixels and strip the rotate tag.
+
+    ffmpeg automatically applies the display-matrix rotation during decode when
+    video passes through a filter graph. The null filter forces that decode-and-
+    rewrite path; -metadata:s:v:0 rotate=0 strips the tag so players don't apply
+    a second rotation on playback.
+    """
+    return [
+        "-i", input_path,
+        "-c:a", "copy",
+        "-vf", "null",
+        "-metadata:s:v:0", "rotate=0",
+        output_path,
+    ]
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,
