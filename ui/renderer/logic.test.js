@@ -956,6 +956,11 @@ test("buildCliCommand renames the diverging sidecar fields to their CLI flags", 
     L.buildCliCommand("loudnorm", { input: "i.mp4", output: "o.mp4", target_i: -16, overwrite: true }),
     "ffmpeg-util loudnorm i.mp4 o.mp4 --target=-16 -y"
   );
+  // Trim-silence body key `threshold_db` -> --threshold (NOT --threshold-db)
+  assert.equal(
+    L.buildCliCommand("trim_silence", { input: "i.mp4", output: "o.mp4", threshold_db: -50, min_duration: 0.5, overwrite: true }),
+    "ffmpeg-util trim-silence i.mp4 o.mp4 --threshold=-50 --min-duration 0.5 -y"
+  );
 });
 
 test("buildCliCommand uses --flag=value for negative numbers", () => {
