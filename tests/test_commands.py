@@ -886,8 +886,15 @@ def test_build_trim_pct_args_stream_copy_default():
 
 
 def test_build_trim_pct_args_reencode():
-    args = c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=0.0, end_pct=50.0, duration_s=10.0, reencode=True)
+    # 10s clip, 25%–75% with reencode → must use -t 5.0 (duration), not -to 7.5.
+    # Input-seeking (-ss before -i) resets PTS to 0 during re-encode, so -to end_s
+    # would produce end_s seconds of output instead of (end_s - start_s).
+    args = c.build_trim_pct_args("in.mp4", "out.mp4", start_pct=25.0, end_pct=75.0, duration_s=10.0, reencode=True)
     assert "-c" not in args
+    assert "-to" not in args, "reencode must use -t (duration), not -to (absolute end)"
+    assert "-t" in args
+    t_val = args[args.index("-t") + 1]
+    assert float(t_val) == pytest.approx(5.0)
 
 
 def test_build_trim_pct_args_rejects_bad_start_pct():
