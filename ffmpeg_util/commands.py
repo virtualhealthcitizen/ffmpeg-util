@@ -1036,6 +1036,39 @@ def build_preview_clip_args(
     ]
 
 
+def build_trim_pct_args(
+    input_path: str,
+    output_path: str,
+    *,
+    start_pct: float = 0.0,
+    end_pct: float = 100.0,
+    duration_s: float | None = None,
+    reencode: bool = False,
+) -> list[str]:
+    """Build args to trim a clip by start/end percentages of total duration.
+
+    ``duration_s`` is required — pass the probed media duration so the
+    timestamps can be computed.  Stream-copy by default (fast, keyframe-aligned);
+    pass ``reencode=True`` for frame-accurate cuts.
+    """
+    if not 0.0 <= start_pct <= 100.0:
+        raise ValueError("start_pct must be in [0, 100]")
+    if not 0.0 <= end_pct <= 100.0:
+        raise ValueError("end_pct must be in [0, 100]")
+    if start_pct >= end_pct:
+        raise ValueError("start_pct must be less than end_pct")
+    if duration_s is None:
+        raise ValueError("duration_s is required for trim-pct")
+    if duration_s <= 0:
+        raise ValueError("duration_s must be positive")
+    start_s = duration_s * start_pct / 100.0
+    end_s = duration_s * end_pct / 100.0
+    args: list[str] = ["-ss", f"{start_s:.6f}", "-i", input_path, "-to", f"{end_s:.6f}"]
+    args += [] if reencode else ["-c", "copy"]
+    args.append(output_path)
+    return args
+
+
 def build_poster_frame_args(
     input_path: str,
     output_path: str,

@@ -287,9 +287,9 @@ Packaging / tests:
 
 ### More ideas (round 6)
 - [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.
-- [x] Extract a poster frame at a percentage of the duration — `build_poster_frame_args` (core), CLI `poster-frame --percent`, sidecar (`/poster-frame` + `/run/stream` op `poster_frame`), Poster frame tab (Trim & Frames). Verified E2E: 6/6 (tab+panel present, 3s clip at 50% → PNG output, "Done" status); 134 core + 88 sidecar + 157 node:test + smoke 5/5 (43 tabs). ← next
+- [x] Extract a poster frame at a percentage of the duration — `build_poster_frame_args` (core), CLI `poster-frame --percent`, sidecar (`/poster-frame` + `/run/stream` op `poster_frame`), Poster frame tab (Trim & Frames). Verified E2E: 6/6 (tab+panel present, 3s clip at 50% → PNG output, "Done" status); 134 core + 88 sidecar + 157 node:test + smoke 5/5 (43 tabs).
 - [ ] Two-up compare grid (input vs output, hstack)
-- [ ] Trim by percentage (e.g. middle 50%)
+- [x] Trim by percentage (e.g. middle 50%) — core `build_trim_pct_args` (duration-based timestamps), CLI `trim-pct --start-pct/--end-pct`, sidecar (`/trim-pct` + `/run/stream` op `trim_pct`), Trim % tab. Verified: 142 core + 91 sidecar + 159 node:test + E2E smoke 5/5 (44 tabs). ← next
 - [ ] Add chapters from a list
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [ ] Auto-orient from rotation metadata, then strip it

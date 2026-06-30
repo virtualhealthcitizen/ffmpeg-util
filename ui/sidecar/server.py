@@ -1007,6 +1007,34 @@ def preview_clip_op(req: PreviewClipReq, _: None = Depends(require_token)) -> di
     return {"output": req.output}
 
 
+class TrimPctReq(BaseModel):
+    input: str
+    output: str
+    start_pct: float = 0.0
+    end_pct: float = 100.0
+    reencode: bool = False
+    overwrite: bool = True
+
+
+@app.post("/trim-pct")
+def trim_pct_op(req: TrimPctReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        dur = commands.probe_duration(runner, req.input)
+        if dur is None:
+            raise ValueError("could not probe duration for trim-pct")
+        runner.run_ffmpeg(commands.build_trim_pct_args(
+            req.input, req.output,
+            start_pct=req.start_pct, end_pct=req.end_pct,
+            duration_s=dur, reencode=req.reencode,
+        ))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class PosterFrameReq(BaseModel):
     input: str
     output: str
@@ -1110,6 +1138,9 @@ class RunReq(BaseModel):
     preset: str = "medium"
     # poster-frame
     percent: float = 10.0
+    # trim-pct
+    start_pct: float = 0.0
+    end_pct: float = 100.0
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1117,6 +1148,14 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
     op = req.op
     if op == "remux":
         return commands.build_remux_args(req.input, req.output), None
+    if op == "trim_pct":
+        if total is None:
+            raise ValueError("could not probe duration for trim-pct streaming")
+        return commands.build_trim_pct_args(
+            req.input, req.output,
+            start_pct=req.start_pct, end_pct=req.end_pct,
+            duration_s=total,
+        ), None
     if op == "poster_frame":
         return commands.build_poster_frame_args(
             req.input, req.output, percent=req.percent, duration_s=total, width=req.width,
@@ -1277,6 +1316,8 @@ def _expected_output_duration(
     end: str | None = None,
     duration: str | None = None,
     seconds: float | None = None,
+    start_pct: float = 0.0,
+    end_pct: float = 100.0,
 ) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
     if op == "image_to_video":
@@ -1303,6 +1344,8 @@ def _expected_output_duration(
                 return max(0.0, total - _parse_time(start))
         except ValueError:
             return total
+    if op == "trim_pct":
+        return total * max(0.0, end_pct - start_pct) / 100.0
     return total
 
 
@@ -1459,7 +1502,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             expected = _expected_output_duration(
                 req.op, total, factor=req.factor, count=req.count,
                 start=req.start, end=req.end, duration=req.duration,
-                seconds=req.seconds,
+                seconds=req.seconds, start_pct=req.start_pct, end_pct=req.end_pct,
             )
             log_q: queue.Queue = queue.Queue()
             for fields in runner.iter_ffmpeg_progress(args, on_log=log_q.put):
