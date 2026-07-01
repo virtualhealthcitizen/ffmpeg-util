@@ -1137,7 +1137,7 @@ const NAV_TABS = [
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "pip", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
-  "stabilize", "watermark", "hardsub",
+  "stabilize", "watermark", "hardsub", "pixfmt",
 ];
 
 test("TOOL_CATEGORIES partitions every nav tab into exactly one category", () => {
@@ -1744,4 +1744,33 @@ test("pip: buildCliCommand maps pip_size to --size flag", () => {
   assert.ok(cmd.includes("30"), "size value should appear");
   assert.ok(cmd.includes("--overlay"), "overlay path should use --overlay flag");
   assert.ok(cmd.includes("--position"), "position should appear");
+});
+
+test("pixfmt: OUTPUT_SPECS has pixfmt tag", () => {
+  assert.ok(L.OUTPUT_SPECS.pixfmt, "pixfmt should be in OUTPUT_SPECS");
+  assert.equal(L.OUTPUT_SPECS.pixfmt.tag, "pixfmt");
+});
+
+test("pixfmt: TOOL_CATEGORIES includes pixfmt in Convert", () => {
+  const convert = L.TOOL_CATEGORIES.find((c) => c.name === "Convert");
+  assert.ok(convert, "Convert category should exist");
+  assert.ok(convert.tabs.includes("pixfmt"), "pixfmt should be in Convert");
+});
+
+test("pixfmt: helpForTab returns non-empty string mentioning format", () => {
+  const h = L.helpForTab("pixfmt");
+  assert.ok(typeof h === "string" && h.length > 0, "pixfmt should have help text");
+  assert.ok(h.includes("pixel") || h.includes("format"), "help should mention pixel or format");
+});
+
+test("pixfmt: buildCliCommand produces correct command with --pix-fmt flag", () => {
+  const cmd = L.buildCliCommand("pixfmt", {
+    input: "clip.mp4",
+    output: "clip.pixfmt.mp4",
+    pix_fmt: "yuv420p10le",
+    overwrite: true,
+  });
+  assert.ok(cmd.startsWith("ffmpeg-util pixfmt"), "should start with ffmpeg-util pixfmt");
+  assert.ok(cmd.includes("--pix-fmt"), "should include --pix-fmt flag");
+  assert.ok(cmd.includes("yuv420p10le"), "should include the format value");
 });

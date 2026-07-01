@@ -269,7 +269,7 @@ Packaging / tests:
       `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
-- [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs). ← next
+- [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs).
 - [ ] Still image → video (image + duration, optional audio)
 - [x] Replace the audio track with an external audio file (see `replace-audio` above)
 - [ ] Set / clear metadata title
@@ -294,7 +294,7 @@ Packaging / tests:
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
 - [x] Stabilize shaky video (`vidstab`, two-pass) — core `build_vidstab_detect_args` / `build_vidstab_transform_args` / `stabilize` (mkdtemp + bare trf filename + cwd to avoid Windows drive-colon filter-parse bug), CLI `stabilize --shakiness/--smoothing`, sidecar (`/stabilize` + `/run/stream` op `stabilize` with two-pass streaming: thread-based detect + heartbeat SSE + pass 2 progress), Stabilize tab (Video FX, after Auto-orient). Verified E2E: 155 core + 97 sidecar + 168 node:test + smoke 5/5 (47 nav tabs). ← next
-- [ ] Convert to a specific pixel format / 10-bit
+- [x] Convert to a specific pixel format / 10-bit — core `build_pixfmt_args` (`format=` filter), CLI `pixfmt --pix-fmt`, sidecar (`/pixfmt` + `/run/stream` op `pixfmt`), Pixel format tab (Convert, curated dropdown). Verified E2E: 180 root + 111 sidecar pytest + 199 node:test + smoke 5/5 (51 nav tabs). ← next
 - [x] Generate a waveform PNG from audio (`showwavespic`) — core `build_waveform_args`, CLI `waveform`, sidecar (`/waveform` + `/run/stream`), Waveform tab. Verified E2E: 640x120 image.
 
 ### More ideas (round 6)

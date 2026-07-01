@@ -431,6 +431,16 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Corner to place the overlay (default bottom-right).")
     _add_global_flags(p)
 
+    # pixfmt (pixel format conversion)
+    p = sub.add_parser("pixfmt", help="Convert video to a specific pixel format (format= filter).")
+    p.add_argument("input")
+    p.add_argument("output")
+    p.add_argument(
+        "--pix-fmt", default="yuv420p",
+        help="Target pixel format, e.g. yuv420p, yuv422p, yuv444p, gray (default yuv420p).",
+    )
+    _add_global_flags(p)
+
     # hardsub
     p = sub.add_parser("hardsub", help="Burn subtitle text into a video (hardsub).")
     p.add_argument("input")
@@ -746,6 +756,10 @@ def _dispatch(args: argparse.Namespace) -> int:
             args.input, args.overlay, args.output,
             size_pct=args.size, position=args.position,
         ))
+        return 0
+
+    if args.command == "pixfmt":
+        runner.run_ffmpeg(commands.build_pixfmt_args(args.input, args.output, args.pix_fmt))
         return 0
 
     if args.command == "hardsub":

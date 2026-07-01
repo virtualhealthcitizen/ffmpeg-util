@@ -1389,3 +1389,23 @@ def build_pip_args(
         "-map", "0:a?",
         output,
     ]
+
+
+# Curated set of formats the UI dropdown offers; the CLI accepts any safe format.
+_PIX_FMT_RE = re.compile(r"^[a-z0-9_]+$")
+
+
+def build_pixfmt_args(input_path: str, output_path: str, pix_fmt: str = "yuv420p") -> list[str]:
+    """Build args to convert the video to a specific pixel format.
+
+    Uses ffmpeg's ``format`` filter so the conversion is explicit even when the
+    encoder would otherwise silently pick a compatible format.  Audio is
+    stream-copied unchanged.  ``pix_fmt`` must be a known ffmpeg pixel-format
+    name (lowercase letters, digits, and underscores only).
+    """
+    if not pix_fmt or not _PIX_FMT_RE.match(pix_fmt):
+        raise ValueError(
+            f"Invalid pixel format {pix_fmt!r}: use a valid ffmpeg name "
+            f"(e.g. yuv420p, yuv422p, gray)."
+        )
+    return ["-i", input_path, "-vf", f"format={pix_fmt}", "-c:a", "copy", output_path]

@@ -91,6 +91,7 @@
     stabilize: { tag: "stable" },
     watermark: { tag: "wm" },
     hardsub: { tag: "sub" },
+    pixfmt: { tag: "pixfmt" },
   };
 
   // The lowercase extension of a path (incl. the dot), or "" if none.
@@ -328,6 +329,7 @@
     stabilize: "stabilize shaky deshake smooth handheld vibration motion blur vidstab gyro steady camera jitter",
     watermark: "watermark text overlay label copyright brand stamp drawtext caption logo burn overlay",
     hardsub: "subtitle subtitles burn hardsub srt ass vtt text render caption burn-in embedded hard",
+    pixfmt: "pixel format convert color space 10-bit yuv rgb gray yuv420p yuv422p yuv444p sampling chroma bit depth",
   };
 
   // Group the operation tabs into labeled categories so the ~30-tab nav scans in
@@ -337,7 +339,7 @@
   // search has filtered all of its tools away. A new tab not listed here is never
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
-    { name: "Convert", tabs: ["convert", "remux"] },
+    { name: "Convert", tabs: ["convert", "remux", "pixfmt"] },
     { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "hardsub", "blur_region"] },
@@ -425,6 +427,7 @@
     auto_orient: "Bake rotation metadata into pixels and strip the tag — fixes videos shot sideways on a phone. No options needed, just run.",
     stabilize: "Remove camera shake with two-pass vidstab. Example: Shakiness 5 + Smoothing 10 for handheld footage; raise Smoothing to 20–50 for very bumpy clips.",
     hardsub: "Burn subtitle text into video frames (hardsub). Pick an SRT, ASS, or WebVTT file — text is baked into the pixels, audio copied unchanged.",
+    pixfmt: "Convert a video to a specific pixel format (chroma sampling or bit depth). Example: yuv420p for max compatibility; yuv420p10le for 10-bit.",
   };
 
   // The one-line help for a tab, or "" for an unknown id (renderer hides it). Pure.
@@ -1536,6 +1539,8 @@
     // Picture in picture
     "pip-size":     "Size of the overlay as a percentage of the base video's width (5–75). Example: 25 makes the overlay one quarter of the base width.",
     "pip-position": "Which corner to place the overlay. Bottom-right is the classic PiP position.",
+    // Pixel format
+    "pixfmt-pix-fmt": "Target pixel format. yuv420p is the most compatible (required by many players). yuv420p10le gives 10-bit depth when your encoder supports it.",
   };
 
   // The help blurb for a form field id, or "" when none is configured. Pure.
