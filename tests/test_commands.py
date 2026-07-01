@@ -1105,3 +1105,26 @@ def test_build_pip_args_keeps_base_audio():
     args = c.build_pip_args("base.mp4", "overlay.mp4", "out.mp4")
     assert "-map" in args
     assert "0:a?" in args
+
+
+def test_build_pixfmt_args_default_format():
+    args = c.build_pixfmt_args("input.mp4", "output.mp4")
+    assert args[args.index("-vf") + 1] == "format=yuv420p"
+    assert "-c:a" in args
+    assert "copy" in args
+    assert args[-1] == "output.mp4"
+
+
+def test_build_pixfmt_args_custom_format():
+    args = c.build_pixfmt_args("input.mp4", "output.mp4", "yuv420p10le")
+    assert args[args.index("-vf") + 1] == "format=yuv420p10le"
+
+
+def test_build_pixfmt_args_invalid_format_space():
+    with pytest.raises(ValueError, match="Invalid pixel format"):
+        c.build_pixfmt_args("input.mp4", "output.mp4", "yuv 420p")
+
+
+def test_build_pixfmt_args_invalid_format_injection():
+    with pytest.raises(ValueError, match="Invalid pixel format"):
+        c.build_pixfmt_args("input.mp4", "output.mp4", "format=yuv420p")

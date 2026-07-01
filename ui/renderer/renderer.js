@@ -1112,6 +1112,7 @@ const STICKY = [
   "poster_frame-percent",
   "trim_pct-start-pct",
   "trim_pct-end-pct",
+  "pixfmt-pix-fmt",
 ];
 
 async function loadSettings() {
@@ -1838,6 +1839,16 @@ $("#run-pip").addEventListener("click", () => {
     output: val("pip-output"),
     pip_size: numOrNull("pip-size") || 25,
     position: $("#pip-position").value || "bottom-right",
+    overwrite: true,
+  });
+});
+
+$("#run-pixfmt").addEventListener("click", () => {
+  if (!requireFields("pixfmt-input", "pixfmt-output")) return;
+  run("Converting pixel format", "pixfmt", {
+    input: val("pixfmt-input"),
+    output: val("pixfmt-output"),
+    pix_fmt: $("#pixfmt-pix-fmt").value || "yuv420p",
     overwrite: true,
   });
 });

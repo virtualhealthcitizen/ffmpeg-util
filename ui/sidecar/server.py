@@ -1202,6 +1202,25 @@ def poster_frame_op(req: PosterFrameReq, _: None = Depends(require_token)) -> di
     return {"output": req.output}
 
 
+class PixfmtReq(BaseModel):
+    input: str
+    output: str
+    pix_fmt: str = "yuv420p"
+    overwrite: bool = True
+
+
+@app.post("/pixfmt")
+def pixfmt(req: PixfmtReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        runner.run_ffmpeg(commands.build_pixfmt_args(req.input, req.output, req.pix_fmt))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1300,6 +1319,8 @@ class RunReq(BaseModel):
     # stabilize
     shakiness: int = 5
     smoothing: int = 10
+    # pixfmt (pixel format conversion)
+    pix_fmt: str = "yuv420p"
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1483,6 +1504,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         os.close(fd)
         commands.write_concat_list(req.inputs or [], list_file)
         return commands.build_concat_args(req.inputs or [], req.output, list_file), list_file
+    if op == "pixfmt":
+        return commands.build_pixfmt_args(req.input, req.output, req.pix_fmt), None
     raise ValueError(f"Unknown op: {op!r}")
 
 

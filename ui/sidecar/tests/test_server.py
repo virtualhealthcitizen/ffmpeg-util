@@ -1655,3 +1655,39 @@ def test_run_stream_pip_produces_output(client, media, auth):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream pip should produce output"
+
+
+def test_pixfmt_converts_format(client, media, auth):
+    d, src = media
+    out = d / "pixfmt_out.mp4"
+    r = client.post(
+        "/pixfmt",
+        json={"input": str(src), "output": str(out), "pix_fmt": "yuv420p", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists(), "/pixfmt should produce an output file"
+
+
+def test_pixfmt_requires_auth(client, media):
+    d, src = media
+    r = client.post(
+        "/pixfmt",
+        json={"input": str(src), "output": str(d / "pixfmt_noauth.mp4")},
+    )
+    assert r.status_code == 401
+
+
+def test_run_stream_pixfmt_produces_output(client, media, auth):
+    d, src = media
+    out = d / "pixfmt_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "pixfmt", "input": str(src), "output": str(out),
+              "pix_fmt": "yuv420p", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream pixfmt should produce output"
