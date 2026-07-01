@@ -1053,6 +1053,33 @@ test("buildCliCommand handles inputs-list ops with -o output", () => {
   );
 });
 
+test("buildCliCommand xfade_concat maps xfade_duration to --duration and xfade_offset to --offset", () => {
+  // xfade_duration must become --duration (not --xfade-duration); xfade_offset becomes --offset
+  assert.equal(
+    L.buildCliCommand("xfade_concat", {
+      inputs: ["a.mp4", "b.mp4"],
+      output: "out.mp4",
+      transition: "fade",
+      xfade_duration: 1.0,
+      xfade_offset: 29.0,
+      overwrite: true,
+    }),
+    "ffmpeg-util xfade-concat a.mp4 b.mp4 -o out.mp4 --transition fade --duration 1 --offset 29 -y"
+  );
+  // null offset is omitted (sidecar auto-computes; user must supply --offset themselves)
+  assert.equal(
+    L.buildCliCommand("xfade_concat", {
+      inputs: ["a.mp4", "b.mp4"],
+      output: "out.mp4",
+      transition: "wipeleft",
+      xfade_duration: 0.5,
+      xfade_offset: null,
+      overwrite: true,
+    }),
+    "ffmpeg-util xfade-concat a.mp4 b.mp4 -o out.mp4 --transition wipeleft --duration 0.5 -y"
+  );
+});
+
 test("TOOL_CATEGORIES Video FX includes blur_region", () => {
   const vfx = L.TOOL_CATEGORIES.find(g => g.name === "Video FX");
   assert.ok(vfx, "Video FX category exists");
