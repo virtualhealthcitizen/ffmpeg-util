@@ -876,8 +876,8 @@
       const secs = Number(f.seconds);
       if (isFinite(secs) && secs > 0) out = Math.min(inDur, secs);
     } else if (tab === "trim_pct") {
-      const startPct = Number(f["start-pct"] ?? 0);
-      const endPct = Number(f["end-pct"] ?? 100);
+      const startPct = Number(f["start-pct"] || 0);
+      const endPct = Number(f["end-pct"] || 100);
       if (isFinite(startPct) && isFinite(endPct) && endPct > startPct) {
         out = inDur * (endPct - startPct) / 100;
       }
