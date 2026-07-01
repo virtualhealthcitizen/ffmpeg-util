@@ -22,6 +22,12 @@
     return { kind: null, path };
   }
 
+  // True when both paths are previewable (image or video), so the compare panel can show.
+  function shouldShowCompare(inputPath, outputPath) {
+    if (!inputPath || !outputPath) return false;
+    return previewKind(inputPath).kind !== null && previewKind(outputPath).kind !== null;
+  }
+
   // Derive a default output path from an input path (swap the extension).
   function suggestOutput(inputPath, ext = ".out.mp4") {
     if (!inputPath) return "output" + ext;
@@ -1651,6 +1657,7 @@
     notifyComplete,
     FIELD_VALIDATORS,
     validateField,
+    shouldShowCompare,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

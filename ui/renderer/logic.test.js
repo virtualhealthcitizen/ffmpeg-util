@@ -25,6 +25,17 @@ test("previewKind classifies image, video, or none", () => {
   assert.deepEqual(L.previewKind("video.frame_%04d.png"), { kind: "image", path: "video.frame_0001.png" });
 });
 
+test("shouldShowCompare returns true only when both paths are previewable", () => {
+  assert.equal(L.shouldShowCompare("in.mp4", "out.mp4"), true);
+  assert.equal(L.shouldShowCompare("in.png", "out.jpg"), true);
+  assert.equal(L.shouldShowCompare("in.mp4", "out.png"), true);  // video + image
+  assert.equal(L.shouldShowCompare("in.mp3", "out.mp4"), false); // audio not previewable
+  assert.equal(L.shouldShowCompare("in.mp4", "out.mp3"), false); // output not previewable
+  assert.equal(L.shouldShowCompare("", "out.mp4"), false);
+  assert.equal(L.shouldShowCompare(null, "out.mp4"), false);
+  assert.equal(L.shouldShowCompare("in.mp4", null), false);
+});
+
 test("suggestOutput swaps the extension", () => {
   assert.equal(L.suggestOutput("C:\\v\\in.mkv"), "C:\\v\\in.out.mp4");
   assert.equal(L.suggestOutput("in.mov", ".small.mp4"), "in.small.mp4");
