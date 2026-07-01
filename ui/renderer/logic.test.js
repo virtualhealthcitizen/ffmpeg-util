@@ -577,6 +577,13 @@ test("estimateOutput trim_pct returns null when start >= end", () => {
   assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "50", "end-pct": "50" }), null);
 });
 
+test("estimateOutput trim_pct defaults empty fields to 0/100 (form initial state)", () => {
+  // Both fields empty: equivalent to 0–100% → full clip
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "", "end-pct": "" }), "~0:10");
+  // Only end-pct empty: treat as 0–100%
+  assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "25", "end-pct": "" }), "~0:08");
+});
+
 test("friendlyError maps common ffmpeg failures to a hint", () => {
   assert.match(
     L.friendlyError("clip.mp4: No such file or directory"),

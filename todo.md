@@ -463,7 +463,15 @@ Make the probe data actionable (the source card is read-only today):
       logic and passing unit tests. Fixed by adding two cases to `estimateFields` and
       extending the listener regex to include `preview_clip-seconds`,
       `trim_pct-start-pct`, `trim_pct-end-pct`. node:test 159/159 + headless E2E
-      smoke green. ← next
+      smoke green.
+      **Bug fix (hunt):** `estimateOutput` for `trim_pct` used nullish coalescing
+      (`?? 100`) to default `end-pct` to 100 when the field is blank, but
+      `estimateFields` always returns a string (never `null`/`undefined`), so an
+      empty end-pct field produced `Number("") === 0` and the condition `endPct >
+      startPct` always failed — the estimate was hidden even when a source file was
+      loaded and the form was at its initial blank state. Fixed by using `|| 100` so
+      the fallback fires on empty string too. 2 new regression tests covering the
+      blank-field case; 203 node:test + 185 pytest + E2E smoke all green. ← next
 
 Direct manipulation on the embedded source player (it's already there):
 - [x] **Scrub-to-set-time** — a "Set from playhead:" button row under the source
