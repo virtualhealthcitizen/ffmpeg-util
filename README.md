@@ -1,5 +1,8 @@
 # ffmpeg-util
 
+[![CI](https://github.com/virtualhealthcitizen/ffmpeg-util/actions/workflows/ci.yml/badge.svg)](https://github.com/virtualhealthcitizen/ffmpeg-util/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/virtualhealthcitizen/ffmpeg-util?sort=semver)](https://github.com/virtualhealthcitizen/ffmpeg-util/releases/latest)
+
 Small, scriptable command-line helpers around [`ffmpeg`](https://ffmpeg.org/) for
 the media chores you reach for constantly: convert, trim, concatenate,
 thumbnail, compress/resize, and probe.
