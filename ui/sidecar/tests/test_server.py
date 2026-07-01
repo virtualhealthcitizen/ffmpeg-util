@@ -153,6 +153,18 @@ def test_concat_too_few_inputs_400(client, media, auth):
     assert r.status_code == 400
 
 
+def test_concat_reencode_produces_output(client, media, auth):
+    d, src = media
+    out = d / "joined_reenc.mp4"
+    r = client.post(
+        "/concat",
+        json={"inputs": [str(src), str(src)], "output": str(out), "reencode": True, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200, r.text
+    assert out.exists()
+
+
 def test_thumbnail(client, media, auth):
     d, src = media
     out = d / "thumb.png"

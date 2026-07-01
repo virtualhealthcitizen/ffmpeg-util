@@ -206,6 +206,79 @@ def concat(runner: FfmpegRunner, inputs: Sequence[str], output_path: str) -> Non
             pass
 
 
+def probe_has_audio(runner: FfmpegRunner, path: str) -> bool:
+    """Return True if ``path`` contains at least one audio stream."""
+    proc = runner.run_ffprobe(
+        ["-v", "error", "-select_streams", "a:0",
+         "-show_entries", "stream=codec_type", "-of", "csv=p=0", path]
+    )
+    return bool((proc.stdout or "").strip()) if proc else False
+
+
+def build_concat_filter_args(
+    inputs: Sequence[str],
+    output_path: str,
+    target_w: int,
+    target_h: int,
+    *,
+    has_audio: Sequence[bool] | None = None,
+) -> list[str]:
+    """Build args for a re-encoding concat using the concat filter.
+
+    Scales every input to ``target_w`` x ``target_h`` (letterboxed, black bars),
+    normalises audio to 44100 Hz stereo, and encodes as libx264/aac.  Inputs
+    without an audio stream receive a silent audio track via anullsrc.
+    ``has_audio`` is a parallel bool sequence; when omitted every input is
+    assumed to carry audio.
+    """
+    if len(inputs) < 2:
+        raise ValueError("concat needs at least two input files.")
+    if target_w < 2 or target_h < 2:
+        raise ValueError("target dimensions must be at least 2x2.")
+    # Force even dimensions (x264 requirement).
+    tw = target_w - (target_w % 2)
+    th = target_h - (target_h % 2)
+    n = len(inputs)
+    audio_flags = list(has_audio) if has_audio is not None else [True] * n
+
+    fc_parts: list[str] = []
+    for i in range(n):
+        # Scale to target, letterbox with black, set SAR=1, normalise fps.
+        fc_parts.append(
+            f"[{i}:v]scale={tw}:{th}:force_original_aspect_ratio=decrease,"
+            f"pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v{i}]"
+        )
+        if audio_flags[i]:
+            fc_parts.append(
+                f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100"
+                f":channel_layouts=stereo[a{i}]"
+            )
+        else:
+            # Generate silence for the duration we can't know here; use
+            # shortest-safe approach: a long anullsrc trimmed by the concat.
+            fc_parts.append(
+                f"anullsrc=channel_layout=stereo:sample_rate=44100[a{i}]"
+            )
+
+    concat_in = "".join(f"[v{i}][a{i}]" for i in range(n))
+    fc_parts.append(f"{concat_in}concat=n={n}:v=1:a=1[v][a]")
+    fc = ";".join(fc_parts)
+
+    args: list[str] = []
+    for inp in inputs:
+        args += ["-i", inp]
+    args += [
+        "-filter_complex", fc,
+        "-map", "[v]",
+        "-map", "[a]",
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-c:a", "aac",
+        output_path,
+    ]
+    return args
+
+
 def build_thumbnail_args(
     input_path: str,
     output_path: str,

@@ -1092,6 +1092,7 @@ document.querySelectorAll(".probe-btn").forEach((btn) => {
 // --- Settings persistence (sticky option fields, not per-file paths) ---
 const STICKY = [
   "convert-vcodec", "convert-acodec",
+  "concat-reencode",
   "trim-start",
   "thumbnail-time", "thumbnail-count", "thumbnail-width",
   "compress-crf", "compress-bitrate", "compress-width", "compress-height",
@@ -1720,7 +1721,8 @@ $("#run-concat").addEventListener("click", () => {
   const inputs = parseLines(val("concat-inputs"));
   if (inputs.length < 2) return setStatus("Concat needs at least two input files.", true);
   if (!requireFields("concat-output")) return;
-  run("Concatenating", "concat", { inputs, output: val("concat-output"), overwrite: true });
+  const reencode = !!$("#concat-reencode")?.checked;
+  run("Concatenating", "concat", { inputs, output: val("concat-output"), reencode, overwrite: true });
 });
 
 $("#run-thumbnail").addEventListener("click", () => {

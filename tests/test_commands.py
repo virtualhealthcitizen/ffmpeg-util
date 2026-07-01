@@ -79,6 +79,43 @@ def test_concat_orchestration_dry_run(capsys):
     assert "joined.mp4" in out
 
 
+def test_concat_filter_requires_two_inputs():
+    with pytest.raises(ValueError, match="at least two"):
+        c.build_concat_filter_args(["only.mp4"], "out.mp4", 320, 240)
+
+
+def test_concat_filter_requires_positive_dims():
+    with pytest.raises(ValueError, match="dimensions"):
+        c.build_concat_filter_args(["a.mp4", "b.mp4"], "out.mp4", 0, 240)
+
+
+def test_concat_filter_structure():
+    args = c.build_concat_filter_args(["a.mp4", "b.mp4"], "out.mp4", 320, 240)
+    fc_idx = args.index("-filter_complex")
+    fc = args[fc_idx + 1]
+    assert "scale=320:240" in fc
+    assert "concat=n=2:v=1:a=1" in fc
+    assert "-map" in args
+    assert "libx264" in args
+    assert "aac" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_concat_filter_anullsrc_for_silent_input():
+    args = c.build_concat_filter_args(
+        ["a.mp4", "b.mp4"], "out.mp4", 320, 240, has_audio=[True, False]
+    )
+    fc = args[args.index("-filter_complex") + 1]
+    assert "anullsrc" in fc
+
+
+def test_concat_filter_three_inputs():
+    args = c.build_concat_filter_args(["a.mp4", "b.mp4", "c.mp4"], "out.mp4", 640, 360)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "concat=n=3:v=1:a=1" in fc
+    assert args.count("-i") == 3
+
+
 def test_thumbnail_single_frame():
     args = c.build_thumbnail_args("in.mp4", "out.png", time="00:00:05", width=320)
     assert args[:2] == ["-ss", "00:00:05"]

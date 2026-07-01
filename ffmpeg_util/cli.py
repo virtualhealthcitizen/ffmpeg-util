@@ -57,6 +57,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("concat", help="Join multiple files (same codec/params).")
     p.add_argument("inputs", nargs="+", help="Two or more input files.")
     p.add_argument("-o", "--output", required=True, help="Output file.")
+    p.add_argument("--reencode", action="store_true",
+                   help="Re-encode inputs to a common codec/size (needed when they differ).")
     _add_global_flags(p)
 
     # thumbnail
@@ -523,7 +525,16 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "concat":
-        commands.concat(runner, args.inputs, args.output)
+        if getattr(args, "reencode", False):
+            dims = commands.probe_dimensions(runner, args.inputs[0])
+            if dims is None:
+                raise SystemExit("Could not probe dimensions of the first input.")
+            tw, th = dims
+            has_audio = [commands.probe_has_audio(runner, p) for p in args.inputs]
+            ff = commands.build_concat_filter_args(args.inputs, args.output, tw, th, has_audio=has_audio)
+            runner.run_ffmpeg(ff)
+        else:
+            commands.concat(runner, args.inputs, args.output)
         return 0
 
     if args.command == "thumbnail":

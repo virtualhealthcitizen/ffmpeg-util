@@ -385,7 +385,7 @@
   const TOOL_HELP = {
     convert: "Change container or codec (or extract audio). Example: in.mov → in.mp4, or tick Extract audio for in.mp3.",
     trim: "Cut a section by start + end/duration. Example: Start 00:00:05, Duration 10 keeps 5s–15s.",
-    concat: "Join clips end-to-end (one path per line, in order). They must share codec/size — re-encode first if not.",
+    concat: "Join clips end-to-end (one path per line, in order). Tick 'Re-encode to match' when clips differ in size or codec.",
     thumbnail: "Grab a still (or N stills, or a contact sheet). Example: Time 00:00:03 → one frame; Count 5 → 5 frames.",
     compress: "Shrink with CRF/bitrate, optionally resizing. Example: CRF 28 + Width 1280 for a smaller 720p file.",
     gif: "Make an animated GIF (palette two-pass). Example: Width 480, FPS 12, Duration 3; Dither = High quality; Loop 0 = infinite.",
@@ -741,7 +741,7 @@
     const sizes = valid.map((d) => `${d.w}×${d.h}`);
     const uniq = [...new Set(sizes)];
     if (uniq.length > 1) {
-      return { ok: false, message: `Inputs differ in size (${uniq.join(", ")}). Concat needs matching size/codecs — re-encode first.` };
+      return { ok: false, message: `Inputs differ in size (${uniq.join(", ")}). Enable 'Re-encode to match' to combine them automatically.` };
     }
     return { ok: true, message: `All inputs are ${uniq[0]} — ready to concat.` };
   }
@@ -1442,6 +1442,8 @@
     // Convert
     "convert-vcodec":  "Video codec: 'copy' to stream-copy without re-encoding, or a name like libx264 (H.264) or libx265 (HEVC).",
     "convert-acodec":  "Audio codec: 'copy' to stream-copy, or a name like aac, mp3, or opus.",
+    // Concat
+    "concat-reencode": "Re-encode all inputs to a common codec and size (scales to the first clip's resolution). Use when clips differ in size or codec.",
     // Trim
     "trim-start":      "Start time: HH:MM:SS, MM:SS, or bare seconds (e.g. 5 or 1:30). Defaults to the beginning.",
     "trim-end":        "End time — use End or Duration, not both. Defaults to the end of the clip.",

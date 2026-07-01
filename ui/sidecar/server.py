@@ -165,6 +165,7 @@ class ConcatReq(BaseModel):
     inputs: list[str]
     output: str
     overwrite: bool = True
+    reencode: bool = False
 
 
 @app.post("/concat")
@@ -173,7 +174,16 @@ def concat(req: ConcatReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        commands.concat(runner, req.inputs, req.output)
+        if req.reencode:
+            dims = commands.probe_dimensions(runner, req.inputs[0])
+            if dims is None:
+                raise ValueError("Could not probe dimensions of the first input.")
+            tw, th = dims
+            has_audio = [commands.probe_has_audio(runner, p) for p in req.inputs]
+            ff = commands.build_concat_filter_args(req.inputs, req.output, tw, th, has_audio=has_audio)
+            runner.run_ffmpeg(ff)
+        else:
+            commands.concat(runner, req.inputs, req.output)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -1500,10 +1510,19 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             kwargs["vcodec"] = req.vcodec
         return commands.build_compress_args(req.input, req.output, **kwargs), None
     if op == "concat":
+        inputs = req.inputs or []
+        if req.reencode:
+            runner = FfmpegRunner()
+            dims = commands.probe_dimensions(runner, inputs[0])
+            if dims is None:
+                raise ValueError("Could not probe dimensions of the first input.")
+            tw, th = dims
+            has_audio = [commands.probe_has_audio(runner, p) for p in inputs]
+            return commands.build_concat_filter_args(inputs, req.output, tw, th, has_audio=has_audio), None
         fd, list_file = tempfile.mkstemp(suffix=".txt", prefix="ffconcat_")
         os.close(fd)
-        commands.write_concat_list(req.inputs or [], list_file)
-        return commands.build_concat_args(req.inputs or [], req.output, list_file), list_file
+        commands.write_concat_list(inputs, list_file)
+        return commands.build_concat_args(inputs, req.output, list_file), list_file
     if op == "pixfmt":
         return commands.build_pixfmt_args(req.input, req.output, req.pix_fmt), None
     raise ValueError(f"Unknown op: {op!r}")

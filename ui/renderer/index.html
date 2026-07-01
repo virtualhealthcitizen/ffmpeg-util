@@ -220,7 +220,7 @@
         <input id="concat-output" type="text" placeholder="Choose an output path…" />
         <button class="pick-save" data-target="concat-output">Save as…</button>
       </div>
-      <p class="hint">Inputs must share codec/params. For exact joins, trim with re-encode first.</p>
+      <label class="inline"><input type="checkbox" id="concat-reencode" /> Re-encode to match (handles mismatched codecs &amp; sizes)</label>
       <div class="row"><button class="primary" id="run-concat">Concat</button></div>
     </section>
 
