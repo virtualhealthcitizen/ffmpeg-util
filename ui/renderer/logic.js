@@ -1133,6 +1133,8 @@
     target_i: "target", // Loudnorm sends `target_i`; the CLI flag is --target
     threshold_db: "threshold", // Trim-silence sends `threshold_db`; the CLI flag is --threshold
     pip_size: "size", // PiP tab sends `pip_size`; the CLI flag is --size
+    xfade_duration: "duration", // xfade_concat sends `xfade_duration`; the CLI flag is --duration
+    xfade_offset: "offset",     // xfade_concat sends `xfade_offset`; the CLI flag is --offset
   };
   // Body keys that aren't CLI options (positionals or transport-only).
   const CLI_SKIP_KEYS = new Set(["input", "output", "inputs", "overwrite", "op"]);

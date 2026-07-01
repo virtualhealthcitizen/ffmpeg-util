@@ -1910,11 +1910,16 @@ $("#run-pixfmt").addEventListener("click", () => {
 
 $("#run-xfade_concat").addEventListener("click", () => {
   if (!requireFields("xfade_concat-input-a", "xfade_concat-input-b", "xfade_concat-output")) return;
+  const dur = Number($("#xfade_concat-xfade_duration").value) || 1.0;
+  // Compute the offset (transition start = end of clip 1 minus transition duration).
+  // Null when the source hasn't been probed yet; the sidecar will probe as fallback.
+  const offset = lastSourceDuration != null ? Math.max(0, lastSourceDuration - dur) : null;
   run("Crossfading clips", "xfade_concat", {
     inputs: [val("xfade_concat-input-a"), val("xfade_concat-input-b")],
     output: val("xfade_concat-output"),
     transition: $("#xfade_concat-transition").value,
-    xfade_duration: Number($("#xfade_concat-xfade_duration").value) || 1.0,
+    xfade_duration: dur,
+    xfade_offset: offset,
     overwrite: true,
   });
 });
