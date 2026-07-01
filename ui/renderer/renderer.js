@@ -18,7 +18,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   revealLabel, outputBaseName,
   runInputEntries, runOutputDirEntry,
   fieldTooltip, notifyComplete,
-  FIELD_VALIDATORS, validateField } = window.FfuLogic;
+  FIELD_VALIDATORS, validateField,
+  shouldShowCompare } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1288,6 +1289,57 @@ async function showPreview(outputPath) {
   }
 }
 
+// --- Two-up compare: input vs output side by side after a run ---
+let compareInUrl = null, compareOutUrl = null;
+
+function hideCompare() {
+  const panel = $("#compare-panel");
+  if (panel) panel.classList.add("hidden");
+  [["compare-in-img", "compare-in-vid"], ["compare-out-img", "compare-out-vid"]].forEach(([imgId, vidId]) => {
+    const img = $("#" + imgId), vid = $("#" + vidId);
+    if (img) { img.classList.add("hidden"); img.removeAttribute("src"); }
+    if (vid) { vid.pause(); vid.classList.add("hidden"); vid.removeAttribute("src"); }
+  });
+  if (compareInUrl) { URL.revokeObjectURL(compareInUrl); compareInUrl = null; }
+  if (compareOutUrl) { URL.revokeObjectURL(compareOutUrl); compareOutUrl = null; }
+}
+
+async function loadCompareMedia(filePath, imgEl, vidEl) {
+  const { kind, path: resolved } = previewKind(filePath);
+  if (!kind) return null;
+  const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(resolved), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  if (kind === "image") {
+    imgEl.src = url; imgEl.classList.remove("hidden");
+    vidEl.classList.add("hidden"); vidEl.removeAttribute("src");
+  } else {
+    vidEl.src = url; vidEl.classList.remove("hidden");
+    imgEl.classList.add("hidden"); imgEl.removeAttribute("src");
+  }
+  return url;
+}
+
+async function showCompare(inputPath, outputPath) {
+  if (!shouldShowCompare(inputPath, outputPath)) return;
+  const panel = $("#compare-panel");
+  if (!panel) return;
+  try {
+    const [inUrl, outUrl] = await Promise.all([
+      loadCompareMedia(inputPath, $("#compare-in-img"), $("#compare-in-vid")),
+      loadCompareMedia(outputPath, $("#compare-out-img"), $("#compare-out-vid")),
+    ]);
+    if (compareInUrl) URL.revokeObjectURL(compareInUrl);
+    if (compareOutUrl) URL.revokeObjectURL(compareOutUrl);
+    compareInUrl = inUrl;
+    compareOutUrl = outUrl;
+    if (inUrl || outUrl) panel.classList.remove("hidden");
+  } catch (_) { /* best-effort */ }
+}
+
 // --- Completion actions: Open and Reveal in Explorer buttons after a run ---
 // Stored so the button click handlers can reference the last successful output.
 let lastOutputPath = null;
@@ -1559,6 +1611,7 @@ async function run(label, op, body) {
   clearConsole();
   showConsole(); // live ffmpeg output, so a long run (e.g. GIF) isn't a black box
   hidePreview();
+  hideCompare();
   try {
     const res = await fetch(baseUrl + "/run/stream", {
       method: "POST",
@@ -1604,8 +1657,10 @@ async function run(label, op, body) {
     if (result && result.output) {
       recordRecentOutput(currentTab(), result.output); // persist output history for this tab
       showPreview(result.output);
+      const primaryInput = body.input || (body.inputs && body.inputs[0]) || null;
       // Compare the output back to the primary input (single-input ops, else first).
-      showSummary(body.input || (body.inputs && body.inputs[0]) || null, result.output);
+      showSummary(primaryInput, result.output);
+      showCompare(primaryInput, result.output);
       showCompletionActions(result.output);
     }
   } catch (e) {

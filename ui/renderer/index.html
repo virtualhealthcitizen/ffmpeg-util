@@ -1456,6 +1456,23 @@
       <video id="preview-video" class="hidden" controls></video>
     </section>
 
+    <!-- Two-up compare: input (left) vs output (right), shown after a run when both are previewable -->
+    <section class="card compare-panel hidden" id="compare-panel">
+      <label>Before / After</label>
+      <div class="compare-grid">
+        <div class="compare-cell">
+          <div class="compare-cell-label">Before</div>
+          <img id="compare-in-img" class="hidden" alt="input" />
+          <video id="compare-in-vid" class="hidden" controls></video>
+        </div>
+        <div class="compare-cell">
+          <div class="compare-cell-label">After</div>
+          <img id="compare-out-img" class="hidden" alt="output" />
+          <video id="compare-out-vid" class="hidden" controls></video>
+        </div>
+      </div>
+    </section>
+
     <section class="card">
       <div class="card-header">
         <label>Probe output</label>
