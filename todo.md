@@ -241,7 +241,12 @@ Packaging / tests:
 - [x] Pad / letterbox to a target frame — core `build_pad_args` (scale-to-fit +
       centered pad), CLI `pad`, sidecar (`/pad` + `/run/stream`), Pad tab.
       Verified E2E: 320x240 -> exact 640x640 frame.
-- [ ] Concatenate with automatic re-encode when inputs differ
+- [x] Concatenate with automatic re-encode when inputs differ — core `build_concat_filter_args`
+      (scale all to first-clip dims, normalize audio, libx264/aac), CLI `--reencode`, sidecar
+      `/concat` + `/run/stream` op `concat` with `reencode=True`, UI "Re-encode to match"
+      checkbox (STICKY) on Concat tab with tooltip + updated compat banner hint.
+      Verified: 202 node:test + 185 core pytest + 112 sidecar pytest + headless Electron E2E
+      7/7 (checkbox present + unchecked, help updated, /concat reencode=True → 200 + output). ← next
 - [x] Per-op "open output folder" after completion
 - [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
 - [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,

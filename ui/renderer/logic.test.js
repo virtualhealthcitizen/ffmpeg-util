@@ -1424,6 +1424,12 @@ test("FIELD_TOOLTIPS has no path fields (input/output keys are excluded)", () =>
   }
 });
 
+test("concat-reencode tooltip exists and is about re-encoding", () => {
+  const tip = L.fieldTooltip("concat-reencode");
+  assert.ok(tip.length > 0, "concat-reencode has a tooltip");
+  assert.ok(/re.encod|codec|size/i.test(tip), "concat-reencode tooltip mentions codec or size");
+});
+
 test("FIELD_TOOLTIPS entries are concise (≤ 160 chars) and non-empty", () => {
   for (const [id, text] of Object.entries(L.FIELD_TOOLTIPS)) {
     assert.ok(text && text.length > 0, `tooltip for "${id}" must not be empty`);
