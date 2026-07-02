@@ -247,6 +247,15 @@ Packaging / tests:
       checkbox (STICKY) on Concat tab with tooltip + updated compat banner hint.
       Verified: 202 node:test + 185 core pytest + 112 sidecar pytest + headless Electron E2E
       7/7 (checkbox present + unchecked, help updated, /concat reencode=True → 200 + output). ← next
+      **Bug fix (hunt):** `build_concat_filter_args` synthesized a silent track for an
+      input with no audio via `anullsrc`, which is an INFINITE source — so the
+      concatenated `[a]` stream never reached EOF and `concat --reencode` (CLI + both
+      sidecar paths) ran FOREVER whenever any input lacked audio (confirmed: a 2s output
+      still growing, unterminated, after 25s). Fixed by appending `-shortest` when a
+      silent input is present, bounding the output to the finite `[v]` stream (correct 2s
+      duration, both streams intact); omitted when every input has real audio (no
+      truncation risk). 2 new regression tests. 187 core + 112 sidecar + 215 node:test +
+      smoke 5/5 green.
 - [x] Per-op "open output folder" after completion
 - [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
 - [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,

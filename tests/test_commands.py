@@ -109,6 +109,28 @@ def test_concat_filter_anullsrc_for_silent_input():
     assert "anullsrc" in fc
 
 
+def test_concat_filter_shortest_bounds_silent_input():
+    # anullsrc is an infinite source, so a silent input must be bounded by
+    # -shortest or the re-encode never terminates.
+    args = c.build_concat_filter_args(
+        ["a.mp4", "b.mp4"], "out.mp4", 320, 240, has_audio=[True, False]
+    )
+    assert "-shortest" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_concat_filter_no_shortest_when_all_have_audio():
+    # Every input carries real audio -> [v] and [a] end together, so -shortest
+    # (which could truncate a stream whose a/v lengths differ slightly) is omitted.
+    args = c.build_concat_filter_args(
+        ["a.mp4", "b.mp4"], "out.mp4", 320, 240, has_audio=[True, True]
+    )
+    assert "-shortest" not in args
+    # Default has_audio (None -> all True) must likewise not add -shortest.
+    default_args = c.build_concat_filter_args(["a.mp4", "b.mp4"], "out.mp4", 320, 240)
+    assert "-shortest" not in default_args
+
+
 def test_concat_filter_three_inputs():
     args = c.build_concat_filter_args(["a.mp4", "b.mp4", "c.mp4"], "out.mp4", 640, 360)
     fc = args[args.index("-filter_complex") + 1]
