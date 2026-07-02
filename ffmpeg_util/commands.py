@@ -274,8 +274,15 @@ def build_concat_filter_args(
         "-c:v", "libx264",
         "-preset", "medium",
         "-c:a", "aac",
-        output_path,
     ]
+    # A silent input's synthesized anullsrc is an INFINITE source, so the
+    # concatenated [a] stream never reaches EOF and the encode would run forever.
+    # -shortest bounds the output to the finite [v] stream (the real total length),
+    # trimming that trailing silence. Only needed when we actually add anullsrc;
+    # when every input has real audio, [v] and [a] end naturally together.
+    if not all(audio_flags):
+        args.append("-shortest")
+    args.append(output_path)
     return args
 
 
