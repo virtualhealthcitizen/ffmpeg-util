@@ -349,8 +349,14 @@ Direct-manipulation (visual instead of typed numbers):
       65 total) + headless Electron E2E vs the real sidecar (320×240 clip →
       full-frame drag fills 0,0,320×240; quarter drag fills even ~160×120; real
       crop output ffprobes to the selected 160×120; overlay hidden on Convert).
-- [ ] Trim/GIF timeline scrubber — load the video, drag in/out handles to set
-      start/end/duration visually (trim, gif, thumbnail time, poster frame).
+- [x] Trim/GIF timeline scrubber — drag in/out handles on the source player to set
+      start/end times on Trim (two handles), gif-start on GIF (one handle), and
+      thumbnail-time (one handle). `timeHandlesForTab`/`timecodeFraction` in `logic.js`;
+      `#timeline-bar` + `.tl-track/.tl-handle/.tl-range/.tl-playhead` in `index.html` +
+      `styles.css`; `setupTimelineDrag`/`updateTimelineBar`/`updateTimelinePlayhead` in
+      `renderer.js`. Verified: 215 node:test + headless E2E 9/9 (bar hidden on Convert,
+      appears on Trim with video, both handles visible, in-handle at 50% after typing 1.5s
+      into a 3s clip, playhead element present, bar hides on switch to Compress). ← next
 - [ ] Before/after compare slider on the output preview (drag a divider over input↔output).
 
 Input affordances (kill the typed-number friction — this is what bit "Blur pad"):
@@ -483,7 +489,7 @@ Direct manipulation on the embedded source player (it's already there):
       fill; hidden on Convert + image; shot).
 - [x] Draw-a-rectangle crop overlay on the source frame → fills Crop x/y/w/h.
       (Shipped as the round-7 "Visual crop selector" above.)
-- [ ] In/out range handles on the player's scrub bar for Trim/GIF duration.
+- [x] In/out range handles on the player's scrub bar for Trim/GIF duration. (Shipped above as timeline scrubber.)
 
 Workflow / re-use:
 - [x] Recent files dropdown on inputs + remembered last-used input directory —

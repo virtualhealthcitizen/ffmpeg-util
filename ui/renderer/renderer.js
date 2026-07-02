@@ -5,7 +5,7 @@ const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathFor
 const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
-  videoDims, compatReport, formatTimecode, timeTargetsForTab,
+  videoDims, compatReport, formatTimecode, timeTargetsForTab, timeHandlesForTab, timecodeFraction,
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
   withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
@@ -380,6 +380,7 @@ function hideSource() {
     URL.revokeObjectURL(sourceUrl);
     sourceUrl = null;
   }
+  updateTimelineBar(); // video is gone — hide the scrubber
 }
 
 // "Set from playhead" buttons: read the source <video> currentTime into the
@@ -393,6 +394,7 @@ function renderSourceActions() {
   const hasVideo = !vid.classList.contains("hidden") && vid.getAttribute("src");
   if (!targets.length || !hasVideo) {
     box.classList.add("hidden");
+    updateTimelineBar();
     return;
   }
   const label = document.createElement("span");
@@ -412,6 +414,7 @@ function renderSourceActions() {
     box.appendChild(btn);
   }
   box.classList.remove("hidden");
+  updateTimelineBar();
 }
 
 async function showSourceMedia(path) {
@@ -2313,6 +2316,167 @@ function setupSliders() {
 }
 
 setupSliders();
+
+// --- Timeline scrubber: in/out handles on the source player for time-field tabs ---
+// Shows a thin track with draggable in/out handles beneath the source video when
+// the active tab has time fields (trim, gif, thumbnail). Dragging a handle seeks
+// the video and fills the form field; the playhead dot tracks currentTime.
+
+function updateTimelinePlayhead() {
+  const vid = $("#source-video");
+  const ph = $("#tl-playhead");
+  if (!ph) return;
+  const dur = vid && vid.duration;
+  if (!(dur > 0)) { ph.style.display = "none"; return; }
+  ph.style.display = "";
+  ph.style.left = ((vid.currentTime / dur) * 100) + "%";
+}
+
+function updateTimelineBar() {
+  const bar = $("#timeline-bar");
+  if (!bar) return;
+  const vid = $("#source-video");
+  const handles = timeHandlesForTab(currentTab());
+  const hasVideo = vid && !vid.classList.contains("hidden") && vid.getAttribute("src");
+
+  if (!handles.length || !hasVideo) {
+    bar.classList.add("hidden");
+    return;
+  }
+  bar.classList.remove("hidden");
+
+  const dur = (vid && vid.duration > 0) ? vid.duration : 0;
+  const inHandle = handles.find((h) => h.role === "in");
+  const outHandle = handles.find((h) => h.role === "out");
+  const inEl = $("#tl-in");
+  const outEl = $("#tl-out");
+
+  if (inHandle) {
+    const frac = timecodeFraction(($("#" + inHandle.id) || {}).value, dur) ?? 0;
+    inEl.style.left = (frac * 100) + "%";
+    inEl.dataset.fieldId = inHandle.id;
+    inEl.classList.remove("hidden");
+  } else {
+    inEl.classList.add("hidden");
+  }
+
+  if (outHandle) {
+    const frac = timecodeFraction(($("#" + outHandle.id) || {}).value, dur) ?? 1;
+    outEl.style.left = (frac * 100) + "%";
+    outEl.dataset.fieldId = outHandle.id;
+    outEl.classList.remove("hidden");
+  } else {
+    outEl.classList.add("hidden");
+  }
+
+  const rangeEl = $("#tl-range");
+  if (rangeEl) {
+    const inFrac = inHandle ? (timecodeFraction(($("#" + inHandle.id) || {}).value, dur) ?? 0) : 0;
+    const outFrac = outHandle ? (timecodeFraction(($("#" + outHandle.id) || {}).value, dur) ?? 1) : 1;
+    rangeEl.style.left = (inFrac * 100) + "%";
+    rangeEl.style.width = (Math.max(0, outFrac - inFrac) * 100) + "%";
+  }
+
+  const labelsEl = $("#tl-labels");
+  if (labelsEl && dur > 0) {
+    const inFrac = inHandle ? (timecodeFraction(($("#" + inHandle.id) || {}).value, dur) ?? 0) : null;
+    const outFrac = outHandle ? (timecodeFraction(($("#" + outHandle.id) || {}).value, dur) ?? null) : null;
+    labelsEl.textContent = "";
+    if (inFrac !== null) {
+      const span = document.createElement("span");
+      span.textContent = formatTimecode(inFrac * dur);
+      labelsEl.appendChild(span);
+    }
+    if (outFrac !== null) {
+      const span = document.createElement("span");
+      span.textContent = formatTimecode(outFrac * dur);
+      labelsEl.appendChild(span);
+    }
+  }
+
+  updateTimelinePlayhead();
+}
+
+(function setupTimelineDrag() {
+  const track = document.querySelector(".tl-track");
+  if (!track) return;
+
+  function fractionFromX(clientX) {
+    const rect = track.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }
+
+  function applyFraction(formFieldId, frac) {
+    const vid = $("#source-video");
+    const dur = vid && vid.duration > 0 ? vid.duration : 0;
+    if (!dur) return;
+    const field = $("#" + formFieldId);
+    if (field) {
+      field.value = formatTimecode(frac * dur);
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    vid.currentTime = frac * dur;
+    updateTimelineBar();
+  }
+
+  for (const elId of ["tl-in", "tl-out"]) {
+    const el = $("#" + elId);
+    if (!el) continue;
+    el.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!el.hasPointerCapture(e.pointerId)) return;
+      const fieldId = el.dataset.fieldId;
+      if (fieldId) applyFraction(fieldId, fractionFromX(e.clientX));
+    });
+    el.addEventListener("pointerup", (e) => {
+      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener("pointercancel", (e) => {
+      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+    // Keyboard nudge: arrow keys move by 1% of total duration
+    el.addEventListener("keydown", (e) => {
+      const vid = $("#source-video");
+      const dur = vid && vid.duration > 0 ? vid.duration : 0;
+      const fieldId = el.dataset.fieldId;
+      if (!dur || !fieldId) return;
+      const field = $("#" + fieldId);
+      const cur = field ? (parseFloat(field.value) || 0) : 0;
+      const step = dur * 0.01;
+      if (e.key === "ArrowLeft") { applyFraction(fieldId, Math.max(0, (cur - step) / dur)); e.preventDefault(); }
+      if (e.key === "ArrowRight") { applyFraction(fieldId, Math.min(1, (cur + step) / dur)); e.preventDefault(); }
+    });
+  }
+
+  // Click on the track background (not on a handle) to seek the video
+  track.addEventListener("click", (e) => {
+    const tgt = e.target;
+    if (tgt === track || tgt.classList.contains("tl-range") || tgt.classList.contains("tl-playhead")) {
+      const vid = $("#source-video");
+      const dur = vid && vid.duration > 0 ? vid.duration : 0;
+      if (!dur) return;
+      vid.currentTime = fractionFromX(e.clientX) * dur;
+      updateTimelinePlayhead();
+    }
+  });
+})();
+
+// Wire video events to keep the timeline in sync with playback and new clips
+(function wireVideoToTimeline() {
+  const vid = $("#source-video");
+  if (!vid) return;
+  vid.addEventListener("timeupdate", updateTimelinePlayhead);
+  vid.addEventListener("loadedmetadata", updateTimelineBar);
+})();
+
+// Sync handle positions when time fields are edited by hand
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id && /^(trim-start|trim-end|gif-start|thumbnail-time)$/.test(id)) updateTimelineBar();
+});
 
 // --- Per-field "?" tooltips ---
 // Walk every label.inline and its child input/select; insert a small ? badge next

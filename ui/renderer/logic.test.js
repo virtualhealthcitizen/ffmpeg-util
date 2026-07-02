@@ -1868,3 +1868,53 @@ test("pixfmt: buildCliCommand produces correct command with --pix-fmt flag", () 
   assert.ok(cmd.includes("--pix-fmt"), "should include --pix-fmt flag");
   assert.ok(cmd.includes("yuv420p10le"), "should include the format value");
 });
+
+// --- Timeline scrubber ---
+
+test("timeHandlesForTab: trim returns in + out handles", () => {
+  const h = L.timeHandlesForTab("trim");
+  assert.equal(h.length, 2);
+  assert.equal(h[0].id, "trim-start");
+  assert.equal(h[0].role, "in");
+  assert.equal(h[1].id, "trim-end");
+  assert.equal(h[1].role, "out");
+});
+
+test("timeHandlesForTab: gif returns only in handle", () => {
+  const h = L.timeHandlesForTab("gif");
+  assert.equal(h.length, 1);
+  assert.equal(h[0].id, "gif-start");
+  assert.equal(h[0].role, "in");
+});
+
+test("timeHandlesForTab: thumbnail returns single in handle", () => {
+  const h = L.timeHandlesForTab("thumbnail");
+  assert.equal(h.length, 1);
+  assert.equal(h[0].id, "thumbnail-time");
+  assert.equal(h[0].role, "in");
+});
+
+test("timeHandlesForTab: tabs without time fields return empty array", () => {
+  assert.deepEqual(L.timeHandlesForTab("convert"), []);
+  assert.deepEqual(L.timeHandlesForTab("compress"), []);
+  assert.deepEqual(L.timeHandlesForTab("reverse"), []);
+});
+
+test("timecodeFraction: computes correct 0-1 fractions", () => {
+  assert.equal(L.timecodeFraction("0", 10), 0);
+  assert.equal(L.timecodeFraction("5", 10), 0.5);
+  assert.equal(L.timecodeFraction("10", 10), 1);
+  assert.equal(L.timecodeFraction("00:00:03.000", 12), 0.25);
+});
+
+test("timecodeFraction: clamps out-of-range values to [0, 1]", () => {
+  assert.equal(L.timecodeFraction("20", 10), 1);
+  assert.equal(L.timecodeFraction("-5", 10), null); // negative → null (parseTimeToSeconds rejects)
+});
+
+test("timecodeFraction: returns null for blank/invalid or zero duration", () => {
+  assert.equal(L.timecodeFraction("", 10), null);
+  assert.equal(L.timecodeFraction("abc", 10), null);
+  assert.equal(L.timecodeFraction("5", 0), null);
+  assert.equal(L.timecodeFraction("5", null), null);
+});
