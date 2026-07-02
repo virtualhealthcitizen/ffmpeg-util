@@ -108,6 +108,16 @@
           <div id="source-chips" class="chips"></div>
         </div>
         <div id="source-actions" class="source-actions hidden"></div>
+        <!-- Timeline scrubber: in/out handles for trim/gif/thumbnail time fields -->
+        <div id="timeline-bar" class="tl-bar hidden">
+          <div class="tl-track">
+            <div class="tl-range" id="tl-range"></div>
+            <div class="tl-handle tl-in hidden" id="tl-in" title="Drag to set in point" tabindex="0" role="slider" aria-label="In point"></div>
+            <div class="tl-handle tl-out hidden" id="tl-out" title="Drag to set out point" tabindex="0" role="slider" aria-label="Out point"></div>
+            <div class="tl-playhead" id="tl-playhead" aria-hidden="true"></div>
+          </div>
+          <div class="tl-labels" id="tl-labels"></div>
+        </div>
       </div>
     </section>
 
@@ -270,6 +280,14 @@
         <label class="inline">Height <input id="compress-height" type="number" placeholder="(optional)" /></label>
         <label class="inline">Codec <input id="compress-vcodec" type="text" placeholder="libx264" /></label>
         <label class="inline">Preset <input id="compress-preset" type="text" placeholder="medium" /></label>
+      </div>
+      <div class="compress-qp" id="compress-quick-presets">
+        <span class="qp-label">Quick presets</span>
+        <button class="secondary qp-chip" data-qp="Web MP4" title="Good quality for web — CRF 23, 1280px wide, libx264 medium">Web MP4</button>
+        <button class="secondary qp-chip" data-qp="Mobile 720p" title="Phone-friendly size — CRF 28, 720px wide, libx264 fast">Mobile 720p</button>
+        <button class="secondary qp-chip" data-qp="Discord" title="Discord free tier — two-pass 8 MB target, libx264 veryfast">Discord</button>
+        <button class="secondary qp-chip" data-qp="Tiny" title="Maximum compression — CRF 32, 480px wide, libx264 veryfast">Tiny</button>
+        <button class="secondary qp-chip" data-qp="High quality" title="Archival quality — CRF 18, no resize, libx264 slow">High quality</button>
       </div>
       <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23). Target MB uses two-pass and overrides both.</p>
       <div class="row"><button class="primary" id="run-compress">Compress</button></div>

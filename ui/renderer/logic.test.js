@@ -507,6 +507,49 @@ test("withPreset overwrites a same-named preset", () => {
   assert.deepEqual(L.presetNames(p, "eq"), ["warm"]);
 });
 
+test("compressQuickPreset returns values for every COMPRESS_QUICK_PRESETS entry", () => {
+  for (const p of L.COMPRESS_QUICK_PRESETS) {
+    const vals = L.compressQuickPreset(p.label);
+    assert.ok(vals !== null, `${p.label} should return values`);
+    assert.strictEqual(typeof vals, "object");
+  }
+});
+
+test("compressQuickPreset returns null for unknown name", () => {
+  assert.strictEqual(L.compressQuickPreset("Nonexistent"), null);
+  assert.strictEqual(L.compressQuickPreset(""), null);
+});
+
+test("compressQuickPreset Web MP4 sets CRF 23, width 1280, libx264", () => {
+  const vals = L.compressQuickPreset("Web MP4");
+  assert.strictEqual(vals["compress-crf"], "23");
+  assert.strictEqual(vals["compress-width"], "1280");
+  assert.strictEqual(vals["compress-vcodec"], "libx264");
+  assert.strictEqual(vals["compress-bitrate"], "");
+  assert.strictEqual(vals["compress-target"], "");
+});
+
+test("compressQuickPreset Discord clears CRF and sets 8 MB target", () => {
+  const vals = L.compressQuickPreset("Discord");
+  assert.strictEqual(vals["compress-target"], "8");
+  assert.strictEqual(vals["compress-crf"], "");
+  assert.strictEqual(vals["compress-bitrate"], "");
+});
+
+test("COMPRESS_QUICK_PRESETS all have label, title, and all 7 compress fields", () => {
+  const FIELDS = [
+    "compress-crf", "compress-bitrate", "compress-target",
+    "compress-width", "compress-height", "compress-vcodec", "compress-preset",
+  ];
+  for (const p of L.COMPRESS_QUICK_PRESETS) {
+    assert.ok(typeof p.label === "string" && p.label.length > 0, "label required");
+    assert.ok(typeof p.title === "string" && p.title.length > 0, "title required");
+    for (const f of FIELDS) {
+      assert.ok(Object.prototype.hasOwnProperty.call(p.values, f), `${p.label} missing field ${f}`);
+    }
+  }
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

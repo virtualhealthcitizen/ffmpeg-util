@@ -770,6 +770,33 @@
     return [];
   }
 
+  // --- Timeline scrubber: in/out drag handles on the source player ---
+
+  // Handle specs for the timeline scrubber per tab. role "in" = start/time;
+  // role "out" = end point. [] means the tab has no scrubber.
+  function timeHandlesForTab(tab) {
+    if (tab === "trim") return [
+      { id: "trim-start", role: "in" },
+      { id: "trim-end", role: "out" },
+    ];
+    if (tab === "gif") return [
+      { id: "gif-start", role: "in" },
+    ];
+    if (tab === "thumbnail") return [
+      { id: "thumbnail-time", role: "in" },
+    ];
+    return [];
+  }
+
+  // Convert a timecode/seconds string to a [0, 1] fraction of total duration.
+  // Returns null when the value is blank, unparseable, or duration is 0.
+  function timecodeFraction(value, duration) {
+    if (!(duration > 0)) return null;
+    const s = parseTimeToSeconds(value);
+    if (s === null) return null;
+    return Math.max(0, Math.min(1, s / duration));
+  }
+
   // --- Overwrite confirmation: warn before clobbering an existing output ---
 
   // The confirm() prompt shown when an op's output path already exists.
@@ -809,6 +836,63 @@
     const t = { ...(base[tab] || {}) };
     delete t[name];
     return { ...base, [tab]: t };
+  }
+
+  // --- Quick (factory) presets for the Compress tab ---
+  // Each preset fills ALL compress option fields; empty string clears a field so
+  // only the preset's chosen fields are active.
+  const COMPRESS_QUICK_PRESETS = [
+    {
+      label: "Web MP4",
+      title: "Good quality for web — CRF 23, 1280px wide, libx264 medium",
+      values: {
+        "compress-crf": "23", "compress-bitrate": "", "compress-target": "",
+        "compress-width": "1280", "compress-height": "",
+        "compress-vcodec": "libx264", "compress-preset": "medium",
+      },
+    },
+    {
+      label: "Mobile 720p",
+      title: "Phone-friendly size — CRF 28, 720px wide, libx264 fast",
+      values: {
+        "compress-crf": "28", "compress-bitrate": "", "compress-target": "",
+        "compress-width": "720", "compress-height": "",
+        "compress-vcodec": "libx264", "compress-preset": "fast",
+      },
+    },
+    {
+      label: "Discord",
+      title: "Discord free tier — two-pass 8 MB target, libx264 veryfast",
+      values: {
+        "compress-crf": "", "compress-bitrate": "", "compress-target": "8",
+        "compress-width": "1280", "compress-height": "",
+        "compress-vcodec": "libx264", "compress-preset": "veryfast",
+      },
+    },
+    {
+      label: "Tiny",
+      title: "Maximum compression — CRF 32, 480px wide, libx264 veryfast",
+      values: {
+        "compress-crf": "32", "compress-bitrate": "", "compress-target": "",
+        "compress-width": "480", "compress-height": "",
+        "compress-vcodec": "libx264", "compress-preset": "veryfast",
+      },
+    },
+    {
+      label: "High quality",
+      title: "Archival quality — CRF 18, no resize, libx264 slow",
+      values: {
+        "compress-crf": "18", "compress-bitrate": "", "compress-target": "",
+        "compress-width": "", "compress-height": "",
+        "compress-vcodec": "libx264", "compress-preset": "slow",
+      },
+    },
+  ];
+
+  // Look up a quick preset by label; return its values map or null if not found.
+  function compressQuickPreset(name) {
+    const p = COMPRESS_QUICK_PRESETS.find((x) => x.label === name);
+    return p ? p.values : null;
   }
 
   // --- Estimated-output readout: predict output duration/size from settings ---
@@ -1612,6 +1696,8 @@
     compatReport,
     formatTimecode,
     timeTargetsForTab,
+    timeHandlesForTab,
+    timecodeFraction,
     clampPoint,
     normalizeDragRect,
     rectToCrop,
@@ -1662,6 +1748,8 @@
     FIELD_VALIDATORS,
     validateField,
     shouldShowCompare,
+    COMPRESS_QUICK_PRESETS,
+    compressQuickPreset,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

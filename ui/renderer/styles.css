@@ -285,6 +285,11 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .dim-presets .dim-presets-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
 .dim-presets .dim-chip { padding: 5px 11px; font-size: 12px; }
 
+/* Quick (factory) presets for Compress — one-click fill of common encode scenarios. */
+.compress-qp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.compress-qp .qp-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.compress-qp .qp-chip { padding: 5px 11px; font-size: 12px; }
+
 /* Multi-input compatibility banner (hstack/vstack/concat). */
 .compat {
   padding: 10px 14px;
@@ -626,6 +631,56 @@ button.danger:hover { background: var(--err); color: #fff; }
   white-space: pre-wrap;
   min-height: 60px;
   margin: 0;
+}
+
+/* Timeline scrubber: in/out drag handles beneath the source player */
+.tl-bar { padding: 8px 0 4px; user-select: none; }
+.tl-track {
+  position: relative;
+  height: 8px;
+  background: var(--inset);
+  border-radius: 4px;
+  cursor: crosshair;
+}
+.tl-range {
+  position: absolute;
+  top: 0; height: 100%;
+  background: var(--accent);
+  opacity: 0.3;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.tl-handle {
+  position: absolute;
+  top: 50%;
+  width: 14px; height: 14px;
+  margin-top: -7px; margin-left: -7px;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  cursor: ew-resize;
+  z-index: 2;
+  touch-action: none;
+  transition: transform 0.08s;
+}
+.tl-handle:hover, .tl-handle:focus { transform: scale(1.25); outline: none; }
+.tl-playhead {
+  position: absolute;
+  top: -3px;
+  width: 2px; height: 14px;
+  background: var(--fg);
+  opacity: 0.5;
+  pointer-events: none;
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+.tl-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  min-height: 14px;
 }
 
 /* Live ffmpeg console output during a run */
