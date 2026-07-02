@@ -19,7 +19,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   runInputEntries, runOutputDirEntry,
   fieldTooltip, notifyComplete,
   FIELD_VALIDATORS, validateField,
-  shouldShowCompare } = window.FfuLogic;
+  shouldShowCompare,
+  COMPRESS_QUICK_PRESETS, compressQuickPreset } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1239,6 +1240,18 @@ $("#preset-delete").addEventListener("click", async () => {
   await persistPresets();
   refreshPresetSelect();
   setStatus(`Deleted preset "${name}".`);
+});
+
+// --- Quick (factory) presets for Compress ---
+// One click fills all compress option fields from a named factory preset.
+document.getElementById("compress-quick-presets").addEventListener("click", (e) => {
+  const btn = e.target.closest(".qp-chip");
+  if (!btn) return;
+  const values = compressQuickPreset(btn.dataset.qp);
+  if (!values) return;
+  applyOptionValues("compress", values);
+  refreshSliders();
+  setStatus(`Applied "${btn.dataset.qp}" preset.`);
 });
 
 // --- Output preview (images) ---
