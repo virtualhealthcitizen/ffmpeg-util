@@ -1468,6 +1468,15 @@
       <button id="run-again" class="secondary" type="button">Run again</button>
     </div>
 
+    <!-- Job history strip: recent completed runs with re-run / reveal buttons -->
+    <section id="job-history" class="card job-history hidden">
+      <div class="card-header">
+        <label>Recent runs</label>
+        <button id="clear-job-history" class="secondary" style="font-size:11px;padding:2px 7px;line-height:1" type="button">Clear</button>
+      </div>
+      <ul id="job-history-list" class="job-history-list"></ul>
+    </section>
+
     <section class="card preview hidden" id="preview">
       <label>Output preview</label>
       <img id="preview-img" class="hidden" alt="output preview" />

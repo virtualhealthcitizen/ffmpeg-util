@@ -1675,6 +1675,31 @@
     };
   }
 
+  // --- Job history strip: record of recent completed runs ---
+  // Each record: { tab, label, op, body, outputPath, ts } where ts is Date.now().
+  const JOB_HISTORY_MAX = 20;
+
+  // Prepend record to history, dedup by outputPath (newest wins), cap at max.
+  function addJobRecord(history, record, max) {
+    const cap = (max != null) ? max : JOB_HISTORY_MAX;
+    const deduped = Array.isArray(history)
+      ? history.filter((r) => r.outputPath !== record.outputPath)
+      : [];
+    return [record, ...deduped].slice(0, cap);
+  }
+
+  // One-line label for a history entry: "Compress — clip.small.mp4 · 2:34 PM"
+  function jobHistoryLabel(record) {
+    const base = record.outputPath
+      ? record.outputPath.replace(/.*[/\\]/, "")
+      : "";
+    const time = record.ts
+      ? new Date(record.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "";
+    const name = [record.label, base].filter(Boolean).join(" — ");
+    return time ? name + " · " + time : name;
+  }
+
   const api = {
     THEMES,
     resolveTheme,
@@ -1775,6 +1800,9 @@
     compareDividerPos,
     COMPRESS_QUICK_PRESETS,
     compressQuickPreset,
+    JOB_HISTORY_MAX,
+    addJobRecord,
+    jobHistoryLabel,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
