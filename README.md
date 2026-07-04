@@ -9,8 +9,7 @@ thumbnail, compress/resize, and probe.
 
 > 📖 Full usage guide: **[MANUAL.md](MANUAL.md)** (CLI, library, desktop UI, packaging).
 >
-> 🌐 Live showcase: this project on the
-> **[JM portfolio](https://jm-portfolio-5afqr6ijoq-uc.a.run.app/#/project/ffmpeg-util)**
+> 🌐 **[JM portfolio](https://jm-portfolio-5afqr6ijoq-uc.a.run.app/#/project/ffmpeg-util)**
 > (demo, changelog, releases) · built autonomously by the
 > **[Burn Fleet](https://jm-portfolio-5afqr6ijoq-uc.a.run.app/#/monitor)**.
 
