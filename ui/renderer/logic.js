@@ -1503,6 +1503,13 @@
 
   // --- Completion actions: Open + Reveal in file manager after a run ---
 
+  // Given [{tab, label}] descriptors for all nav tabs and the active tab,
+  // return the subset the user could chain to (every tab except the current).
+  function chainTabOptions(allTabData, currentTab) {
+    if (!Array.isArray(allTabData)) return [];
+    return allTabData.filter((t) => t && t.tab && t.tab !== currentTab);
+  }
+
   // Platform-appropriate label for the "reveal in file manager" button.
   function revealLabel(platform) {
     if (platform === "darwin") return "Reveal in Finder";
@@ -1807,6 +1814,7 @@
     JOB_HISTORY_MAX,
     addJobRecord,
     jobHistoryLabel,
+    chainTabOptions,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

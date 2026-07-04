@@ -21,7 +21,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   FIELD_VALIDATORS, validateField,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
-  addJobRecord, jobHistoryLabel } = window.FfuLogic;
+  addJobRecord, jobHistoryLabel, chainTabOptions } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1426,10 +1426,20 @@ let lastOutputPath = null;
 // Stored so "Run again" can re-fire the exact same op with the same parameters.
 let lastRunRecord = null;
 
+function populateChainSelect() {
+  const sel = $("#chain-tab-select");
+  if (!sel) return;
+  const allTabs = Array.from(document.querySelectorAll(".tabs button[data-tab]"))
+    .map((btn) => ({ tab: btn.dataset.tab, label: btn.textContent.trim() }));
+  const options = chainTabOptions(allTabs, currentTab());
+  sel.innerHTML = options.map((o) => `<option value="${o.tab}">${o.label}</option>`).join("");
+}
+
 function showCompletionActions(outputPath) {
   lastOutputPath = outputPath || null;
   const el = $("#completion-actions");
   if (el) el.classList.toggle("hidden", !outputPath);
+  if (outputPath) populateChainSelect();
 }
 
 function hideCompletionActions() {
@@ -1458,6 +1468,31 @@ function runAgain() {
 
 const runAgainBtn = $("#run-again");
 if (runAgainBtn) runAgainBtn.addEventListener("click", runAgain);
+
+// --- "Chain to tab": send the last output into another tab as its input ---
+const chainToBtn = $("#chain-to-btn");
+if (chainToBtn) chainToBtn.addEventListener("click", () => {
+  const sel = $("#chain-tab-select");
+  if (!sel || !lastOutputPath) return;
+  const targetTab = sel.value;
+  if (!targetTab) return;
+
+  const tabBtn = document.querySelector(`.tabs button[data-tab="${targetTab}"]`);
+  if (tabBtn) tabBtn.click(); // switches tab + triggers refreshInputs / updateTabHelp
+
+  const concatVal = ($("#concat-inputs") || {}).value || "";
+  const upd = dropUpdate([lastOutputPath], targetTab, concatVal);
+  if (upd) {
+    const inputEl = $("#" + upd.id);
+    if (inputEl) {
+      inputEl.value = upd.value;
+      inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+
+  recordRecent(lastOutputPath);
+  setStatus("Output sent to " + targetTab.replace(/_/g, "-") + " tab.");
+});
 
 // --- Job history strip: recent completed runs with re-run / reveal buttons ---
 let jobHistoryData = [];
