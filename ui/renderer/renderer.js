@@ -19,7 +19,7 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   runInputEntries, runOutputDirEntry,
   fieldTooltip, notifyComplete,
   FIELD_VALIDATORS, validateField,
-  shouldShowCompare,
+  shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
@@ -1306,38 +1306,45 @@ async function showPreview(outputPath) {
   }
 }
 
-// --- Two-up compare: input vs output side by side after a run ---
+// --- Before/after compare: two-up grid + overlay slider after a run ---
 let compareInUrl = null, compareOutUrl = null;
+let compareMode = "grid"; // "grid" | "slider"
+
+// Assign an already-loaded blob URL to an img/video pair based on its kind.
+function assignCompareMedia(url, kind, imgEl, vidEl) {
+  if (!imgEl || !vidEl) return;
+  if (url && kind === "image") {
+    imgEl.src = url; imgEl.classList.remove("hidden");
+    vidEl.classList.add("hidden"); vidEl.removeAttribute("src");
+  } else if (url && kind === "video") {
+    vidEl.src = url; vidEl.classList.remove("hidden");
+    imgEl.classList.add("hidden"); imgEl.removeAttribute("src");
+  } else {
+    imgEl.classList.add("hidden"); imgEl.removeAttribute("src");
+    vidEl.pause && vidEl.pause(); vidEl.classList.add("hidden"); vidEl.removeAttribute("src");
+  }
+}
 
 function hideCompare() {
   const panel = $("#compare-panel");
   if (panel) panel.classList.add("hidden");
-  [["compare-in-img", "compare-in-vid"], ["compare-out-img", "compare-out-vid"]].forEach(([imgId, vidId]) => {
-    const img = $("#" + imgId), vid = $("#" + vidId);
-    if (img) { img.classList.add("hidden"); img.removeAttribute("src"); }
-    if (vid) { vid.pause(); vid.classList.add("hidden"); vid.removeAttribute("src"); }
+  ["compare-in", "compare-out", "cs-before", "cs-after"].forEach((base) => {
+    assignCompareMedia(null, null, $("#" + base + "-img"), $("#" + base + "-vid"));
   });
   if (compareInUrl) { URL.revokeObjectURL(compareInUrl); compareInUrl = null; }
   if (compareOutUrl) { URL.revokeObjectURL(compareOutUrl); compareOutUrl = null; }
 }
 
-async function loadCompareMedia(filePath, imgEl, vidEl) {
+// Fetch the file once and return its blob URL + preview kind (no DOM assignment).
+async function fetchCompareMedia(filePath) {
   const { kind, path: resolved } = previewKind(filePath);
-  if (!kind) return null;
+  if (!kind) return { url: null, kind: null };
   const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(resolved), {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return null;
+  if (!res.ok) return { url: null, kind: null };
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  if (kind === "image") {
-    imgEl.src = url; imgEl.classList.remove("hidden");
-    vidEl.classList.add("hidden"); vidEl.removeAttribute("src");
-  } else {
-    vidEl.src = url; vidEl.classList.remove("hidden");
-    imgEl.classList.add("hidden"); imgEl.removeAttribute("src");
-  }
-  return url;
+  return { url: URL.createObjectURL(blob), kind };
 }
 
 async function showCompare(inputPath, outputPath) {
@@ -1345,16 +1352,67 @@ async function showCompare(inputPath, outputPath) {
   const panel = $("#compare-panel");
   if (!panel) return;
   try {
-    const [inUrl, outUrl] = await Promise.all([
-      loadCompareMedia(inputPath, $("#compare-in-img"), $("#compare-in-vid")),
-      loadCompareMedia(outputPath, $("#compare-out-img"), $("#compare-out-vid")),
+    const [inMedia, outMedia] = await Promise.all([
+      fetchCompareMedia(inputPath),
+      fetchCompareMedia(outputPath),
     ]);
     if (compareInUrl) URL.revokeObjectURL(compareInUrl);
     if (compareOutUrl) URL.revokeObjectURL(compareOutUrl);
-    compareInUrl = inUrl;
-    compareOutUrl = outUrl;
-    if (inUrl || outUrl) panel.classList.remove("hidden");
+    compareInUrl = inMedia.url;
+    compareOutUrl = outMedia.url;
+    // Two-up grid.
+    assignCompareMedia(inMedia.url, inMedia.kind, $("#compare-in-img"), $("#compare-in-vid"));
+    assignCompareMedia(outMedia.url, outMedia.kind, $("#compare-out-img"), $("#compare-out-vid"));
+    // Overlay slider (before = input, after = output), reusing the same blobs.
+    assignCompareMedia(inMedia.url, inMedia.kind, $("#cs-before-img"), $("#cs-before-vid"));
+    assignCompareMedia(outMedia.url, outMedia.kind, $("#cs-after-img"), $("#cs-after-vid"));
+    setCompareSliderPct(50);
+    if (inMedia.url || outMedia.url) panel.classList.remove("hidden");
   } catch (_) { /* best-effort */ }
+}
+
+// Position the divider + clip the "after" layer to reveal pct% from the left.
+function setCompareSliderPct(pct) {
+  const after = $("#cs-after"), divider = $("#cs-divider");
+  if (after) after.style.clipPath = compareClipInset(pct);
+  if (divider) divider.style.left = compareDividerPos(pct);
+}
+
+function setCompareMode(mode) {
+  compareMode = mode === "slider" ? "slider" : "grid";
+  const grid = $("#compare-grid"), slider = $("#compare-slider");
+  if (grid) grid.classList.toggle("hidden", compareMode !== "grid");
+  if (slider) slider.classList.toggle("hidden", compareMode !== "slider");
+  const gridBtn = $("#compare-mode-grid"), sliderBtn = $("#compare-mode-slider");
+  [[gridBtn, compareMode === "grid"], [sliderBtn, compareMode === "slider"]].forEach(([btn, on]) => {
+    if (btn) { btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", String(on)); }
+  });
+}
+
+// Wire the mode toggle + drag-to-reveal on the slider box (called once at startup).
+function setupCompareControls() {
+  const gridBtn = $("#compare-mode-grid"), sliderBtn = $("#compare-mode-slider");
+  if (gridBtn) gridBtn.addEventListener("click", () => setCompareMode("grid"));
+  if (sliderBtn) sliderBtn.addEventListener("click", () => setCompareMode("slider"));
+  const box = $("#compare-slider-box");
+  if (!box) return;
+  let dragging = false;
+  const moveTo = (clientX) => {
+    const r = box.getBoundingClientRect();
+    setCompareSliderPct(compareSliderPercent(clientX, r.left, r.width));
+  };
+  box.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    box.setPointerCapture && box.setPointerCapture(e.pointerId);
+    moveTo(e.clientX);
+  });
+  box.addEventListener("pointermove", (e) => { if (dragging) moveTo(e.clientX); });
+  const stop = (e) => {
+    dragging = false;
+    box.releasePointerCapture && e && box.releasePointerCapture(e.pointerId);
+  };
+  box.addEventListener("pointerup", stop);
+  box.addEventListener("pointercancel", stop);
 }
 
 // --- Completion actions: Open and Reveal in Explorer buttons after a run ---
@@ -2499,3 +2557,4 @@ function setupFieldTooltips() {
 }
 
 setupFieldTooltips();
+setupCompareControls();

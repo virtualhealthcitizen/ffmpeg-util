@@ -1476,8 +1476,14 @@
 
     <!-- Two-up compare: input (left) vs output (right), shown after a run when both are previewable -->
     <section class="card compare-panel hidden" id="compare-panel">
-      <label>Before / After</label>
-      <div class="compare-grid">
+      <div class="compare-head">
+        <label>Before / After</label>
+        <div class="compare-mode" role="tablist" aria-label="Compare view">
+          <button type="button" id="compare-mode-grid" class="compare-mode-btn active" aria-pressed="true">Side by side</button>
+          <button type="button" id="compare-mode-slider" class="compare-mode-btn" aria-pressed="false">Slider</button>
+        </div>
+      </div>
+      <div class="compare-grid" id="compare-grid">
         <div class="compare-cell">
           <div class="compare-cell-label">Before</div>
           <img id="compare-in-img" class="hidden" alt="input" />
@@ -1488,6 +1494,21 @@
           <img id="compare-out-img" class="hidden" alt="output" />
           <video id="compare-out-vid" class="hidden" controls></video>
         </div>
+      </div>
+      <!-- Overlay slider: after over before, a draggable divider reveals the split -->
+      <div class="compare-slider hidden" id="compare-slider">
+        <div class="compare-slider-box" id="compare-slider-box">
+          <div class="cs-layer cs-before">
+            <img id="cs-before-img" class="hidden" alt="before" />
+            <video id="cs-before-vid" class="hidden" muted></video>
+          </div>
+          <div class="cs-layer cs-after" id="cs-after">
+            <img id="cs-after-img" class="hidden" alt="after" />
+            <video id="cs-after-vid" class="hidden" muted></video>
+          </div>
+          <div class="cs-divider" id="cs-divider"><div class="cs-handle"></div></div>
+        </div>
+        <div class="compare-cell-label">◄ Before&nbsp;&nbsp;·&nbsp;&nbsp;After ►</div>
       </div>
     </section>
 

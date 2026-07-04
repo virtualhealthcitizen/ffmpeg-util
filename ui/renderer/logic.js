@@ -28,6 +28,28 @@
     return previewKind(inputPath).kind !== null && previewKind(outputPath).kind !== null;
   }
 
+  // Before/after compare slider: from a pointer x, the box's left edge and its
+  // width, return the reveal percentage (0–100, one decimal) of the "after"
+  // layer. Clamped to the box; a zero/negative width falls back to a centred 50.
+  function compareSliderPercent(clientX, rectLeft, rectWidth) {
+    if (!(rectWidth > 0)) return 50;
+    const pct = ((clientX - rectLeft) / rectWidth) * 100;
+    return Math.max(0, Math.min(100, Math.round(pct * 10) / 10));
+  }
+
+  // CSS clip-path for the "after" layer so only its left `pct`% shows over the
+  // "before" layer beneath (inset clips the layer from the right by the complement).
+  function compareClipInset(pct) {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `inset(0 ${100 - p}% 0 0)`;
+  }
+
+  // CSS left offset for the divider/handle at `pct`%.
+  function compareDividerPos(pct) {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `${p}%`;
+  }
+
   // Derive a default output path from an input path (swap the extension).
   function suggestOutput(inputPath, ext = ".out.mp4") {
     if (!inputPath) return "output" + ext;
@@ -1748,6 +1770,9 @@
     FIELD_VALIDATORS,
     validateField,
     shouldShowCompare,
+    compareSliderPercent,
+    compareClipInset,
+    compareDividerPos,
     COMPRESS_QUICK_PRESETS,
     compressQuickPreset,
   };

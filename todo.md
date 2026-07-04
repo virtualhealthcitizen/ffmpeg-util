@@ -365,8 +365,19 @@ Direct-manipulation (visual instead of typed numbers):
       `styles.css`; `setupTimelineDrag`/`updateTimelineBar`/`updateTimelinePlayhead` in
       `renderer.js`. Verified: 215 node:test + headless E2E 9/9 (bar hidden on Convert,
       appears on Trim with video, both handles visible, in-handle at 50% after typing 1.5s
-      into a 3s clip, playhead element present, bar hides on switch to Compress). ← next
-- [ ] Before/after compare slider on the output preview (drag a divider over input↔output).
+      into a 3s clip, playhead element present, bar hides on switch to Compress).
+- [x] Before/after compare slider on the output preview (drag a divider over input↔output) —
+      a "Side by side / Slider" toggle in the compare panel header switches the two-up grid
+      for an overlay view: the output ("after") is stacked over the input ("before") and a
+      draggable divider clips it to reveal the split (`clip-path: inset`). Pure
+      `compareSliderPercent`/`compareClipInset`/`compareDividerPos` in `logic.js` (pointer-x →
+      clamped %, layer clip, divider offset); `#compare-slider` overlay + `.cs-layer/.cs-divider`
+      in `index.html`/`styles.css`; `setupCompareControls`/`setCompareSliderPct`/`setCompareMode`
+      in `renderer.js` (pointer-capture drag, reuses the already-fetched compare blobs — no
+      re-fetch). Verified: 218 node:test (+4: percent/clip/divider math) + headless Electron E2E
+      12/12 vs the real sidecar (toggle+slider elements present, panel hidden pre-run, compress →
+      panel + slider layers populated, Slider mode hides grid, default divider 50%, drag to 25%
+      → divider 25% + after-clip inset 75%, toggle back to grid) + committed smoke 5/5. ← next
 
 Input affordances (kill the typed-number friction — this is what bit "Blur pad"):
 - [x] **Auto source-preview + friendly probe card** — on file select/drop/type, the

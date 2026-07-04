@@ -595,10 +595,88 @@ button.danger:hover { background: var(--err); color: #fff; }
 
 /* Two-up before/after compare panel */
 .compare-panel.hidden { display: none; }
+.compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.compare-mode {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.compare-mode-btn {
+  border: none;
+  background: var(--btn);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.compare-mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
 .compare-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+.compare-grid.hidden { display: none; }
+
+/* Overlay slider: before + after stacked, a draggable divider reveals the split */
+.compare-slider.hidden { display: none; }
+.compare-slider-box {
+  position: relative;
+  width: 100%;
+  max-height: 260px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--inset);
+  touch-action: none;
+  user-select: none;
+  cursor: ew-resize;
+}
+.cs-layer {
+  position: absolute;
+  inset: 0;
+}
+.cs-layer img, .cs-layer video {
+  width: 100%;
+  height: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+.cs-layer img.hidden, .cs-layer video.hidden { display: none; }
+/* The box height is driven by the before layer flowing in normal layout. */
+.cs-before { position: relative; }
+.cs-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: var(--accent);
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+.cs-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 .compare-cell-label {
   text-align: center;
