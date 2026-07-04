@@ -69,6 +69,7 @@
       <button data-tab="crop_aspect">Aspect</button>
       <button data-tab="mono">Mono</button>
       <button data-tab="title">Title</button>
+      <button data-tab="chapters">Chapters</button>
       <button data-tab="waveform">Waveform</button>
       <button data-tab="sample_rate">Sample rate</button>
       <button data-tab="trim_silence">Trim silence</button>
@@ -981,6 +982,25 @@
       </div>
       <p class="hint">Sets the title metadata tag; streams are copied (no re-encode).</p>
       <div class="row"><button class="primary" id="run-title">Set title</button></div>
+    </section>
+
+    <!-- Chapters -->
+    <section class="card panel" id="panel-chapters">
+      <label>Input file</label>
+      <div class="row">
+        <input id="chapters-input" type="text" placeholder="Choose a source file…" />
+        <button class="pick-file" data-target="chapters-input">Browse…</button>
+        <button class="secondary probe-btn" data-source="chapters-input">Probe</button>
+      </div>
+      <label>Output file</label>
+      <div class="row">
+        <input id="chapters-output" type="text" placeholder="Choose an output path…" />
+        <button class="pick-save" data-target="chapters-output">Save as…</button>
+      </div>
+      <label>Chapters <span class="field-tip" data-tip="chapters-chapters">?</span></label>
+      <textarea id="chapters-chapters" rows="5" placeholder="0:00 Introduction&#10;0:30 Chapter 2&#10;1:00 The Ending"></textarea>
+      <p class="hint">One chapter per line: <code>timestamp title</code>. Timestamps: seconds, MM:SS, or HH:MM:SS. Streams are copied.</p>
+      <div class="row"><button class="primary" id="run-chapters">Add chapters</button></div>
     </section>
 
     <!-- Waveform -->

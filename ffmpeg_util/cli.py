@@ -1,7 +1,9 @@
 """argparse-based command-line interface for ffmpeg-util."""
 
 import argparse
+import os
 import sys
+import tempfile
 
 from . import __version__, commands
 from .errors import FfmpegError
@@ -302,6 +304,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("input")
     p.add_argument("output")
     p.add_argument("--title", default="", help="Title text (empty clears it).")
+    _add_global_flags(p)
+
+    # chapters (embed chapter markers)
+    p = sub.add_parser("chapters", help="Embed chapter markers from a text list.")
+    p.add_argument("input")
+    p.add_argument("output")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--chapters-file", metavar="FILE",
+                   help="Text file with one chapter per line: '<timestamp> <title>'.")
+    g.add_argument("--chapters", dest="chapters_inline", metavar="TEXT",
+                   help="Chapter list as a string (newline-separated lines).")
     _add_global_flags(p)
 
     # sample-rate
@@ -803,6 +816,29 @@ def _dispatch(args: argparse.Namespace) -> int:
             vcodec=args.vcodec, preset=args.preset,
         )
         runner.run_ffmpeg(ff)
+        return 0
+
+    if args.command == "chapters":
+        if args.chapters_file:
+            with open(args.chapters_file, "r", encoding="utf-8") as fh:
+                chapters_text = fh.read()
+        else:
+            chapters_text = args.chapters_inline or ""
+        chapters = commands.parse_chapters_text(chapters_text)
+        dur = commands.probe_duration(runner, args.input)
+        if dur is None and not runner.dry_run:
+            print("Could not probe input duration; cannot compute chapter end times.")
+            return 1
+        fd, meta_file = tempfile.mkstemp(suffix=".txt", prefix="ffchapters_")
+        os.close(fd)
+        try:
+            commands.write_chapters_meta(chapters, dur or 0.0, meta_file)
+            runner.run_ffmpeg(commands.build_chapters_args(args.input, meta_file, args.output))
+        finally:
+            try:
+                os.remove(meta_file)
+            except OSError:
+                pass
         return 0
 
     return 2  # unreachable: argparse enforces a valid subcommand

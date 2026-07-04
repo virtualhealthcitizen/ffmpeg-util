@@ -1287,6 +1287,96 @@ def build_trim_pct_args(
     return args
 
 
+def _parse_timestamp_s(ts: str) -> float:
+    """Parse a timestamp string to seconds (float).
+
+    Accepts: plain seconds ("90", "1.5"), MM:SS, or HH:MM:SS(.ms).
+    """
+    ts = ts.strip()
+    try:
+        return float(ts)
+    except ValueError:
+        pass
+    parts = ts.split(":")
+    try:
+        if len(parts) == 2:
+            return int(parts[0]) * 60 + float(parts[1])
+        if len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+    except (ValueError, IndexError):
+        pass
+    raise ValueError(f"Cannot parse timestamp: {ts!r}")
+
+
+def parse_chapters_text(text: str) -> list[dict]:
+    """Parse chapter lines into dicts with ``start_s`` and ``title`` keys.
+
+    Each non-blank, non-comment line must be ``<timestamp> <title>`` where
+    timestamp accepts plain seconds, MM:SS, or HH:MM:SS.
+    Returns a list sorted ascending by start time.
+    """
+    chapters = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split(None, 1)
+        if len(parts) < 2:
+            raise ValueError(f"Expected '<timestamp> <title>', got: {line!r}")
+        chapters.append({"start_s": _parse_timestamp_s(parts[0]), "title": parts[1].strip()})
+    if not chapters:
+        raise ValueError("No chapters found — each line should be '<timestamp> <title>'")
+    chapters.sort(key=lambda c: c["start_s"])
+    return chapters
+
+
+def write_chapters_meta(chapters: list[dict], duration_s: float, meta_file: str) -> None:
+    """Write an ffmetadata file with chapter markers.
+
+    ``chapters`` is a list of ``{'start_s': float, 'title': str}`` dicts.
+    The last chapter ends at ``duration_s``.  Uses a 1/1000 (ms) timebase.
+    """
+    tb = 1000
+    with open(meta_file, "w", encoding="utf-8") as fh:
+        fh.write(";FFMETADATA1\n\n")
+        for i, ch in enumerate(chapters):
+            start_ms = int(ch["start_s"] * tb)
+            end_ms = (
+                int(chapters[i + 1]["start_s"] * tb)
+                if i + 1 < len(chapters)
+                else int(duration_s * tb)
+            )
+            title = (
+                ch["title"]
+                .replace("\\", "\\\\")
+                .replace("=", "\\=")
+                .replace(";", "\\;")
+                .replace("#", "\\#")
+                .replace("\n", "\\\n")
+            )
+            fh.write("[CHAPTER]\n")
+            fh.write(f"TIMEBASE=1/{tb}\n")
+            fh.write(f"START={start_ms}\n")
+            fh.write(f"END={end_ms}\n")
+            fh.write(f"title={title}\n\n")
+
+
+def build_chapters_args(input_path: str, meta_file: str, output_path: str) -> list[str]:
+    """Build args to embed chapters from an ffmetadata ``meta_file`` into ``input_path``.
+
+    All streams and existing metadata are stream-copied; the chapter markers from
+    ``meta_file`` replace any prior chapter data.
+    """
+    return [
+        "-i", input_path,
+        "-f", "ffmetadata", "-i", meta_file,
+        "-map_metadata", "1",
+        "-map", "0",
+        "-c", "copy",
+        output_path,
+    ]
+
+
 def build_poster_frame_args(
     input_path: str,
     output_path: str,

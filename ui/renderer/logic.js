@@ -100,6 +100,7 @@
     crop_aspect: { tag: "aspect" },
     mono: { tag: "mono" },
     title: { tag: "titled" },
+    chapters: { tag: "chaptered" },
     waveform: { tag: "wave", ext: ".png" },
     sample_rate: { tag: "resample" },
     hstack: { tag: "hstack" },
@@ -374,7 +375,7 @@
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
     { name: "Audio", tabs: ["volume", "mute", "replace_audio", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform"] },
     { name: "Combine", tabs: ["concat", "hstack", "vstack", "xfade_concat", "pip"] },
-    { name: "Metadata", tabs: ["title"] },
+    { name: "Metadata", tabs: ["title", "chapters"] },
   ];
 
   // Lay the given tab ids out under their categories, in category order, keeping
@@ -437,6 +438,7 @@
     crop_aspect: "Auto-crop to an aspect ratio. Example: 16:9 turns 320×240 into 320×180 (sides kept, top/bottom trimmed).",
     mono: "Downmix audio to a single channel (-ac 1). No options to set — just run.",
     title: "Set or clear the metadata title tag. Example: type a Title, or leave it blank to clear.",
+    chapters: "Embed chapter markers (timestamps + titles). One line per chapter: '0:00 Intro', '0:30 Chapter 2'. Streams are stream-copied.",
     waveform: "Render the audio as a waveform PNG. Example: 640×120 for a compact strip.",
     sample_rate: "Resample audio. Example: Rate 22050 down-samples a 44100 Hz track.",
     hstack: "Place two videos side by side (equal heights). Output width is the sum of both.",
@@ -1621,6 +1623,8 @@
     "autocrop-limit":  "Black level threshold (0–255): pixels at or below this brightness count as 'bar' pixels. Default 24 suits most clips.",
     // Title
     "title-title":     "Metadata title tag to embed in the output file. Leave blank to clear the existing title.",
+    // Chapters
+    "chapters-chapters": "One chapter per line: '<timestamp> <title>'. Timestamps accept seconds (90), MM:SS (1:30), or HH:MM:SS (0:01:30). Example: '0:00 Intro'.",
     // Sharpen
     "sharpen-amount":  "Unsharp mask luma amount: >0 sharpens (1.5 = moderate, 5 = heavy), <0 softens, 0 = no-op.",
     // Denoise
