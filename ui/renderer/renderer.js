@@ -1617,7 +1617,7 @@ async function runQueueAll() {
     while ((next = nextQueuedItem(opQueueData))) {
       opQueueData = updateQueueItem(opQueueData, next.id, { status: "running" });
       renderQueue();
-      const ok = await run(next.label, next.op, next.body);
+      const ok = await run(next.label, next.op, next.body, next.tab);
       opQueueData = updateQueueItem(opQueueData, next.id, { status: ok ? "done" : "error" });
       setSettings({ opQueue: opQueueData }).catch(() => {});
       renderQueue();
@@ -1854,9 +1854,15 @@ async function validateRunPaths(tab, body) {
 // Returns true once the op completes without error, false on any early-out,
 // validation failure, cancel, or error — so the queue runner (below) knows
 // whether to advance the item to "done" or "error".
-async function run(label, op, body) {
+//
+// `tab` is the op's OWN tab (defaults to whatever's on-screen for a direct Run
+// click); the queue runner passes the tab an item was queued from explicitly,
+// since the user may have navigated elsewhere by the time that item executes —
+// persisted per-tab state (recent output, job history, field highlighting)
+// must follow the op, not the currently-visible tab.
+async function run(label, op, body, tab = currentTab()) {
   if (opInFlight) return false; // an op is already running — ignore the extra click
-  const validation = await validateRunPaths(currentTab(), body);
+  const validation = await validateRunPaths(tab, body);
   if (!validation.ok) {
     setStatus(validation.message, true);
     return false;
@@ -1923,8 +1929,8 @@ async function run(label, op, body) {
     const notifyPayload = notifyComplete(doneBasename, notifyEnabled);
     if (notifyPayload) notify(notifyPayload.title, notifyPayload.body).catch(() => {});
     if (result && result.output) {
-      recordRecentOutput(currentTab(), result.output); // persist output history for this tab
-      pushJobRecord({ tab: currentTab(), label, op, body, outputPath: result.output, ts: Date.now() });
+      recordRecentOutput(tab, result.output); // persist output history for this tab
+      pushJobRecord({ tab, label, op, body, outputPath: result.output, ts: Date.now() });
       showPreview(result.output);
       const primaryInput = body.input || (body.inputs && body.inputs[0]) || null;
       // Compare the output back to the primary input (single-input ops, else first).
