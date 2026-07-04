@@ -71,3 +71,12 @@ def test_pip_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "filter_complex" in out and "overlay" in out and "out.mp4" in out
+
+
+def test_chapters_dry_run(capsys):
+    rc = main(["chapters", "in.mp4", "out.mp4",
+               "--chapters", "0:00 Intro\n0:30 Chapter 2",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "ffmetadata" in out and "out.mp4" in out

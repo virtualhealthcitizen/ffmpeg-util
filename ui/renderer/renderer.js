@@ -2216,6 +2216,16 @@ $("#run-title").addEventListener("click", () => {
   });
 });
 
+$("#run-chapters").addEventListener("click", () => {
+  if (!requireFields("chapters-input", "chapters-output", "chapters-chapters")) return;
+  run("Adding chapters", "chapters", {
+    input: val("chapters-input"),
+    output: val("chapters-output"),
+    chapters_text: val("chapters-chapters"),
+    overwrite: true,
+  });
+});
+
 $("#run-mono").addEventListener("click", () => {
   if (!requireFields("mono-input", "mono-output")) return;
   run("Downmixing to mono", "mono", {

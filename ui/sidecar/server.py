@@ -1231,6 +1231,38 @@ def pixfmt(req: PixfmtReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class ChaptersReq(BaseModel):
+    input: str
+    output: str
+    chapters_text: str
+    overwrite: bool = True
+
+
+@app.post("/chapters")
+def chapters_op(req: ChaptersReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        chapters = commands.parse_chapters_text(req.chapters_text)
+        dur = commands.probe_duration(runner, req.input)
+        if dur is None:
+            raise ValueError("Could not probe input duration for chapters")
+        fd, meta_file = tempfile.mkstemp(suffix=".txt", prefix="ffchapters_")
+        os.close(fd)
+        try:
+            commands.write_chapters_meta(chapters, dur, meta_file)
+            runner.run_ffmpeg(commands.build_chapters_args(req.input, meta_file, req.output))
+        finally:
+            try:
+                os.remove(meta_file)
+            except OSError:
+                pass
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1331,6 +1363,8 @@ class RunReq(BaseModel):
     smoothing: int = 10
     # pixfmt (pixel format conversion)
     pix_fmt: str = "yuv420p"
+    # chapters (metadata)
+    chapters_text: str = ""
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1525,6 +1559,15 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_concat_args(inputs, req.output, list_file), list_file
     if op == "pixfmt":
         return commands.build_pixfmt_args(req.input, req.output, req.pix_fmt), None
+    if op == "chapters":
+        chapters = commands.parse_chapters_text(req.chapters_text or "")
+        dur = total if total is not None else commands.probe_duration(FfmpegRunner(), req.input)
+        if dur is None:
+            raise ValueError("Could not probe input duration for chapters")
+        fd, meta_file = tempfile.mkstemp(suffix=".txt", prefix="ffchapters_")
+        os.close(fd)
+        commands.write_chapters_meta(chapters, dur, meta_file)
+        return commands.build_chapters_args(req.input, meta_file, req.output), meta_file
     raise ValueError(f"Unknown op: {op!r}")
 
 

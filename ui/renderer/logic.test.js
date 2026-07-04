@@ -1250,7 +1250,7 @@ const NAV_TABS = [
   "convert", "trim", "trim_pct", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
-  "mono", "title", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "pip", "blur_pad",
+  "mono", "title", "chapters", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "pip", "blur_pad",
   "image_to_video", "autocrop", "remux", "preview_clip", "blur_region", "poster_frame", "auto_orient",
   "stabilize", "watermark", "hardsub", "pixfmt",
 ];
@@ -1775,6 +1775,21 @@ test("watermark: buildCliCommand produces correct command", () => {
   assert.ok(cmd.includes("--font-size 24"), "should include --font-size");
   assert.ok(cmd.includes("--opacity 0.8"), "should include --opacity");
   assert.ok(cmd.includes("-y"), "overwrite flag should append -y");
+});
+
+test("chapters: OUTPUT_SPECS gives chaptered tag preserving extension", () => {
+  const out = L.suggestOutputForTab("C:/v/clip.mp4", "chapters");
+  assert.ok(out.endsWith(".chaptered.mp4"), "should add .chaptered tag");
+});
+
+test("chapters: TOOL_CATEGORIES includes chapters under Metadata", () => {
+  const meta = L.TOOL_CATEGORIES.find((g) => g.name === "Metadata");
+  assert.ok(meta, "Metadata category exists");
+  assert.ok(meta.tabs.includes("chapters"), "chapters in Metadata");
+});
+
+test("chapters: helpForTab returns non-empty help", () => {
+  assert.ok(L.helpForTab("chapters").length > 0, "chapters has help text");
 });
 
 test("watermark: validateField validates watermark-opacity via SLIDER_SPECS", () => {

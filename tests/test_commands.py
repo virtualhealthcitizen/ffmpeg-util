@@ -861,6 +861,82 @@ def test_build_remux_args_uses_copy():
     assert args == ["-i", "in.mkv", "-c", "copy", "out.mp4"]
 
 
+def test_parse_timestamp_s_accepts_seconds():
+    assert c._parse_timestamp_s("90") == 90.0
+    assert c._parse_timestamp_s("1.5") == 1.5
+
+
+def test_parse_timestamp_s_accepts_mmss():
+    assert c._parse_timestamp_s("1:30") == 90.0
+    assert c._parse_timestamp_s("0:05") == 5.0
+
+
+def test_parse_timestamp_s_accepts_hhmmss():
+    assert c._parse_timestamp_s("1:00:00") == 3600.0
+    assert c._parse_timestamp_s("0:01:30") == 90.0
+
+
+def test_parse_timestamp_s_rejects_garbage():
+    with pytest.raises(ValueError):
+        c._parse_timestamp_s("abc")
+
+
+def test_parse_chapters_text_basic():
+    text = "0:00 Intro\n0:30 Chapter 2\n1:00 The End"
+    chapters = c.parse_chapters_text(text)
+    assert len(chapters) == 3
+    assert chapters[0] == {"start_s": 0.0, "title": "Intro"}
+    assert chapters[1] == {"start_s": 30.0, "title": "Chapter 2"}
+    assert chapters[2] == {"start_s": 60.0, "title": "The End"}
+
+
+def test_parse_chapters_text_skips_blanks_and_comments():
+    text = "# a comment\n\n0:00 Start\n\n# another\n0:30 End"
+    chapters = c.parse_chapters_text(text)
+    assert len(chapters) == 2
+
+
+def test_parse_chapters_text_sorts_by_start():
+    text = "1:00 Late\n0:00 Early"
+    chapters = c.parse_chapters_text(text)
+    assert chapters[0]["title"] == "Early"
+    assert chapters[1]["title"] == "Late"
+
+
+def test_parse_chapters_text_empty_raises():
+    with pytest.raises(ValueError, match="No chapters"):
+        c.parse_chapters_text("   \n# only a comment\n")
+
+
+def test_parse_chapters_text_missing_title_raises():
+    with pytest.raises(ValueError):
+        c.parse_chapters_text("0:00")
+
+
+def test_write_chapters_meta(tmp_path):
+    meta = tmp_path / "chaps.txt"
+    chapters = [{"start_s": 0.0, "title": "Intro"}, {"start_s": 30.0, "title": "Part 2"}]
+    c.write_chapters_meta(chapters, 60.0, str(meta))
+    content = meta.read_text(encoding="utf-8")
+    assert ";FFMETADATA1" in content
+    assert "title=Intro" in content
+    assert "title=Part 2" in content
+    assert "START=0\n" in content
+    assert "START=30000\n" in content
+    assert "END=30000\n" in content
+    assert "END=60000\n" in content
+
+
+def test_build_chapters_args_structure():
+    args = c.build_chapters_args("in.mp4", "meta.txt", "out.mp4")
+    assert args[0] == "-i" and args[1] == "in.mp4"
+    assert "-f" in args and args[args.index("-f") + 1] == "ffmetadata"
+    assert "-map_metadata" in args and args[args.index("-map_metadata") + 1] == "1"
+    assert "-map" in args and args[args.index("-map") + 1] == "0"
+    assert "-c" in args and args[args.index("-c") + 1] == "copy"
+    assert args[-1] == "out.mp4"
+
+
 def test_build_remux_args_preserves_output_path():
     args = c.build_remux_args("video.mp4", "video.mov")
     assert args[0] == "-i" and args[1] == "video.mp4"
