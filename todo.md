@@ -655,7 +655,15 @@ Persistence / memory:
 
 Power-user flow:
 - [ ] Operation queue — line up several ops and run them in sequence.
-- [ ] Chain ops on one file (trim → compress …) without manual disk round-trips.
+- [x] Chain ops on one file — after a successful run, a "→ Send to" select+button
+      in the completion-actions area populates any other tab's input with the output
+      and switches to it. Pure `chainTabOptions(allTabData, currentTab)` in `logic.js`
+      (filters current tab from nav descriptors); `populateChainSelect` builds the
+      `<select>` from live nav buttons + `chainTabOptions`; click handler calls
+      `tabBtn.click()` + `dropUpdate`. Verified: node:test 231/231 (3 new) + headless
+      Electron E2E 8/8 (chain-tab-select visible with 51 options after compress run,
+      excludes compress, sends output to trim tab + trim-input set to output path,
+      smoke 5/5). ← next
 - [x] **"Copy as CLI"** — on each run, a `#cli-command` row shows the equivalent
       `ffmpeg-util <op> …` command (reconstructed from the op + request body) with a
       Copy button. Pure `buildCliCommand` in `logic.js` (kebab subcommand/flags,

@@ -353,8 +353,9 @@ label.inline[data-field-err]::after {
 .summary::before { content: "📊 "; }
 
 /* Open / Reveal-in-Explorer buttons shown after a successful op. */
-.completion-actions { margin-top: 10px; display: flex; gap: 8px; }
+.completion-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .completion-actions.hidden { display: none; }
+.chain-to-row { display: flex; gap: 6px; align-items: center; }
 
 /* Job history strip: list of recent completed runs. */
 .job-history { margin-top: 12px; }

@@ -1447,6 +1447,24 @@ test("outputBaseName extracts filename from Windows, POSIX, and bare paths", () 
   assert.equal(L.outputBaseName(""), null);
 });
 
+test("chainTabOptions excludes the current tab from chain options", () => {
+  const tabs = [
+    { tab: "compress", label: "Compress" },
+    { tab: "trim", label: "Trim" },
+  ];
+  assert.deepStrictEqual(L.chainTabOptions(tabs, "compress"), [{ tab: "trim", label: "Trim" }]);
+});
+
+test("chainTabOptions returns all entries when currentTab is not in the list", () => {
+  const tabs = [{ tab: "compress", label: "Compress" }];
+  assert.deepStrictEqual(L.chainTabOptions(tabs, "convert"), tabs);
+});
+
+test("chainTabOptions handles null/empty input gracefully", () => {
+  assert.deepStrictEqual(L.chainTabOptions([], "compress"), []);
+  assert.deepStrictEqual(L.chainTabOptions(null, "compress"), []);
+});
+
 test("runInputEntries maps body inputs to [path, fieldId] pairs", () => {
   // single-input tab
   assert.deepEqual(L.runInputEntries("compress", { input: "in.mp4", output: "out.mp4" }),
