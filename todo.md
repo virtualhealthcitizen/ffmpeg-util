@@ -695,7 +695,18 @@ Power-user flow:
       queue mode is on produces neither output yet, turning queue mode off +
       "Run queue" produces BOTH real outputs and both items read "— done", Remove
       drops exactly one item, Clear empties + hides the panel) + committed smoke
-      5/5 (sidecar health, 52 nav tabs, real compress still runs). ← next
+      5/5 (sidecar health, 52 nav tabs, real compress still runs).
+      **Bug fix (hunt):** the queue runner called `run(next.label, next.op, next.body)`
+      without `next.tab` — the tab an item was queued from — so `run()` fell back to
+      `currentTab()`, the tab currently on-screen. Queuing ops from several tabs (the
+      feature's own headline use case) then switching tabs before "Run queue" finished
+      meant a completed item's persisted state — `recordRecentOutput` (Save-As default,
+      the very thing `hunt/save-dialog-default-ignores-tab` fixed), `pushJobRecord` (job
+      history), and the validation field-error highlight — was attributed to whatever
+      tab happened to be visible when that item executed, not the tab it belonged to.
+      Fixed by giving `run()` a `tab = currentTab()` parameter (unchanged default for a
+      direct Run click) and having `runQueueAll` pass `next.tab` explicitly. 245 node:test
+      (untouched, still green) + headless E2E smoke ok=true. ← next
 - [x] Chain ops on one file — after a successful run, a "→ Send to" select+button
       in the completion-actions area populates any other tab's input with the output
       and switches to it. Pure `chainTabOptions(allTabData, currentTab)` in `logic.js`
