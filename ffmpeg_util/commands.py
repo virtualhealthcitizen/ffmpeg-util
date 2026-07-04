@@ -1377,6 +1377,65 @@ def build_chapters_args(input_path: str, meta_file: str, output_path: str) -> li
     ]
 
 
+def parse_segments_text(text: str) -> list[tuple[float, float]]:
+    """Parse trim-segment lines into a list of ``(start_s, end_s)`` tuples.
+
+    Each non-blank, non-comment line is ``<start> <end>`` (seconds, MM:SS, or
+    HH:MM:SS). Segments are kept in the given order (not sorted), so the order
+    of lines controls the order they appear in the joined output.
+    """
+    segments: list[tuple[float, float]] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) != 2:
+            raise ValueError(f"Expected '<start> <end>', got: {line!r}")
+        start_s = _parse_timestamp_s(parts[0])
+        end_s = _parse_timestamp_s(parts[1])
+        if end_s <= start_s:
+            raise ValueError(f"End must be after start: {line!r}")
+        segments.append((start_s, end_s))
+    if not segments:
+        raise ValueError("No segments found — each line should be '<start> <end>'")
+    return segments
+
+
+def build_trim_segments_args(
+    input_path: str,
+    output_path: str,
+    segments: Sequence[tuple[float, float]],
+) -> list[str]:
+    """Build args to cut multiple segments from one input and join them in order.
+
+    Each segment is cut with the trim/atrim filters (frame-accurate — stream
+    copy can't join arbitrary, non-keyframe-aligned cuts) and stitched together
+    with the concat filter, re-encoding the result.
+    """
+    if len(segments) < 1:
+        raise ValueError("Need at least one segment.")
+    n = len(segments)
+    fc_parts: list[str] = []
+    for i, (start_s, end_s) in enumerate(segments):
+        fc_parts.append(f"[0:v]trim=start={start_s}:end={end_s},setpts=PTS-STARTPTS[v{i}]")
+        fc_parts.append(f"[0:a]atrim=start={start_s}:end={end_s},asetpts=PTS-STARTPTS[a{i}]")
+    concat_in = "".join(f"[v{i}][a{i}]" for i in range(n))
+    fc_parts.append(f"{concat_in}concat=n={n}:v=1:a=1[v][a]")
+    fc = ";".join(fc_parts)
+
+    return [
+        "-i", input_path,
+        "-filter_complex", fc,
+        "-map", "[v]",
+        "-map", "[a]",
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-c:a", "aac",
+        output_path,
+    ]
+
+
 def build_poster_frame_args(
     input_path: str,
     output_path: str,

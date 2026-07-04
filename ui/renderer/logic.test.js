@@ -1264,7 +1264,7 @@ test("nextVisibleTab handles a current tab hidden by the filter, and an empty li
 // The canonical nav order from index.html — the category map must cover exactly
 // these, each once. (Kept in sync with the <nav class="tabs"> buttons.)
 const NAV_TABS = [
-  "convert", "trim", "trim_pct", "concat", "thumbnail", "compress", "gif", "speed", "transform",
+  "convert", "trim", "trim_pct", "trim_segments", "concat", "thumbnail", "compress", "gif", "speed", "transform",
   "crop", "mute", "replace_audio", "pad", "loop", "frames", "scene_thumbs", "reverse", "volume",
   "fade", "grayscale", "invert", "timecode", "deinterlace", "sharpen", "denoise", "loudnorm", "boomerang", "eq", "fps", "crop_aspect",
   "mono", "title", "chapters", "waveform", "sample_rate", "trim_silence", "hstack", "vstack", "xfade_concat", "pip", "blur_pad",

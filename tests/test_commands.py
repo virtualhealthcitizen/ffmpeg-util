@@ -937,6 +937,57 @@ def test_build_chapters_args_structure():
     assert args[-1] == "out.mp4"
 
 
+def test_parse_segments_text_basic():
+    text = "0 5\n10 15\n20 25"
+    segments = c.parse_segments_text(text)
+    assert segments == [(0.0, 5.0), (10.0, 15.0), (20.0, 25.0)]
+
+
+def test_parse_segments_text_keeps_given_order():
+    text = "10 15\n0 5"
+    segments = c.parse_segments_text(text)
+    assert segments == [(10.0, 15.0), (0.0, 5.0)]
+
+
+def test_parse_segments_text_skips_blanks_and_comments():
+    text = "# a comment\n\n0 5\n\n# another\n10 15"
+    segments = c.parse_segments_text(text)
+    assert len(segments) == 2
+
+
+def test_parse_segments_text_empty_raises():
+    with pytest.raises(ValueError, match="No segments"):
+        c.parse_segments_text("   \n# only a comment\n")
+
+
+def test_parse_segments_text_wrong_field_count_raises():
+    with pytest.raises(ValueError, match="Expected"):
+        c.parse_segments_text("0 5 extra")
+
+
+def test_parse_segments_text_end_before_start_raises():
+    with pytest.raises(ValueError, match="End must be after start"):
+        c.parse_segments_text("5 5")
+
+
+def test_build_trim_segments_args_structure():
+    args = c.build_trim_segments_args("in.mp4", "out.mp4", [(0.0, 5.0), (10.0, 15.0)])
+    assert args[0] == "-i" and args[1] == "in.mp4"
+    fc = args[args.index("-filter_complex") + 1]
+    assert "trim=start=0.0:end=5.0" in fc
+    assert "trim=start=10.0:end=15.0" in fc
+    assert "atrim=start=0.0:end=5.0" in fc
+    assert "concat=n=2:v=1:a=1[v][a]" in fc
+    assert "-map" in args and "[v]" in args
+    assert "[a]" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_build_trim_segments_args_requires_a_segment():
+    with pytest.raises(ValueError):
+        c.build_trim_segments_args("in.mp4", "out.mp4", [])
+
+
 def test_build_remux_args_preserves_output_path():
     args = c.build_remux_args("video.mp4", "video.mov")
     assert args[0] == "-i" and args[1] == "video.mp4"

@@ -113,6 +113,7 @@
     autocrop: { tag: "autocrop" },
     trim_silence: { tag: "trimmed" },
     trim_pct: { tag: "trimmed" },
+    trim_segments: { tag: "joined" },
     remux: { tag: "remux" },
     preview_clip: { tag: "preview" },
     poster_frame: { tag: "poster", ext: ".png" },
@@ -359,6 +360,7 @@
     image_to_video: "still photo png jpg slideshow loop clip make movie from picture",
     trim_silence: "silence strip trim audio ends start trailing leading remove quiet padding",
     trim_pct: "trim cut percentage percent middle half section portion relative start end",
+    trim_segments: "trim multiple segments cut clips join stitch highlights reel multi-cut combine",
     remux: "container format change mkv mp4 mov avi webm repackage rewrap copy codec",
     preview_clip: "short preview sample quick look downscale first seconds thumbnail clip small",
     poster_frame: "poster frame still grab percentage midpoint cover art representative image",
@@ -377,7 +379,7 @@
   // silently dropped — groupTabs() collects any strays into a trailing "Other".
   const TOOL_CATEGORIES = [
     { name: "Convert", tabs: ["convert", "remux", "pixfmt"] },
-    { name: "Trim & Frames", tabs: ["trim", "trim_pct", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
+    { name: "Trim & Frames", tabs: ["trim", "trim_pct", "trim_segments", "preview_clip", "thumbnail", "poster_frame", "frames", "scene_thumbs", "gif"] },
     { name: "Resize & Frame", tabs: ["compress", "crop", "crop_aspect", "autocrop", "pad", "blur_pad"] },
     { name: "Video FX", tabs: ["transform", "auto_orient", "stabilize", "speed", "fps", "loop", "reverse", "boomerang", "fade", "image_to_video", "timecode", "watermark", "hardsub", "blur_region"] },
     { name: "Color", tabs: ["grayscale", "invert", "deinterlace", "sharpen", "denoise", "eq"] },
@@ -459,6 +461,7 @@
     autocrop: "Detect and remove black bars automatically (cropdetect → crop). Example: letterboxed 320×240 → 320×180.",
     trim_silence: "Strip leading and trailing silence (silenceremove). Example: Threshold -50 dB, Min 0.5s removes quiet pads from recordings.",
     trim_pct: "Trim by position percentage instead of exact timestamps. Example: Start 25 + End 75 keeps the middle half; Start 0 + End 50 keeps the first half.",
+    trim_segments: "Cut several segments and join them in order. One '<start> <end>' per line. Example: '0 5' then '10 15' keeps 0–5s and 10–15s, back to back.",
     remux: "Change the container without re-encoding (-c copy). Example: in.mkv → in.mp4 — fast and lossless when the codecs are container-compatible.",
     preview_clip: "Export the first N seconds at a reduced width — quick sanity-check for long recordings. Example: 5 s · 320 px wide.",
     poster_frame: "Grab one representative frame at a % of the clip's duration. Example: 10% for a near-start cover; 50% for the midpoint; 90% for near the end.",
@@ -1640,6 +1643,8 @@
     "title-title":     "Metadata title tag to embed in the output file. Leave blank to clear the existing title.",
     // Chapters
     "chapters-chapters": "One chapter per line: '<timestamp> <title>'. Timestamps accept seconds (90), MM:SS (1:30), or HH:MM:SS (0:01:30). Example: '0:00 Intro'.",
+    // Trim segments
+    "trim_segments-segments": "One segment per line: '<start> <end>'. Segments are kept in this order. Example: '0 5' then '10 15'.",
     // Sharpen
     "sharpen-amount":  "Unsharp mask luma amount: >0 sharpens (1.5 = moderate, 5 = heavy), <0 softens, 0 = no-op.",
     // Denoise
