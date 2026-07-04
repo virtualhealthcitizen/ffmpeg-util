@@ -1263,6 +1263,26 @@ def chapters_op(req: ChaptersReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class TrimSegmentsReq(BaseModel):
+    input: str
+    output: str
+    segments_text: str
+    overwrite: bool = True
+
+
+@app.post("/trim-segments")
+def trim_segments_op(req: TrimSegmentsReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=req.overwrite)
+    try:
+        commands.require_output_extension(req.output)
+        commands.require_output_dir(req.output)
+        segments = commands.parse_segments_text(req.segments_text)
+        runner.run_ffmpeg(commands.build_trim_segments_args(req.input, req.output, segments))
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return {"output": req.output}
+
+
 class RunReq(BaseModel):
     op: str
     output: str
@@ -1365,6 +1385,8 @@ class RunReq(BaseModel):
     pix_fmt: str = "yuv420p"
     # chapters (metadata)
     chapters_text: str = ""
+    # trim-segments
+    segments_text: str = ""
 
 
 def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str | None]:
@@ -1568,6 +1590,9 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         os.close(fd)
         commands.write_chapters_meta(chapters, dur, meta_file)
         return commands.build_chapters_args(req.input, meta_file, req.output), meta_file
+    if op == "trim_segments":
+        segments = commands.parse_segments_text(req.segments_text or "")
+        return commands.build_trim_segments_args(req.input, req.output, segments), None
     raise ValueError(f"Unknown op: {op!r}")
 
 

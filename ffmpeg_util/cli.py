@@ -369,6 +369,17 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
                    help="Chapter list as a string (newline-separated lines).")
     _add_global_flags(p)
 
+    # trim-segments (cut multiple segments from one input and join them)
+    p = sub.add_parser("trim-segments", help="Cut multiple segments from one input and join them.")
+    p.add_argument("input")
+    p.add_argument("output")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--segments-file", metavar="FILE",
+                   help="Text file with one segment per line: '<start> <end>'.")
+    g.add_argument("--segments", dest="segments_inline", metavar="TEXT",
+                   help="Segment list as a string (newline-separated '<start> <end>' lines).")
+    _add_global_flags(p)
+
     # sample-rate
     p = sub.add_parser("sample-rate", help="Resample audio to a sample rate (Hz).")
     p.add_argument("input")
@@ -891,6 +902,16 @@ def _dispatch(args: argparse.Namespace) -> int:
                 os.remove(meta_file)
             except OSError:
                 pass
+        return 0
+
+    if args.command == "trim-segments":
+        if args.segments_file:
+            with open(args.segments_file, "r", encoding="utf-8") as fh:
+                segments_text = fh.read()
+        else:
+            segments_text = args.segments_inline or ""
+        segments = commands.parse_segments_text(segments_text)
+        runner.run_ffmpeg(commands.build_trim_segments_args(args.input, args.output, segments))
         return 0
 
     return 2  # unreachable: argparse enforces a valid subcommand

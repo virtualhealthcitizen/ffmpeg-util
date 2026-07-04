@@ -80,3 +80,12 @@ def test_chapters_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "ffmetadata" in out and "out.mp4" in out
+
+
+def test_trim_segments_dry_run(capsys):
+    rc = main(["trim-segments", "in.mp4", "out.mp4",
+               "--segments", "0 5\n10 15",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "filter_complex" in out and "concat=n=2" in out and "out.mp4" in out

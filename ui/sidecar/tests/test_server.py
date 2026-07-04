@@ -1703,3 +1703,55 @@ def test_run_stream_pixfmt_produces_output(client, media, auth):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream pixfmt should produce output"
+
+
+def test_trim_segments_joins_two_segments(client, media, auth):
+    d, src = media  # 3s 320x240 clip
+    out = d / "trim_segments_out.mp4"
+    r = client.post(
+        "/trim-segments",
+        json={
+            "input": str(src), "output": str(out),
+            "segments_text": "0 1\n2 3",
+            "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200, r.text
+    assert out.exists()
+    assert abs(_duration(out) - 2.0) < 0.2
+    assert _dims(out) == (320, 240)
+
+
+def test_trim_segments_bad_segments_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/trim-segments",
+        json={"input": str(src), "output": str(d / "bad.mp4"), "segments_text": "not a segment"},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
+def test_trim_segments_requires_auth(client, media):
+    d, src = media
+    r = client.post(
+        "/trim-segments",
+        json={"input": str(src), "output": str(d / "noauth.mp4"), "segments_text": "0 1"},
+    )
+    assert r.status_code == 401
+
+
+def test_run_stream_trim_segments_produces_output(client, media, auth):
+    d, src = media
+    out = d / "trim_segments_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_segments", "input": str(src), "output": str(out),
+              "segments_text": "0 1\n2 3", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream trim_segments should produce output"

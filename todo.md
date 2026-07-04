@@ -211,8 +211,14 @@ Packaging / tests:
       broken on the Scene thumbs tab. Fixed by standardising all 7 element IDs/data-* attributes
       in `index.html` + the 5 hardcoded strings in `renderer.js` + 2 FIELD_TOOLTIPS keys in
       `logic.js`; test assertions in `logic.test.js` updated to match. Verified: 190 node:test
-      + headless Electron E2E ok=True. ← next
-- [ ] Trim multiple segments and join them in one go
+      + headless Electron E2E ok=True.
+- [x] Trim multiple segments and join them in one go — core `parse_segments_text`/
+      `build_trim_segments_args` (trim/atrim + concat filter_complex, re-encoded), CLI
+      `trim-segments --segments/--segments-file`, sidecar (`/trim-segments` + `/run/stream`
+      op `trim_segments`), Trim segments tab (Trim & Frames, textarea of `<start> <end>`
+      lines). Verified: 245 node:test + 221 root pytest + 116 sidecar pytest (0–1s + 2–3s
+      of a 3s clip → ~2s joined output, 320x240 preserved) + headless Electron E2E smoke
+      ok=true (53 nav tabs). ← next
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)

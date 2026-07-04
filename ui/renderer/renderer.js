@@ -2497,6 +2497,16 @@ $("#run-trim_pct").addEventListener("click", () => {
   });
 });
 
+$("#run-trim_segments").addEventListener("click", () => {
+  if (!requireFields("trim_segments-input", "trim_segments-output", "trim_segments-segments")) return;
+  runOrQueue("Trimming segments", "trim_segments", {
+    input: val("trim_segments-input"),
+    output: val("trim_segments-output"),
+    segments_text: val("trim_segments-segments"),
+    overwrite: true,
+  });
+});
+
 $("#run-preview_clip").addEventListener("click", () => {
   if (!requireFields("preview_clip-input", "preview_clip-output")) return;
   runOrQueue("Exporting preview", "preview_clip", {
