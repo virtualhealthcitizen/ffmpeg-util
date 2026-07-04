@@ -284,6 +284,7 @@ Packaging / tests:
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
 - [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs).
+      **Bug fix (hunt):** `build_pip_args` left the overlay filter output unlabeled and only mapped `0:a?` — so the PiP video stream was never included in the output (audio-only or silent failure depending on container). Similar overlay functions (`build_blur_region_args`, `build_blur_pad_args`) correctly label their output `[v]` and map it; pip was the odd one out. Fixed by appending `[v]` to the filter_complex overlay output and adding `-map [v]` before `-map 0:a?`. 1 new regression test (`test_build_pip_args_maps_video`); 188 core + 218 node:test + E2E smoke 5/5 green.
 - [ ] Still image → video (image + duration, optional audio)
 - [x] Replace the audio track with an external audio file (see `replace-audio` above)
 - [ ] Set / clear metadata title
