@@ -21,7 +21,8 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   FIELD_VALIDATORS, validateField,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
-  addJobRecord, jobHistoryLabel, chainTabOptions } = window.FfuLogic;
+  addJobRecord, jobHistoryLabel, chainTabOptions,
+  addQueueItem, removeQueueItem, updateQueueItem, nextQueuedItem, queueItemLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1158,6 +1159,12 @@ async function loadSettings() {
       ? s.jobHistory.filter((r) => r && r.outputPath)
       : [];
     renderJobHistory();
+    // Restore the queue; anything still "running" was interrupted by the last
+    // shutdown, so it goes back to "queued" rather than being stuck forever.
+    opQueueData = Array.isArray(s.opQueue)
+      ? s.opQueue.map((it) => (it && it.status === "running" ? { ...it, status: "queued" } : it)).filter(Boolean)
+      : [];
+    renderQueue();
   } catch (_) {
     // first run / no store yet — ignore
   }
@@ -1548,6 +1555,95 @@ function pushJobRecord(record) {
   });
 })();
 
+// --- Operation queue: line up several ops (any tab, "Queue mode" toggle above) ---
+// and run them one after another. Each item captures the exact { label, op, body }
+// that would otherwise be passed straight to run().
+let opQueueData = [];
+let queueModeEnabled = false;
+let queueRunning = false;
+let queueIdCounter = 0;
+
+function renderQueue() {
+  const panel = $("#op-queue");
+  const list = $("#op-queue-list");
+  if (!panel || !list) return;
+  if (!opQueueData.length) {
+    panel.classList.add("hidden");
+    return;
+  }
+  list.innerHTML = "";
+  for (const item of opQueueData) {
+    const li = document.createElement("li");
+    li.className = "job-entry";
+    const lbl = document.createElement("span");
+    lbl.className = "job-entry-label";
+    lbl.textContent = queueItemLabel(item);
+    li.appendChild(lbl);
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "Remove";
+    removeBtn.className = "secondary";
+    removeBtn.type = "button";
+    removeBtn.disabled = item.status === "running";
+    removeBtn.addEventListener("click", () => {
+      opQueueData = removeQueueItem(opQueueData, item.id);
+      setSettings({ opQueue: opQueueData }).catch(() => {});
+      renderQueue();
+    });
+    li.appendChild(removeBtn);
+    list.appendChild(li);
+  }
+  panel.classList.remove("hidden");
+}
+
+// Called in place of run() for every tab's Run button. In Queue mode this
+// captures the op instead of executing it immediately; otherwise it's a
+// pass-through to run() so normal (non-queued) behavior is unchanged.
+function runOrQueue(label, op, body) {
+  if (!queueModeEnabled) return run(label, op, body);
+  const item = { id: "q" + Date.now() + "_" + queueIdCounter++, tab: currentTab(), label, op, body, status: "queued" };
+  opQueueData = addQueueItem(opQueueData, item);
+  setSettings({ opQueue: opQueueData }).catch(() => {});
+  setStatus("Queued: " + label + " (" + opQueueData.length + " in queue)");
+  renderQueue();
+}
+
+// Run every queued item in order, updating each item's status as it goes.
+// Stops early if the op it's running fails/cancels — remaining items stay queued.
+async function runQueueAll() {
+  if (queueRunning || opInFlight) return;
+  queueRunning = true;
+  try {
+    let next;
+    while ((next = nextQueuedItem(opQueueData))) {
+      opQueueData = updateQueueItem(opQueueData, next.id, { status: "running" });
+      renderQueue();
+      const ok = await run(next.label, next.op, next.body);
+      opQueueData = updateQueueItem(opQueueData, next.id, { status: ok ? "done" : "error" });
+      setSettings({ opQueue: opQueueData }).catch(() => {});
+      renderQueue();
+      if (!ok) break; // don't blow through the rest of the queue after a failure
+    }
+  } finally {
+    queueRunning = false;
+  }
+}
+
+(function setupOpQueue() {
+  const modeToggle = $("#queue-mode-toggle");
+  if (modeToggle) modeToggle.addEventListener("change", () => {
+    queueModeEnabled = modeToggle.checked;
+  });
+  const runBtn = $("#run-queue");
+  if (runBtn) runBtn.addEventListener("click", runQueueAll);
+  const clearBtn = $("#clear-queue");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    if (queueRunning) return; // don't clear out from under the runner
+    opQueueData = [];
+    setSettings({ opQueue: [] }).catch(() => {});
+    renderQueue();
+  });
+})();
+
 // --- Before/after result summary (size + duration once an op completes) ---
 function hideSummary() {
   const el = $("#summary");
@@ -1755,16 +1851,19 @@ async function validateRunPaths(tab, body) {
   return { ok: true };
 }
 
+// Returns true once the op completes without error, false on any early-out,
+// validation failure, cancel, or error — so the queue runner (below) knows
+// whether to advance the item to "done" or "error".
 async function run(label, op, body) {
-  if (opInFlight) return; // an op is already running — ignore the extra click
+  if (opInFlight) return false; // an op is already running — ignore the extra click
   const validation = await validateRunPaths(currentTab(), body);
   if (!validation.ok) {
     setStatus(validation.message, true);
-    return;
+    return false;
   }
   if (!(await confirmOverwrite(body.output))) {
     setStatus("Cancelled — existing file left in place.");
-    return;
+    return false;
   }
   opInFlight = true;
   const abort = new AbortController();
@@ -1833,6 +1932,7 @@ async function run(label, op, body) {
       showCompare(primaryInput, result.output);
       showCompletionActions(result.output);
     }
+    return true;
   } catch (e) {
     hideProgress();
     if (abort.signal.aborted) {
@@ -1841,6 +1941,7 @@ async function run(label, op, body) {
       showErrorHint(e.message); // friendly one-liner above the raw stderr
       setStatus("Error: " + e.message, true);
     }
+    return false;
   } finally {
     opInFlight = false;
     currentAbort = null;
@@ -1863,7 +1964,7 @@ function requireFields(...ids) {
 
 $("#run-convert").addEventListener("click", () => {
   if (!requireFields("convert-input", "convert-output")) return;
-  run("Converting", "convert", {
+  runOrQueue("Converting", "convert", {
     input: val("convert-input"),
     output: val("convert-output"),
     vcodec: strOrNull("convert-vcodec"),
@@ -1875,7 +1976,7 @@ $("#run-convert").addEventListener("click", () => {
 
 $("#run-trim").addEventListener("click", () => {
   if (!requireFields("trim-input", "trim-output")) return;
-  run("Trimming", "trim", {
+  runOrQueue("Trimming", "trim", {
     input: val("trim-input"),
     output: val("trim-output"),
     start: strOrNull("trim-start"),
@@ -1891,7 +1992,7 @@ $("#run-concat").addEventListener("click", () => {
   if (inputs.length < 2) return setStatus("Concat needs at least two input files.", true);
   if (!requireFields("concat-output")) return;
   const reencode = !!$("#concat-reencode")?.checked;
-  run("Concatenating", "concat", { inputs, output: val("concat-output"), reencode, overwrite: true });
+  runOrQueue("Concatenating", "concat", { inputs, output: val("concat-output"), reencode, overwrite: true });
 });
 
 $("#run-thumbnail").addEventListener("click", () => {
@@ -1899,7 +2000,7 @@ $("#run-thumbnail").addEventListener("click", () => {
   const cols = numOrNull("thumbnail-cols");
   const rows = numOrNull("thumbnail-rows");
   if (cols && rows) {
-    run("Building contact sheet", "contact_sheet", {
+    runOrQueue("Building contact sheet", "contact_sheet", {
       input: val("thumbnail-input"),
       output: val("thumbnail-output"),
       cols,
@@ -1909,7 +2010,7 @@ $("#run-thumbnail").addEventListener("click", () => {
     });
     return;
   }
-  run("Extracting thumbnail", "thumbnail", {
+  runOrQueue("Extracting thumbnail", "thumbnail", {
     input: val("thumbnail-input"),
     output: val("thumbnail-output"),
     time: val("thumbnail-time") || "00:00:01",
@@ -1921,7 +2022,7 @@ $("#run-thumbnail").addEventListener("click", () => {
 
 $("#run-grayscale").addEventListener("click", () => {
   if (!requireFields("grayscale-input", "grayscale-output")) return;
-  run("Converting to grayscale", "grayscale", {
+  runOrQueue("Converting to grayscale", "grayscale", {
     input: val("grayscale-input"),
     output: val("grayscale-output"),
     overwrite: true,
@@ -1930,7 +2031,7 @@ $("#run-grayscale").addEventListener("click", () => {
 
 $("#run-invert").addEventListener("click", () => {
   if (!requireFields("invert-input", "invert-output")) return;
-  run("Inverting colors", "invert", {
+  runOrQueue("Inverting colors", "invert", {
     input: val("invert-input"),
     output: val("invert-output"),
     overwrite: true,
@@ -1939,7 +2040,7 @@ $("#run-invert").addEventListener("click", () => {
 
 $("#run-timecode").addEventListener("click", () => {
   if (!requireFields("timecode-input", "timecode-output")) return;
-  run("Burning timecode", "timecode", {
+  runOrQueue("Burning timecode", "timecode", {
     input: val("timecode-input"),
     output: val("timecode-output"),
     font_size: numOrNull("timecode-font-size") ?? 24,
@@ -1951,7 +2052,7 @@ $("#run-timecode").addEventListener("click", () => {
 
 $("#run-watermark").addEventListener("click", () => {
   if (!requireFields("watermark-input", "watermark-output", "watermark-text")) return;
-  run("Burning watermark", "watermark", {
+  runOrQueue("Burning watermark", "watermark", {
     input: val("watermark-input"),
     output: val("watermark-output"),
     text: val("watermark-text"),
@@ -1965,7 +2066,7 @@ $("#run-watermark").addEventListener("click", () => {
 
 $("#run-hardsub").addEventListener("click", () => {
   if (!requireFields("hardsub-input", "hardsub-subtitle", "hardsub-output")) return;
-  run("Burning subtitles", "hardsub", {
+  runOrQueue("Burning subtitles", "hardsub", {
     input: val("hardsub-input"),
     subtitle: val("hardsub-subtitle"),
     output: val("hardsub-output"),
@@ -1975,7 +2076,7 @@ $("#run-hardsub").addEventListener("click", () => {
 
 $("#run-deinterlace").addEventListener("click", () => {
   if (!requireFields("deinterlace-input", "deinterlace-output")) return;
-  run("Deinterlacing", "deinterlace", {
+  runOrQueue("Deinterlacing", "deinterlace", {
     input: val("deinterlace-input"),
     output: val("deinterlace-output"),
     overwrite: true,
@@ -1984,7 +2085,7 @@ $("#run-deinterlace").addEventListener("click", () => {
 
 $("#run-sharpen").addEventListener("click", () => {
   if (!requireFields("sharpen-input", "sharpen-output")) return;
-  run("Sharpening", "sharpen", {
+  runOrQueue("Sharpening", "sharpen", {
     input: val("sharpen-input"),
     output: val("sharpen-output"),
     amount: numOrNull("sharpen-amount") ?? 1.5,
@@ -1994,7 +2095,7 @@ $("#run-sharpen").addEventListener("click", () => {
 
 $("#run-denoise").addEventListener("click", () => {
   if (!requireFields("denoise-input", "denoise-output")) return;
-  run("Denoising", "denoise", {
+  runOrQueue("Denoising", "denoise", {
     input: val("denoise-input"),
     output: val("denoise-output"),
     strength: numOrNull("denoise-strength") ?? 4.0,
@@ -2004,7 +2105,7 @@ $("#run-denoise").addEventListener("click", () => {
 
 $("#run-blur_region").addEventListener("click", () => {
   if (!requireFields("blur_region-input", "blur_region-output", "blur_region-width", "blur_region-height")) return;
-  run("Blurring region", "blur_region", {
+  runOrQueue("Blurring region", "blur_region", {
     input: val("blur_region-input"),
     output: val("blur_region-output"),
     x: numOrNull("blur_region-x") ?? 0,
@@ -2018,7 +2119,7 @@ $("#run-blur_region").addEventListener("click", () => {
 
 $("#run-blur_pad").addEventListener("click", () => {
   if (!requireFields("blur_pad-input", "blur_pad-output", "blur_pad-width", "blur_pad-height")) return;
-  run("Blur padding", "blur_pad", {
+  runOrQueue("Blur padding", "blur_pad", {
     input: val("blur_pad-input"),
     output: val("blur_pad-output"),
     width: numOrNull("blur_pad-width"),
@@ -2030,7 +2131,7 @@ $("#run-blur_pad").addEventListener("click", () => {
 
 $("#run-image_to_video").addEventListener("click", () => {
   if (!requireFields("image_to_video-input", "image_to_video-output", "image_to_video-seconds")) return;
-  run("Making video", "image_to_video", {
+  runOrQueue("Making video", "image_to_video", {
     input: val("image_to_video-input"),
     output: val("image_to_video-output"),
     seconds: numOrNull("image_to_video-seconds"),
@@ -2041,7 +2142,7 @@ $("#run-image_to_video").addEventListener("click", () => {
 
 $("#run-vstack").addEventListener("click", () => {
   if (!requireFields("vstack-input-a", "vstack-input-b", "vstack-output")) return;
-  run("Stacking vertically", "vstack", {
+  runOrQueue("Stacking vertically", "vstack", {
     inputs: [val("vstack-input-a"), val("vstack-input-b")],
     output: val("vstack-output"),
     overwrite: true,
@@ -2050,7 +2151,7 @@ $("#run-vstack").addEventListener("click", () => {
 
 $("#run-hstack").addEventListener("click", () => {
   if (!requireFields("hstack-input-a", "hstack-input-b", "hstack-output")) return;
-  run("Combining side by side", "hstack", {
+  runOrQueue("Combining side by side", "hstack", {
     inputs: [val("hstack-input-a"), val("hstack-input-b")],
     output: val("hstack-output"),
     overwrite: true,
@@ -2059,7 +2160,7 @@ $("#run-hstack").addEventListener("click", () => {
 
 $("#run-pip").addEventListener("click", () => {
   if (!requireFields("pip-input", "pip-overlay", "pip-output")) return;
-  run("Adding picture in picture", "pip", {
+  runOrQueue("Adding picture in picture", "pip", {
     input: val("pip-input"),
     overlay: val("pip-overlay"),
     output: val("pip-output"),
@@ -2071,7 +2172,7 @@ $("#run-pip").addEventListener("click", () => {
 
 $("#run-pixfmt").addEventListener("click", () => {
   if (!requireFields("pixfmt-input", "pixfmt-output")) return;
-  run("Converting pixel format", "pixfmt", {
+  runOrQueue("Converting pixel format", "pixfmt", {
     input: val("pixfmt-input"),
     output: val("pixfmt-output"),
     pix_fmt: $("#pixfmt-pix-fmt").value || "yuv420p",
@@ -2085,7 +2186,7 @@ $("#run-xfade_concat").addEventListener("click", () => {
   // Compute the offset (transition start = end of clip 1 minus transition duration).
   // Null when the source hasn't been probed yet; the sidecar will probe as fallback.
   const offset = lastSourceDuration != null ? Math.max(0, lastSourceDuration - dur) : null;
-  run("Crossfading clips", "xfade_concat", {
+  runOrQueue("Crossfading clips", "xfade_concat", {
     inputs: [val("xfade_concat-input-a"), val("xfade_concat-input-b")],
     output: val("xfade_concat-output"),
     transition: $("#xfade_concat-transition").value,
@@ -2097,7 +2198,7 @@ $("#run-xfade_concat").addEventListener("click", () => {
 
 $("#run-sample_rate").addEventListener("click", () => {
   if (!requireFields("sample_rate-input", "sample_rate-output")) return;
-  run("Resampling audio", "sample_rate", {
+  runOrQueue("Resampling audio", "sample_rate", {
     input: val("sample_rate-input"),
     output: val("sample_rate-output"),
     rate: Number($("#sample_rate-rate").value),
@@ -2107,7 +2208,7 @@ $("#run-sample_rate").addEventListener("click", () => {
 
 $("#run-waveform").addEventListener("click", () => {
   if (!requireFields("waveform-input", "waveform-output")) return;
-  run("Rendering waveform", "waveform", {
+  runOrQueue("Rendering waveform", "waveform", {
     input: val("waveform-input"),
     output: val("waveform-output"),
     width: numOrNull("waveform-width") || 1000,
@@ -2118,7 +2219,7 @@ $("#run-waveform").addEventListener("click", () => {
 
 $("#run-crop_aspect").addEventListener("click", () => {
   if (!requireFields("crop_aspect-input", "crop_aspect-output")) return;
-  run("Cropping to aspect", "crop_aspect", {
+  runOrQueue("Cropping to aspect", "crop_aspect", {
     input: val("crop_aspect-input"),
     output: val("crop_aspect-output"),
     aspect: $("#crop_aspect-aspect").value,
@@ -2128,7 +2229,7 @@ $("#run-crop_aspect").addEventListener("click", () => {
 
 $("#run-fps").addEventListener("click", () => {
   if (!requireFields("fps-input", "fps-output", "fps-fps")) return;
-  run("Resampling FPS", "fps", {
+  runOrQueue("Resampling FPS", "fps", {
     input: val("fps-input"),
     output: val("fps-output"),
     fps: numOrNull("fps-fps"),
@@ -2141,7 +2242,7 @@ $("#run-eq").addEventListener("click", () => {
   const b = numOrNull("eq-brightness");
   const c = numOrNull("eq-contrast");
   const s = numOrNull("eq-saturation");
-  run("Adjusting", "eq", {
+  runOrQueue("Adjusting", "eq", {
     input: val("eq-input"),
     output: val("eq-output"),
     brightness: b != null ? b : 0,
@@ -2153,7 +2254,7 @@ $("#run-eq").addEventListener("click", () => {
 
 $("#run-boomerang").addEventListener("click", () => {
   if (!requireFields("boomerang-input", "boomerang-output")) return;
-  run("Making boomerang", "boomerang", {
+  runOrQueue("Making boomerang", "boomerang", {
     input: val("boomerang-input"),
     output: val("boomerang-output"),
     overwrite: true,
@@ -2162,7 +2263,7 @@ $("#run-boomerang").addEventListener("click", () => {
 
 $("#run-fade").addEventListener("click", () => {
   if (!requireFields("fade-input", "fade-output", "fade-duration")) return;
-  run("Fading", "fade", {
+  runOrQueue("Fading", "fade", {
     input: val("fade-input"),
     output: val("fade-output"),
     fade: numOrNull("fade-duration"),
@@ -2172,7 +2273,7 @@ $("#run-fade").addEventListener("click", () => {
 
 $("#run-loudnorm").addEventListener("click", () => {
   if (!requireFields("loudnorm-input", "loudnorm-output")) return;
-  run("Normalizing loudness", "loudnorm", {
+  runOrQueue("Normalizing loudness", "loudnorm", {
     input: val("loudnorm-input"),
     output: val("loudnorm-output"),
     target_i: numOrNull("loudnorm-target") != null ? numOrNull("loudnorm-target") : -16,
@@ -2182,7 +2283,7 @@ $("#run-loudnorm").addEventListener("click", () => {
 
 $("#run-volume").addEventListener("click", () => {
   if (!requireFields("volume-input", "volume-output", "volume-gain")) return;
-  run("Adjusting volume", "volume", {
+  runOrQueue("Adjusting volume", "volume", {
     input: val("volume-input"),
     output: val("volume-output"),
     gain: numOrNull("volume-gain"),
@@ -2192,7 +2293,7 @@ $("#run-volume").addEventListener("click", () => {
 
 $("#run-reverse").addEventListener("click", () => {
   if (!requireFields("reverse-input", "reverse-output")) return;
-  run("Reversing", "reverse", {
+  runOrQueue("Reversing", "reverse", {
     input: val("reverse-input"),
     output: val("reverse-output"),
     overwrite: true,
@@ -2201,7 +2302,7 @@ $("#run-reverse").addEventListener("click", () => {
 
 $("#run-frames").addEventListener("click", () => {
   if (!requireFields("frames-input", "frames-output")) return;
-  run("Extracting frames", "frames", {
+  runOrQueue("Extracting frames", "frames", {
     input: val("frames-input"),
     output: val("frames-output"),
     every: numOrNull("frames-every") || 1,
@@ -2211,7 +2312,7 @@ $("#run-frames").addEventListener("click", () => {
 
 $("#run-scene-thumbs").addEventListener("click", () => {
   if (!requireFields("scene_thumbs-input", "scene_thumbs-output")) return;
-  run("Extracting scene thumbnails", "scene_thumbs", {
+  runOrQueue("Extracting scene thumbnails", "scene_thumbs", {
     input: val("scene_thumbs-input"),
     output: val("scene_thumbs-output"),
     threshold: numOrNull("scene_thumbs-threshold") ?? 0.3,
@@ -2222,7 +2323,7 @@ $("#run-scene-thumbs").addEventListener("click", () => {
 
 $("#run-loop").addEventListener("click", () => {
   if (!requireFields("loop-input", "loop-output", "loop-count")) return;
-  run("Looping", "loop", {
+  runOrQueue("Looping", "loop", {
     input: val("loop-input"),
     output: val("loop-output"),
     count: numOrNull("loop-count"),
@@ -2232,7 +2333,7 @@ $("#run-loop").addEventListener("click", () => {
 
 $("#run-pad").addEventListener("click", () => {
   if (!requireFields("pad-input", "pad-output", "pad-width", "pad-height")) return;
-  run("Padding", "pad", {
+  runOrQueue("Padding", "pad", {
     input: val("pad-input"),
     output: val("pad-output"),
     width: numOrNull("pad-width"),
@@ -2243,7 +2344,7 @@ $("#run-pad").addEventListener("click", () => {
 
 $("#run-title").addEventListener("click", () => {
   if (!requireFields("title-input", "title-output")) return;
-  run("Setting title", "title", {
+  runOrQueue("Setting title", "title", {
     input: val("title-input"),
     output: val("title-output"),
     title: val("title-title"),
@@ -2253,7 +2354,7 @@ $("#run-title").addEventListener("click", () => {
 
 $("#run-chapters").addEventListener("click", () => {
   if (!requireFields("chapters-input", "chapters-output", "chapters-chapters")) return;
-  run("Adding chapters", "chapters", {
+  runOrQueue("Adding chapters", "chapters", {
     input: val("chapters-input"),
     output: val("chapters-output"),
     chapters_text: val("chapters-chapters"),
@@ -2263,7 +2364,7 @@ $("#run-chapters").addEventListener("click", () => {
 
 $("#run-mono").addEventListener("click", () => {
   if (!requireFields("mono-input", "mono-output")) return;
-  run("Downmixing to mono", "mono", {
+  runOrQueue("Downmixing to mono", "mono", {
     input: val("mono-input"),
     output: val("mono-output"),
     overwrite: true,
@@ -2272,7 +2373,7 @@ $("#run-mono").addEventListener("click", () => {
 
 $("#run-trim_silence").addEventListener("click", () => {
   if (!requireFields("trim_silence-input", "trim_silence-output")) return;
-  run("Trimming silence", "trim_silence", {
+  runOrQueue("Trimming silence", "trim_silence", {
     input: val("trim_silence-input"),
     output: val("trim_silence-output"),
     threshold_db: numOrNull("trim_silence-threshold") != null ? numOrNull("trim_silence-threshold") : -50,
@@ -2283,7 +2384,7 @@ $("#run-trim_silence").addEventListener("click", () => {
 
 $("#run-mute").addEventListener("click", () => {
   if (!requireFields("mute-input", "mute-output")) return;
-  run("Stripping audio", "mute", {
+  runOrQueue("Stripping audio", "mute", {
     input: val("mute-input"),
     output: val("mute-output"),
     overwrite: true,
@@ -2292,7 +2393,7 @@ $("#run-mute").addEventListener("click", () => {
 
 $("#run-replace_audio").addEventListener("click", () => {
   if (!requireFields("replace_audio-input", "replace_audio-audio", "replace_audio-output")) return;
-  run("Replacing audio", "replace_audio", {
+  runOrQueue("Replacing audio", "replace_audio", {
     input: val("replace_audio-input"),
     audio: val("replace_audio-audio"),
     output: val("replace_audio-output"),
@@ -2302,7 +2403,7 @@ $("#run-replace_audio").addEventListener("click", () => {
 
 $("#run-crop").addEventListener("click", () => {
   if (!requireFields("crop-input", "crop-output", "crop-width", "crop-height")) return;
-  run("Cropping", "crop", {
+  runOrQueue("Cropping", "crop", {
     input: val("crop-input"),
     output: val("crop-output"),
     width: numOrNull("crop-width"),
@@ -2315,7 +2416,7 @@ $("#run-crop").addEventListener("click", () => {
 
 $("#run-transform").addEventListener("click", () => {
   if (!requireFields("transform-input", "transform-output")) return;
-  run("Transforming", "transform", {
+  runOrQueue("Transforming", "transform", {
     input: val("transform-input"),
     output: val("transform-output"),
     transform: $("#transform-op").value,
@@ -2325,7 +2426,7 @@ $("#run-transform").addEventListener("click", () => {
 
 $("#run-speed").addEventListener("click", () => {
   if (!requireFields("speed-input", "speed-output", "speed-factor")) return;
-  run("Changing speed", "speed", {
+  runOrQueue("Changing speed", "speed", {
     input: val("speed-input"),
     output: val("speed-output"),
     factor: numOrNull("speed-factor"),
@@ -2335,7 +2436,7 @@ $("#run-speed").addEventListener("click", () => {
 
 $("#run-gif").addEventListener("click", () => {
   if (!requireFields("gif-input", "gif-output")) return;
-  run("Making GIF", "gif", {
+  runOrQueue("Making GIF", "gif", {
     input: val("gif-input"),
     output: val("gif-output"),
     fps: numOrNull("gif-fps") || 12,
@@ -2350,7 +2451,7 @@ $("#run-gif").addEventListener("click", () => {
 
 $("#run-compress").addEventListener("click", () => {
   if (!requireFields("compress-input", "compress-output")) return;
-  run("Compressing", "compress", {
+  runOrQueue("Compressing", "compress", {
     input: val("compress-input"),
     output: val("compress-output"),
     crf: numOrNull("compress-crf"),
@@ -2367,7 +2468,7 @@ $("#run-compress").addEventListener("click", () => {
 $("#run-autocrop").addEventListener("click", () => {
   if (!requireFields("autocrop-input", "autocrop-output")) return;
   const limit = numOrNull("autocrop-limit");
-  run("Auto-cropping", "autocrop", {
+  runOrQueue("Auto-cropping", "autocrop", {
     input: val("autocrop-input"),
     output: val("autocrop-output"),
     limit: limit != null ? limit : 24,
@@ -2377,7 +2478,7 @@ $("#run-autocrop").addEventListener("click", () => {
 
 $("#run-remux").addEventListener("click", () => {
   if (!requireFields("remux-input", "remux-output")) return;
-  run("Remuxing", "remux", {
+  runOrQueue("Remuxing", "remux", {
     input: val("remux-input"),
     output: val("remux-output"),
     overwrite: true,
@@ -2386,7 +2487,7 @@ $("#run-remux").addEventListener("click", () => {
 
 $("#run-trim_pct").addEventListener("click", () => {
   if (!requireFields("trim_pct-input", "trim_pct-output")) return;
-  run("Trimming by percentage", "trim_pct", {
+  runOrQueue("Trimming by percentage", "trim_pct", {
     input: val("trim_pct-input"),
     output: val("trim_pct-output"),
     start_pct: numOrNull("trim_pct-start-pct") ?? 0,
@@ -2398,7 +2499,7 @@ $("#run-trim_pct").addEventListener("click", () => {
 
 $("#run-preview_clip").addEventListener("click", () => {
   if (!requireFields("preview_clip-input", "preview_clip-output")) return;
-  run("Exporting preview", "preview_clip", {
+  runOrQueue("Exporting preview", "preview_clip", {
     input: val("preview_clip-input"),
     output: val("preview_clip-output"),
     seconds: numOrNull("preview_clip-seconds") ?? 5,
@@ -2409,7 +2510,7 @@ $("#run-preview_clip").addEventListener("click", () => {
 
 $("#run-poster_frame").addEventListener("click", () => {
   if (!requireFields("poster_frame-input", "poster_frame-output")) return;
-  run("Extracting poster frame", "poster_frame", {
+  runOrQueue("Extracting poster frame", "poster_frame", {
     input: val("poster_frame-input"),
     output: val("poster_frame-output"),
     percent: numOrNull("poster_frame-percent") ?? 10,
@@ -2419,7 +2520,7 @@ $("#run-poster_frame").addEventListener("click", () => {
 
 $("#run-auto_orient").addEventListener("click", () => {
   if (!requireFields("auto_orient-input", "auto_orient-output")) return;
-  run("Auto-orienting", "auto_orient", {
+  runOrQueue("Auto-orienting", "auto_orient", {
     input: val("auto_orient-input"),
     output: val("auto_orient-output"),
     overwrite: true,
@@ -2428,7 +2529,7 @@ $("#run-auto_orient").addEventListener("click", () => {
 
 $("#run-stabilize").addEventListener("click", () => {
   if (!requireFields("stabilize-input", "stabilize-output")) return;
-  run("Stabilizing", "stabilize", {
+  runOrQueue("Stabilizing", "stabilize", {
     input: val("stabilize-input"),
     output: val("stabilize-output"),
     shakiness: numOrNull("stabilize-shakiness") ?? 5,

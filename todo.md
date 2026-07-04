@@ -669,7 +669,27 @@ Persistence / memory:
       after mutation restores CRF/width; survives relaunch; delete removes it).
 
 Power-user flow:
-- [ ] Operation queue — line up several ops and run them in sequence.
+- [x] Operation queue — line up several ops and run them in sequence. A global
+      "📋 Queue mode" checkbox in the header retargets every tab's existing Run
+      button: while on, clicking Run captures `{tab, label, op, body}` into a new
+      Operation queue panel instead of executing it, so ops from several different
+      tabs (each with its own already-filled-in fields) can be lined up; while off,
+      Run behaves exactly as before. "Run queue" then executes the queued items
+      one after another (via the same `run()` used by a normal run), updating each
+      item's status queued → running → done/error live; a failed/cancelled item
+      stops the run rather than blowing through the rest. Per-item Remove + a
+      Clear-all button; persisted in `settings.json` under `opQueue` (any item
+      still "running" at a crash/relaunch is restored as "queued"). Pure
+      `addQueueItem`/`removeQueueItem`/`updateQueueItem`/`nextQueuedItem`/
+      `queueItemLabel` in `logic.js`; `run()` now returns true/false so the queue
+      runner knows whether to advance an item to done or error. Verified: node:test
+      245/245 (14 new) + 212 root pytest + 112 sidecar pytest (untouched, still
+      green) + headless Electron E2E (queue-mode toggle present, panel hidden
+      until queued, queuing a Trim then a Compress from two different tabs while
+      queue mode is on produces neither output yet, turning queue mode off +
+      "Run queue" produces BOTH real outputs and both items read "— done", Remove
+      drops exactly one item, Clear empties + hides the panel) + committed smoke
+      5/5 (sidecar health, 52 nav tabs, real compress still runs). ← next
 - [x] Chain ops on one file — after a successful run, a "→ Send to" select+button
       in the completion-actions area populates any other tab's input with the output
       and switches to it. Pure `chainTabOptions(allTabData, currentTab)` in `logic.js`
@@ -678,7 +698,7 @@ Power-user flow:
       `tabBtn.click()` + `dropUpdate`. Verified: node:test 231/231 (3 new) + headless
       Electron E2E 8/8 (chain-tab-select visible with 51 options after compress run,
       excludes compress, sends output to trim tab + trim-input set to output path,
-      smoke 5/5). ← next
+      smoke 5/5).
 - [x] **"Copy as CLI"** — on each run, a `#cli-command` row shows the equivalent
       `ffmpeg-util <op> …` command (reconstructed from the op + request body) with a
       Copy button. Pure `buildCliCommand` in `logic.js` (kebab subcommand/flags,
