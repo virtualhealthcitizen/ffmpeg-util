@@ -650,7 +650,16 @@ Persistence / memory:
       the "Save as…" dialog defaults to the last output path for the active tab.
       Verified: node:test (178/178, +2 new fns) + headless Electron E2E 6/6 (run →
       saved in recentOutputs; second launch → field pre-populated; other tabs not
-      affected). ← next
+      affected).
+      **Bug fix (hunt):** when a tab had no prior output history, the "Choose
+      output file..." button's default filename fell back to the generic
+      `suggestOutput("", "")` (a bare "output", no extension) instead of a
+      tab-aware suggestion built from the active input — so e.g. a first-use GIF
+      save offered "output" instead of "clip.anim.gif". Extracted a testable
+      `defaultSavePath(lastOut, inputPath, tab)` helper in `logic.js` that tries
+      lastOut, then `suggestOutputForTab`, then the generic fallback; wired into
+      the `.pick-save` handler in `renderer.js`. 3 new regression tests;
+      234 node:test + headless E2E smoke ok=true. ← next
 - [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
       Save, a dropdown + Load/Delete) captures the active tab's option fields
       (path inputs excluded) under a name, scoped per tool, persisted in

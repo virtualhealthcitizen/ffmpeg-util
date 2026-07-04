@@ -722,6 +722,23 @@ test("suggestOutputForTab falls back for unknown tabs and empty input", () => {
   assert.equal(L.suggestOutputForTab(null, "trim"), "");
 });
 
+test("defaultSavePath prefers an explicit lastOut over any suggestion", () => {
+  assert.equal(L.defaultSavePath("C:\\out\\prior.gif", "C:\\v\\clip.mp4", "gif"), "C:\\out\\prior.gif");
+});
+
+test("defaultSavePath falls back to a tab-aware suggestion from the active input", () => {
+  // Regression: this used to fall through to the generic suggestOutput("", "")
+  // default ("output.out.mp4"), ignoring the tab's own extension (e.g. .gif).
+  assert.equal(L.defaultSavePath("", "C:\\v\\clip.mp4", "gif"), "C:\\v\\clip.anim.gif");
+  assert.equal(L.defaultSavePath("", "clip.mp4", "waveform"), "clip.wave.png");
+});
+
+test("defaultSavePath falls back to the generic suggestion when there is no input either", () => {
+  // Preserves the pre-existing generic fallback exactly (suggestOutput("", "")).
+  assert.equal(L.defaultSavePath("", "", "gif"), "output");
+  assert.equal(L.defaultSavePath(null, null, "trim"), "output");
+});
+
 test("applyOutputTemplate substitutes known tokens and leaves unknown ones", () => {
   const ctx = { name: "clip", op: "compress", w: 320, h: 240, date: "2026-06-27" };
   assert.equal(L.applyOutputTemplate("{name}-{op}", ctx), "clip-compress");
