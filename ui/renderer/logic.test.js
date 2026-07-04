@@ -36,6 +36,33 @@ test("shouldShowCompare returns true only when both paths are previewable", () =
   assert.equal(L.shouldShowCompare("in.mp4", null), false);
 });
 
+test("compareSliderPercent maps pointer x within the box to a clamped 0-100 percent", () => {
+  // box from x=100 to x=300 (left=100, width=200)
+  assert.equal(L.compareSliderPercent(100, 100, 200), 0);   // at left edge
+  assert.equal(L.compareSliderPercent(200, 100, 200), 50);  // centre
+  assert.equal(L.compareSliderPercent(300, 100, 200), 100); // right edge
+  assert.equal(L.compareSliderPercent(50, 100, 200), 0);    // left of box -> clamped
+  assert.equal(L.compareSliderPercent(500, 100, 200), 100); // right of box -> clamped
+  assert.equal(L.compareSliderPercent(150, 100, 200), 25);  // quarter in
+  assert.equal(L.compareSliderPercent(123, 0, 0), 50);      // zero width -> centred fallback
+});
+
+test("compareClipInset clips the after layer from the right by the complement", () => {
+  assert.equal(L.compareClipInset(0), "inset(0 100% 0 0)");   // reveal nothing
+  assert.equal(L.compareClipInset(50), "inset(0 50% 0 0)");   // reveal left half
+  assert.equal(L.compareClipInset(100), "inset(0 0% 0 0)");   // reveal all
+  assert.equal(L.compareClipInset(150), "inset(0 0% 0 0)");   // clamped high
+  assert.equal(L.compareClipInset(-20), "inset(0 100% 0 0)"); // clamped low
+});
+
+test("compareDividerPos returns a clamped CSS percentage", () => {
+  assert.equal(L.compareDividerPos(0), "0%");
+  assert.equal(L.compareDividerPos(37.5), "37.5%");
+  assert.equal(L.compareDividerPos(100), "100%");
+  assert.equal(L.compareDividerPos(120), "100%");
+  assert.equal(L.compareDividerPos(-5), "0%");
+});
+
 test("suggestOutput swaps the extension", () => {
   assert.equal(L.suggestOutput("C:\\v\\in.mkv"), "C:\\v\\in.out.mp4");
   assert.equal(L.suggestOutput("in.mov", ".small.mp4"), "in.small.mp4");
