@@ -1462,10 +1462,11 @@ def build_pip_args(
     if not 5 <= size_pct <= 75:
         raise ValueError("size_pct must be between 5 and 75")
     x, y = _PIP_POSITIONS[position]
-    fc = f"[1:v]scale=iw*{size_pct}/100:-2[ov];[0:v][ov]overlay={x}:{y}"
+    fc = f"[1:v]scale=iw*{size_pct}/100:-2[ov];[0:v][ov]overlay={x}:{y}[v]"
     return [
         "-i", base, "-i", overlay,
         "-filter_complex", fc,
+        "-map", "[v]",
         "-map", "0:a?",
         output,
     ]
