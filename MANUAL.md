@@ -54,6 +54,30 @@ These apply to every subcommand:
 ffmpeg-util convert in.mkv out.mp4 --dry-run
 ```
 
+### Config file (defaults for the global flags)
+
+Set defaults for `ffmpeg` / `ffprobe` / `overwrite` / `verbose` / `dry_run` in a JSON
+file so you don't have to repeat them on every invocation. Any flag given on the
+command line still overrides the config file.
+
+Looked up, in order:
+1. `--config PATH` (explicit; errors if the file doesn't exist)
+2. the `FFMPEG_UTIL_CONFIG` environment variable (explicit; same)
+3. `.ffmpeg-util.json` in the current directory (skipped if absent)
+4. `.ffmpeg-util.json` in your home directory (skipped if absent)
+
+```json
+{
+  "ffmpeg": "C:/tools/ffmpeg/bin/ffmpeg.exe",
+  "overwrite": true,
+  "verbose": true
+}
+```
+
+```bash
+ffmpeg-util compress in.mp4 out.mp4 --crf 28 --config myconfig.json
+```
+
 ---
 
 ## 4. Commands

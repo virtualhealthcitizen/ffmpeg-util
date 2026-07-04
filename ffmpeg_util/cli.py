@@ -1,28 +1,80 @@
 """argparse-based command-line interface for ffmpeg-util."""
 
 import argparse
+import json
 import os
 import sys
 import tempfile
+from pathlib import Path
 
 from . import __version__, commands
 from .errors import FfmpegError
 from .runner import FfmpegRunner
 
+CONFIG_ENV_VAR = "FFMPEG_UTIL_CONFIG"
+CONFIG_FILENAME = ".ffmpeg-util.json"
+_CONFIG_KEYS = {"ffmpeg", "ffprobe", "overwrite", "verbose", "dry_run"}
 
-def _add_global_flags(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--ffmpeg", help="Path to the ffmpeg binary (overrides PATH/env).")
-    p.add_argument("--ffprobe", help="Path to the ffprobe binary (overrides PATH/env).")
-    p.add_argument("-y", "--overwrite", action="store_true", help="Overwrite output files.")
-    p.add_argument("-v", "--verbose", action="store_true", help="Verbose output.")
-    p.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print the ffmpeg command instead of running it.",
+
+def _find_config_path(argv: list[str]) -> "Path | None":
+    """Locate a config file: --config flag > env var > ./{CONFIG_FILENAME} > ~/{CONFIG_FILENAME}."""
+    for i, tok in enumerate(argv):
+        if tok == "--config" and i + 1 < len(argv):
+            return Path(argv[i + 1])
+        if tok.startswith("--config="):
+            return Path(tok.split("=", 1)[1])
+    env = os.environ.get(CONFIG_ENV_VAR)
+    if env:
+        return Path(env)
+    cwd_file = Path.cwd() / CONFIG_FILENAME
+    if cwd_file.is_file():
+        return cwd_file
+    home_file = Path.home() / CONFIG_FILENAME
+    if home_file.is_file():
+        return home_file
+    return None
+
+
+def load_config_defaults(argv: list[str]) -> dict:
+    """Read global-flag defaults (ffmpeg/ffprobe/overwrite/verbose/dry_run) from a JSON
+    config file. An explicitly-requested (--config / env var) file that's missing or
+    invalid is an error; an unrequested default-location file is simply skipped."""
+    explicit = any(tok == "--config" or tok.startswith("--config=") for tok in argv) or bool(
+        os.environ.get(CONFIG_ENV_VAR)
     )
+    path = _find_config_path(argv)
+    if path is None:
+        return {}
+    if not path.is_file():
+        if explicit:
+            raise SystemExit(f"error: config file not found: {path}")
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"error: could not read config file {path}: {exc}")
+    if not isinstance(data, dict):
+        raise SystemExit(f"error: config file {path} must contain a JSON object.")
+    return {k: v for k, v in data.items() if k in _CONFIG_KEYS}
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser:
+    config_defaults = config_defaults or {}
+
+    def _add_global_flags(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--config", help="Path to a JSON file of default flag values.")
+        p.add_argument("--ffmpeg", help="Path to the ffmpeg binary (overrides PATH/env).")
+        p.add_argument("--ffprobe", help="Path to the ffprobe binary (overrides PATH/env).")
+        p.add_argument("-y", "--overwrite", action="store_true", help="Overwrite output files.")
+        p.add_argument("-v", "--verbose", action="store_true", help="Verbose output.")
+        p.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Print the ffmpeg command instead of running it.",
+        )
+        if config_defaults:
+            p.set_defaults(**config_defaults)
+
     parser = argparse.ArgumentParser(
         prog="ffmpeg-util",
         description="Scriptable helpers around ffmpeg for common media chores.",
@@ -845,8 +897,10 @@ def _dispatch(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    config_defaults = load_config_defaults(raw_argv)
+    parser = build_parser(config_defaults)
+    args = parser.parse_args(raw_argv)
     try:
         return _dispatch(args)
     except (FfmpegError, ValueError) as exc:

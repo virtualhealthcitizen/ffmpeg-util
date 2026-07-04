@@ -183,7 +183,13 @@ Packaging / tests:
 ### Project / infra
 - [x] GitHub Actions CI (pytest + node:test) — DONE (see entry above in Possible v2)
 - [ ] Signed electron-builder installer (needs Windows Developer Mode/admin here)
-- [ ] CLI: read defaults from a config file
+- [x] CLI: read defaults from a config file — `load_config_defaults`/`_find_config_path`
+      in `cli.py` reads a JSON file (`--config PATH` > `FFMPEG_UTIL_CONFIG` env var >
+      `./.ffmpeg-util.json` > `~/.ffmpeg-util.json`) and applies known keys
+      (ffmpeg/ffprobe/overwrite/verbose/dry_run) as argparse defaults on every
+      subcommand; explicit CLI flags still win. Verified: 12 new pytest cases
+      (missing/invalid/non-object config, precedence order, CLI-overrides-config)
+      + 212 root pytest + 112 sidecar pytest + 231 node:test + E2E smoke ok=true. ← next
 
 ### More ideas (round 2)
 - [x] Playback speed change (setpts + atempo chain) — core `change_speed`/`build_speed_args`,
