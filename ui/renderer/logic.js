@@ -140,6 +140,14 @@
     return spec.tag ? base + "." + spec.tag + ext : base + ext;
   }
 
+  // Default path to offer in the "Choose output file..." save dialog: the tab's
+  // own last-saved output wins, else a tab-aware suggestion from the active
+  // input (correct extension for the tab), else the generic fallback so the
+  // dialog always has some filename.
+  function defaultSavePath(lastOut, inputPath, tab) {
+    return lastOut || suggestOutputForTab(inputPath, tab) || suggestOutput("", "");
+  }
+
   // Split a path into { dir (incl. trailing separator), name (no extension) }.
   // Handles both \ and / so it works on Windows and POSIX paths.
   function splitPath(p) {
@@ -1777,6 +1785,7 @@
     previewKind,
     suggestOutput,
     suggestOutputForTab,
+    defaultSavePath,
     applyOutputTemplate,
     templatedOutputForTab,
     splitPath,

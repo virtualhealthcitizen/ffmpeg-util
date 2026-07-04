@@ -2,7 +2,7 @@
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile, notify } =
   window.sidecar;
-const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
+const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab, timeHandlesForTab, timecodeFraction,
@@ -1071,7 +1071,7 @@ document.querySelectorAll(".pick-save").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const tab = currentTab();
     const lastOut = recentOutputData[tab] || "";
-    const p = await saveFile(lastOut || suggestOutput("", ""));
+    const p = await saveFile(defaultSavePath(lastOut, activeInputPath(), tab));
     if (p) {
       const el = $("#" + btn.dataset.target);
       if (el) { el.value = p; delete el.dataset.auto; }
