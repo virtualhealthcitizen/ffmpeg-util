@@ -1719,6 +1719,45 @@
     return time ? name + " · " + time : name;
   }
 
+  // --- Operation queue: line up several ops (any tab) and run them in sequence ---
+  // Each item: { id, tab, label, op, body, status } where status is one of
+  // "queued"|"running"|"done"|"error"; errorMessage set when status is "error".
+  const QUEUE_MAX = 30;
+
+  // Append to the end (FIFO — queued ops run in the order they were added).
+  function addQueueItem(queue, item, max) {
+    const cap = (max != null) ? max : QUEUE_MAX;
+    const list = Array.isArray(queue) ? queue : [];
+    return [...list, item].slice(-cap);
+  }
+
+  function removeQueueItem(queue, id) {
+    const list = Array.isArray(queue) ? queue : [];
+    return list.filter((it) => it.id !== id);
+  }
+
+  // Shallow-merge updates (e.g. status/errorMessage/outputPath) into one item by id.
+  function updateQueueItem(queue, id, updates) {
+    const list = Array.isArray(queue) ? queue : [];
+    return list.map((it) => (it.id === id ? { ...it, ...updates } : it));
+  }
+
+  // The next item still waiting to run, or null when nothing is queued.
+  function nextQueuedItem(queue) {
+    const list = Array.isArray(queue) ? queue : [];
+    return list.find((it) => it.status === "queued") || null;
+  }
+
+  // One-line label: "Compress — running…" / "GIF — done" / "Trim — error".
+  function queueItemLabel(item) {
+    if (!item) return "";
+    const suffix =
+      item.status === "running" ? " — running…" :
+      item.status === "done" ? " — done" :
+      item.status === "error" ? " — error" : "";
+    return (item.label || item.op || "Operation") + suffix;
+  }
+
   const api = {
     THEMES,
     resolveTheme,
@@ -1824,6 +1863,12 @@
     addJobRecord,
     jobHistoryLabel,
     chainTabOptions,
+    QUEUE_MAX,
+    addQueueItem,
+    removeQueueItem,
+    updateQueueItem,
+    nextQueuedItem,
+    queueItemLabel,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

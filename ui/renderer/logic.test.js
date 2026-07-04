@@ -2049,3 +2049,76 @@ test("jobHistoryLabel: handles missing fields gracefully", () => {
   assert.ok(typeof result === "string");
   assert.ok(result.includes("Convert"));
 });
+
+// --- Operation queue: addQueueItem / removeQueueItem / updateQueueItem / nextQueuedItem / queueItemLabel ---
+
+test("addQueueItem: appends to the end (FIFO order)", () => {
+  const q = [{ id: "1", label: "A" }];
+  const result = L.addQueueItem(q, { id: "2", label: "B" });
+  assert.equal(result.length, 2);
+  assert.equal(result[0].id, "1");
+  assert.equal(result[1].id, "2");
+});
+
+test("addQueueItem: caps at max, dropping the oldest", () => {
+  const q = [{ id: "1" }, { id: "2" }];
+  const result = L.addQueueItem(q, { id: "3" }, 2);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].id, "2");
+  assert.equal(result[1].id, "3");
+});
+
+test("addQueueItem: handles empty/null queue gracefully", () => {
+  const item = { id: "1", label: "A" };
+  assert.deepEqual(L.addQueueItem([], item), [item]);
+  assert.deepEqual(L.addQueueItem(null, item), [item]);
+});
+
+test("removeQueueItem: filters out the matching id, leaves others untouched", () => {
+  const q = [{ id: "1" }, { id: "2" }, { id: "3" }];
+  const result = L.removeQueueItem(q, "2");
+  assert.deepEqual(result.map((it) => it.id), ["1", "3"]);
+});
+
+test("removeQueueItem: handles empty/null queue gracefully", () => {
+  assert.deepEqual(L.removeQueueItem([], "1"), []);
+  assert.deepEqual(L.removeQueueItem(null, "1"), []);
+});
+
+test("updateQueueItem: shallow-merges updates into the matching item only", () => {
+  const q = [{ id: "1", status: "queued" }, { id: "2", status: "queued" }];
+  const result = L.updateQueueItem(q, "1", { status: "running" });
+  assert.equal(result[0].status, "running");
+  assert.equal(result[1].status, "queued");
+});
+
+test("updateQueueItem: no-op when id isn't found", () => {
+  const q = [{ id: "1", status: "queued" }];
+  const result = L.updateQueueItem(q, "missing", { status: "done" });
+  assert.deepEqual(result, q);
+});
+
+test("nextQueuedItem: returns the first item still queued", () => {
+  const q = [{ id: "1", status: "done" }, { id: "2", status: "queued" }, { id: "3", status: "queued" }];
+  const result = L.nextQueuedItem(q);
+  assert.equal(result.id, "2");
+});
+
+test("nextQueuedItem: returns null when nothing is queued", () => {
+  const q = [{ id: "1", status: "done" }, { id: "2", status: "error" }];
+  assert.equal(L.nextQueuedItem(q), null);
+  assert.equal(L.nextQueuedItem([]), null);
+  assert.equal(L.nextQueuedItem(null), null);
+});
+
+test("queueItemLabel: appends a status suffix", () => {
+  assert.equal(L.queueItemLabel({ label: "Compress", status: "queued" }), "Compress");
+  assert.equal(L.queueItemLabel({ label: "Compress", status: "running" }), "Compress — running…");
+  assert.equal(L.queueItemLabel({ label: "Compress", status: "done" }), "Compress — done");
+  assert.equal(L.queueItemLabel({ label: "Compress", status: "error" }), "Compress — error");
+});
+
+test("queueItemLabel: falls back to op name, handles missing item", () => {
+  assert.equal(L.queueItemLabel({ op: "gif", status: "queued" }), "gif");
+  assert.equal(L.queueItemLabel(null), "");
+});
