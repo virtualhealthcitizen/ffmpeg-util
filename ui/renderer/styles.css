@@ -356,6 +356,30 @@ label.inline[data-field-err]::after {
 .completion-actions { margin-top: 10px; display: flex; gap: 8px; }
 .completion-actions.hidden { display: none; }
 
+/* Job history strip: list of recent completed runs. */
+.job-history { margin-top: 12px; }
+.job-history.hidden { display: none; }
+.job-history .card-header { margin-bottom: 8px; }
+.job-history-list { list-style: none; padding: 0; margin: 0; }
+.job-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.job-entry:first-child { border-top: none; }
+.job-entry-label {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.job-entry button { flex: none; font-size: 11px; padding: 2px 7px; line-height: 1; }
+
 /* "Copy as CLI": the reconstructed ffmpeg-util command + a copy button */
 .cli-command-row {
   margin-top: 12px;

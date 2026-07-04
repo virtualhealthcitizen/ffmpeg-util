@@ -1945,3 +1945,57 @@ test("timecodeFraction: returns null for blank/invalid or zero duration", () => 
   assert.equal(L.timecodeFraction("5", 0), null);
   assert.equal(L.timecodeFraction("5", null), null);
 });
+
+// --- addJobRecord ---
+
+test("addJobRecord: prepends new record to front", () => {
+  const old = [{ outputPath: "a.mp4", label: "A" }];
+  const rec = { outputPath: "b.mp4", label: "B", ts: 0 };
+  const result = L.addJobRecord(old, rec);
+  assert.equal(result[0].outputPath, "b.mp4");
+  assert.equal(result[1].outputPath, "a.mp4");
+});
+
+test("addJobRecord: deduplicates by outputPath, keeping newest", () => {
+  const old = [{ outputPath: "a.mp4", label: "A1" }, { outputPath: "b.mp4", label: "B" }];
+  const rec = { outputPath: "a.mp4", label: "A2", ts: 1 };
+  const result = L.addJobRecord(old, rec);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].label, "A2");
+  assert.equal(result[1].label, "B");
+});
+
+test("addJobRecord: caps at max entries", () => {
+  const old = [{ outputPath: "x.mp4" }, { outputPath: "y.mp4" }];
+  const rec = { outputPath: "z.mp4" };
+  const result = L.addJobRecord(old, rec, 2);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].outputPath, "z.mp4");
+});
+
+test("addJobRecord: handles empty/null history gracefully", () => {
+  const rec = { outputPath: "a.mp4", label: "A", ts: 0 };
+  assert.deepEqual(L.addJobRecord([], rec), [rec]);
+  assert.deepEqual(L.addJobRecord(null, rec), [rec]);
+});
+
+// --- jobHistoryLabel ---
+
+test("jobHistoryLabel: formats label + basename + time", () => {
+  const rec = { label: "Compress", outputPath: "C:\\tmp\\clip.small.mp4", ts: new Date("2024-01-15T14:34:00").getTime() };
+  const result = L.jobHistoryLabel(rec);
+  assert.ok(result.startsWith("Compress — clip.small.mp4"));
+  assert.ok(result.includes("·"));
+});
+
+test("jobHistoryLabel: works with posix paths", () => {
+  const rec = { label: "Trim", outputPath: "/home/user/out.mp4", ts: 0 };
+  const result = L.jobHistoryLabel(rec);
+  assert.ok(result.includes("out.mp4"));
+});
+
+test("jobHistoryLabel: handles missing fields gracefully", () => {
+  const result = L.jobHistoryLabel({ label: "Convert" });
+  assert.ok(typeof result === "string");
+  assert.ok(result.includes("Convert"));
+});

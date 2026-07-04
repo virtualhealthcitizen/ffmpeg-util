@@ -20,7 +20,8 @@ const { suggestOutput, suggestOutputForTab, parseLines, fieldLabel, parseSseBuff
   fieldTooltip, notifyComplete,
   FIELD_VALIDATORS, validateField,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
-  COMPRESS_QUICK_PRESETS, compressQuickPreset } = window.FfuLogic;
+  COMPRESS_QUICK_PRESETS, compressQuickPreset,
+  addJobRecord, jobHistoryLabel } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1153,6 +1154,10 @@ async function loadSettings() {
     }
     refreshPresetSelect();
     refreshDimPresets();
+    jobHistoryData = Array.isArray(s.jobHistory)
+      ? s.jobHistory.filter((r) => r && r.outputPath)
+      : [];
+    renderJobHistory();
   } catch (_) {
     // first run / no store yet — ignore
   }
@@ -1454,6 +1459,60 @@ function runAgain() {
 const runAgainBtn = $("#run-again");
 if (runAgainBtn) runAgainBtn.addEventListener("click", runAgain);
 
+// --- Job history strip: recent completed runs with re-run / reveal buttons ---
+let jobHistoryData = [];
+
+function renderJobHistory() {
+  const panel = $("#job-history");
+  const list = $("#job-history-list");
+  if (!panel || !list) return;
+  if (!jobHistoryData.length) {
+    panel.classList.add("hidden");
+    return;
+  }
+  list.innerHTML = "";
+  for (const r of jobHistoryData) {
+    const li = document.createElement("li");
+    li.className = "job-entry";
+    const lbl = document.createElement("span");
+    lbl.className = "job-entry-label";
+    lbl.title = r.outputPath || "";
+    lbl.textContent = jobHistoryLabel(r);
+    li.appendChild(lbl);
+    const rerunBtn = document.createElement("button");
+    rerunBtn.textContent = "Re-run";
+    rerunBtn.className = "secondary";
+    rerunBtn.type = "button";
+    rerunBtn.addEventListener("click", () => { if (!opInFlight) run(r.label, r.op, r.body); });
+    const revealBtn = document.createElement("button");
+    revealBtn.textContent = "Reveal";
+    revealBtn.className = "secondary";
+    revealBtn.type = "button";
+    revealBtn.addEventListener("click", () => {
+      window.sidecar.showItemInFolder(r.outputPath).catch(() => {});
+    });
+    li.appendChild(rerunBtn);
+    li.appendChild(revealBtn);
+    list.appendChild(li);
+  }
+  panel.classList.remove("hidden");
+}
+
+function pushJobRecord(record) {
+  jobHistoryData = addJobRecord(jobHistoryData, record);
+  setSettings({ jobHistory: jobHistoryData }).catch(() => {});
+  renderJobHistory();
+}
+
+(function setupJobHistory() {
+  const clearBtn = $("#clear-job-history");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    jobHistoryData = [];
+    setSettings({ jobHistory: [] }).catch(() => {});
+    renderJobHistory();
+  });
+})();
+
 // --- Before/after result summary (size + duration once an op completes) ---
 function hideSummary() {
   const el = $("#summary");
@@ -1731,6 +1790,7 @@ async function run(label, op, body) {
     if (notifyPayload) notify(notifyPayload.title, notifyPayload.body).catch(() => {});
     if (result && result.output) {
       recordRecentOutput(currentTab(), result.output); // persist output history for this tab
+      pushJobRecord({ tab: currentTab(), label, op, body, outputPath: result.output, ts: Date.now() });
       showPreview(result.output);
       const primaryInput = body.input || (body.inputs && body.inputs[0]) || null;
       // Compare the output back to the primary input (single-input ops, else first).
