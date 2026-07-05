@@ -553,6 +553,8 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
     p.add_argument("--height", type=int, help="Scale height.")
     p.add_argument("--vcodec", default="libx264", help="Video codec.")
     p.add_argument("--preset", default="medium", help="x264/x265 preset.")
+    p.add_argument("--hwaccel", choices=["none", "nvenc", "qsv"], default="none",
+                   help="Hardware-accelerated encoder in place of --vcodec, when available.")
     _add_global_flags(p)
 
     return parser
@@ -868,6 +870,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         if args.target_size is not None:
             if args.crf is not None or args.bitrate is not None:
                 raise ValueError("Pass only one of --target-size / --crf / --bitrate.")
+            if args.hwaccel != "none":
+                raise ValueError("--hwaccel is not supported with --target-size (two-pass software only).")
             commands.compress_to_size(
                 runner, args.input, args.output, args.target_size,
                 vcodec=args.vcodec, preset=args.preset,
@@ -876,7 +880,7 @@ def _dispatch(args: argparse.Namespace) -> int:
         ff = commands.build_compress_args(
             args.input, args.output,
             crf=args.crf, bitrate=args.bitrate, width=args.width, height=args.height,
-            vcodec=args.vcodec, preset=args.preset,
+            vcodec=args.vcodec, preset=args.preset, hwaccel=args.hwaccel,
         )
         runner.run_ffmpeg(ff)
         return 0

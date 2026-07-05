@@ -1152,7 +1152,7 @@ const STICKY = [
   "trim-start",
   "thumbnail-time", "thumbnail-count", "thumbnail-width",
   "compress-crf", "compress-bitrate", "compress-width", "compress-height",
-  "compress-vcodec", "compress-preset",
+  "compress-vcodec", "compress-preset", "compress-hwaccel",
   "gif-fps", "gif-width", "gif-dither", "gif-loop",
   "image_to_video-seconds", "image_to_video-fps",
   "autocrop-limit",
@@ -2559,6 +2559,7 @@ $("#run-compress").addEventListener("click", () => {
     height: numOrNull("compress-height"),
     vcodec: val("compress-vcodec") || "libx264",
     preset: val("compress-preset") || "medium",
+    hwaccel: val("compress-hwaccel") || "none",
     overwrite: true,
   });
 });

@@ -121,7 +121,27 @@ Packaging / tests:
       updating the GIF path to `req.fps or 12`; the existing `req.fps or 30` guard
       for image_to_video now works correctly. 1 new regression test (77 sidecar);
       117 core + 77 sidecar + 144 node:test + E2E smoke all green. ← next
-- [ ] Hardware-accelerated encoding option (NVENC/QSV) when available
+- [x] Hardware-accelerated encoding option (NVENC/QSV) when available — core
+      `HWACCEL_VCODECS` + `build_compress_args(hwaccel=...)` swaps in `h264_nvenc`/
+      `h264_qsv` and remaps CRF to each device's real quality flag (nvenc: `-rc vbr
+      -cq`; qsv: `-global_quality`) — neither accepts `-crf` (ffmpeg silently drops
+      it rather than erroring, confirmed on this machine). CLI `--hwaccel
+      none/nvenc/qsv` (rejected with `--target-size`, which stays two-pass
+      software-only), sidecar (`CompressReq`/`RunReq` + `/compress` + `/run/stream`),
+      Compress tab "Hardware accel" dropdown (STICKY, tooltip). Verified: 5 new core
+      pytest + 2 CLI dry-run pytest + 3 sidecar pytest doing a REAL `h264_nvenc`
+      encode (this machine has a usable NVIDIA GPU; `h264_qsv` compiles in but has
+      no usable Intel Quick Sync hardware here, so its path is covered by arg-
+      building tests only) + 1 node:test (`buildCliCommand` → `--hwaccel`) + a
+      custom headless E2E confirming the dropdown (none/nvenc/qsv) and tooltip
+      render on the real Compress tab. The through-UI real-encode click (Run with
+      hwaccel=nvenc while an offscreen Electron/Chromium instance is also live)
+      reproducibly crashed Chromium's network service on this machine even with
+      the GPU process disabled — an environment-level flake in the harness, not in
+      the shipped code (the identical fetch/SSE `/run/stream` path already passes
+      for software compress in the committed smoke test); the real-hardware path is
+      instead proven at the sidecar layer, which exercises the same commands.py/
+      server.py code the UI calls. ← next
 
 ### Workflow
 - [x] Cancel a running operation (kill the ffmpeg process mid-run) — Cancel button

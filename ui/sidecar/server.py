@@ -1095,6 +1095,7 @@ class CompressReq(BaseModel):
     height: int | None = None
     vcodec: str = "libx264"
     preset: str = "medium"
+    hwaccel: str = "none"
     overwrite: bool = True
 
 
@@ -1107,6 +1108,8 @@ def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
         if req.target_size is not None:
             if req.crf is not None or req.bitrate is not None:
                 raise ValueError("Pass only one of target_size / crf / bitrate.")
+            if req.hwaccel != "none":
+                raise ValueError("hwaccel is not supported with target_size (two-pass software only).")
             commands.compress_to_size(
                 runner, req.input, req.output, req.target_size,
                 vcodec=req.vcodec, preset=req.preset,
@@ -1115,6 +1118,7 @@ def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
             runner.run_ffmpeg(commands.build_compress_args(
                 req.input, req.output, crf=req.crf, bitrate=req.bitrate,
                 width=req.width, height=req.height, vcodec=req.vcodec, preset=req.preset,
+                hwaccel=req.hwaccel,
             ))
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -1369,6 +1373,7 @@ class RunReq(BaseModel):
     target_size: float | None = None
     height: int | None = None
     preset: str = "medium"
+    hwaccel: str = "none"
     # poster-frame
     percent: float = 10.0
     # trim-pct
@@ -1561,7 +1566,7 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         ), None
     if op == "compress":
         kwargs = dict(crf=req.crf, bitrate=req.bitrate, width=req.width,
-                      height=req.height, preset=req.preset)
+                      height=req.height, preset=req.preset, hwaccel=req.hwaccel)
         if req.vcodec:
             kwargs["vcodec"] = req.vcodec
         return commands.build_compress_args(req.input, req.output, **kwargs), None
@@ -1683,6 +1688,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
             # Two-pass target-size encoding doesn't map to a single streamed pass;
             # run it to completion and emit just a final done event.
             if req.op == "compress" and req.target_size is not None:
+                if req.hwaccel != "none":
+                    raise ValueError("hwaccel is not supported with target_size (two-pass software only).")
                 commands.compress_to_size(
                     runner, req.input, req.output, req.target_size,
                     duration_s=total, vcodec=req.vcodec or "libx264", preset=req.preset,

@@ -1094,6 +1094,13 @@ test("buildCliCommand kebab-cases the subcommand and multi-word flags", () => {
   );
 });
 
+test("buildCliCommand includes --hwaccel for a hardware-accelerated compress", () => {
+  assert.equal(
+    L.buildCliCommand("compress", { input: "i.mp4", output: "o.mp4", crf: 28, hwaccel: "nvenc", overwrite: true }),
+    "ffmpeg-util compress i.mp4 o.mp4 --crf 28 --hwaccel nvenc -y"
+  );
+});
+
 test("buildCliCommand renames the diverging sidecar fields to their CLI flags", () => {
   // Fade tab body key `fade` -> --duration
   assert.equal(

@@ -5,6 +5,8 @@ import json
 import os
 import tempfile
 
+import pytest
+
 
 def _sse_events(text: str) -> list:
     return [
@@ -1158,6 +1160,56 @@ def test_compress_target_size_conflict_400(client, media, auth):
         headers=auth,
     )
     assert r.status_code == 400
+
+
+def test_compress_hwaccel_rejects_target_size_400(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/compress",
+        json={"input": str(src), "output": str(d / "x.mp4"), "target_size": 0.5, "hwaccel": "nvenc"},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
+def test_compress_hwaccel_nvenc(client, media, auth, nvenc_available):
+    if not nvenc_available:
+        pytest.skip("h264_nvenc not usable on this machine (no NVIDIA GPU/driver)")
+    d, src = media
+    out = d / "nvenc.mp4"
+    r = client.post(
+        "/compress",
+        json={"input": str(src), "output": str(out), "crf": 30, "width": 160,
+              "hwaccel": "nvenc", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert out.exists() and out.stat().st_size > 0
+    import json as _json2, subprocess as _sp
+    from conftest import FFPROBE
+    probe = _sp.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=codec_name", "-of", "json", str(out)],
+        capture_output=True, text=True, check=True,
+    )
+    assert _json2.loads(probe.stdout)["streams"][0]["codec_name"] == "h264"
+
+
+def test_run_stream_hwaccel_nvenc(client, media, auth, nvenc_available):
+    if not nvenc_available:
+        pytest.skip("h264_nvenc not usable on this machine (no NVIDIA GPU/driver)")
+    d, src = media
+    out = d / "stream_nvenc.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "compress", "input": str(src), "output": str(out),
+              "crf": 30, "hwaccel": "nvenc", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert events[-1]["type"] == "done"
+    assert out.exists() and out.stat().st_size > 0
 
 
 def test_run_stream_emits_progress_and_done(client, media, auth):

@@ -32,6 +32,21 @@ def test_compress_dry_run(capsys):
     assert "-crf" in out and "scale=1280" in out
 
 
+def test_compress_hwaccel_dry_run(capsys):
+    rc = main(["compress", "in.mp4", "out.mp4", "--crf", "20", "--hwaccel", "nvenc",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "h264_nvenc" in out and "-cq" in out and "-crf" not in out
+
+
+def test_compress_hwaccel_rejects_target_size(capsys):
+    rc = main(["compress", "in.mp4", "out.mp4", "--target-size", "5", "--hwaccel", "nvenc",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    assert "error" in capsys.readouterr().err.lower()
+
+
 def test_thumbnail_dry_run(capsys):
     rc = main(["thumbnail", "in.mp4", "out.png", "--time", "00:00:03",
                "--ffmpeg", "ffmpeg", "--dry-run"])

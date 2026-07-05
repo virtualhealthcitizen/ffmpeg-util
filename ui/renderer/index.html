@@ -308,6 +308,13 @@
         <label class="inline">Height <input id="compress-height" type="number" placeholder="(optional)" /></label>
         <label class="inline">Codec <input id="compress-vcodec" type="text" placeholder="libx264" /></label>
         <label class="inline">Preset <input id="compress-preset" type="text" placeholder="medium" /></label>
+        <label class="inline">Hardware accel
+          <select id="compress-hwaccel">
+            <option value="none">Software (Codec field above)</option>
+            <option value="nvenc">NVIDIA NVENC</option>
+            <option value="qsv">Intel Quick Sync</option>
+          </select>
+        </label>
       </div>
       <div class="compress-qp" id="compress-quick-presets">
         <span class="qp-label">Quick presets</span>

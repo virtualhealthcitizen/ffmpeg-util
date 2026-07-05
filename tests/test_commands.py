@@ -178,6 +178,32 @@ def test_compress_scale_filter():
     assert "scale=1280:-1" in args
 
 
+def test_compress_hwaccel_nvenc_remaps_crf_to_cq():
+    args = c.build_compress_args("in.mp4", "out.mp4", crf=20, hwaccel="nvenc")
+    assert args[args.index("-c:v") + 1] == "h264_nvenc"
+    assert "-crf" not in args
+    assert args[args.index("-cq") + 1] == "20"
+    assert args[args.index("-rc") + 1] == "vbr"
+
+
+def test_compress_hwaccel_qsv_remaps_crf_to_global_quality():
+    args = c.build_compress_args("in.mp4", "out.mp4", hwaccel="qsv")
+    assert args[args.index("-c:v") + 1] == "h264_qsv"
+    assert "-crf" not in args
+    assert args[args.index("-global_quality") + 1] == "23"
+
+
+def test_compress_hwaccel_bitrate_path_keeps_bv_no_quality_flag():
+    args = c.build_compress_args("in.mp4", "out.mp4", bitrate="2M", hwaccel="nvenc")
+    assert args[args.index("-b:v") + 1] == "2M"
+    assert "-cq" not in args and "-crf" not in args
+
+
+def test_compress_rejects_bad_hwaccel():
+    with pytest.raises(ValueError):
+        c.build_compress_args("in.mp4", "out.mp4", hwaccel="cuda")
+
+
 def test_waveform_args_build_filter():
     args = c.build_waveform_args("in.mp4", "wave.png", 800, 120)
     assert args[args.index("-filter_complex") + 1] == "showwavespic=s=800x120"

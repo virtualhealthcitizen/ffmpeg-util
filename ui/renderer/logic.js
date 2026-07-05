@@ -1586,6 +1586,7 @@
     "compress-target": "Target output file size in megabytes — uses a two-pass encode. Overrides CRF and Bitrate.",
     "compress-vcodec": "Video codec: libx264 (H.264), libx265 (H.265/HEVC), libvpx-vp9 (VP9). Defaults to libx264.",
     "compress-preset": "Encoding speed vs compression: ultrafast → veryslow. Slower = smaller file at the same CRF, but takes longer.",
+    "compress-hwaccel":"Hardware encoder (overrides Codec above). Needs the matching GPU/driver; not supported with Target MB.",
     // GIF
     "gif-fps":         "Frames per second for the GIF. Lower = smaller file; 10–15 fps is a good range.",
     "gif-width":       "Output width in pixels; height scales proportionally.",
