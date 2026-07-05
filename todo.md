@@ -825,7 +825,23 @@ Persistence / memory:
       `defaultSavePath(lastOut, inputPath, tab)` helper in `logic.js` that tries
       lastOut, then `suggestOutputForTab`, then the generic fallback; wired into
       the `.pick-save` handler in `renderer.js`. 3 new regression tests;
-      234 node:test + headless E2E smoke ok=true. ← next
+      234 node:test + headless E2E smoke ok=true.
+      **Bug fix (hunt):** `loadSettings` restored a tab's output field from
+      `recentOutputs` with a plain `el.value = path`, never tagging it
+      `data-auto` — so on the very next launch, that field looked exactly like
+      a user-typed path to `maybeFillOutput`'s `!outEl.dataset.auto` guard.
+      Loading a brand-new input into that tab then silently kept pointing the
+      output at the *previous session's* output file instead of re-suggesting
+      one for the new input (the same symptom `0838790` fixed for the
+      in-session auto-fill path, just via a second, un-tagged seeding path that
+      fix didn't touch). Fixed by tagging the restored value `data-auto = "1"`
+      too, exactly like a real auto-fill. 267 node:test (untouched, no pure-fn
+      change) + 256 root pytest + 136 sidecar pytest (untouched) + a custom
+      headless E2E (settings.get stubbed with a stale `recentOutputs.convert`
+      path → field seeded from it on load; loading a new input then
+      re-suggests an output instead of staying pinned to the stale path;
+      reverting the fix reproduces the stale-path failure) + committed smoke
+      5/5. ← next
 - [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
       Save, a dropdown + Load/Delete) captures the active tab's option fields
       (path inputs excluded) under a name, scoped per tool, persisted in
