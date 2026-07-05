@@ -762,6 +762,27 @@ def test_blur_pad_produces_target_frame(client, media, auth):
     assert _dims(out) == (480, 480)
 
 
+def test_run_stream_blur_region_default_sigma():
+    # Regression: RunReq's `sigma` field is shared between blur_region and
+    # blur_pad but defaulted to 20 (blur-pad's value) unconditionally, so
+    # calling /run/stream op=blur_region without an explicit sigma used
+    # blur-pad's default instead of blur-region's own default (10, matching
+    # the CLI and the dedicated /blur-region endpoint).
+    import server
+    req = server.RunReq(op="blur_region", output="out.mp4", input="in.mp4", width=80, height=60)
+    args, _ = server._build_op_args(req)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "gblur=sigma=10" in fc
+
+
+def test_run_stream_blur_pad_default_sigma():
+    import server
+    req = server.RunReq(op="blur_pad", output="out.mp4", input="in.mp4", width=480, height=480)
+    args, _ = server._build_op_args(req)
+    fc = args[args.index("-filter_complex") + 1]
+    assert "gblur=sigma=20" in fc
+
+
 def test_image_to_video_makes_clip(client, media, auth):
     import subprocess
     from conftest import FFMPEG

@@ -416,6 +416,16 @@ Packaging / tests:
       leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
       matching the documented "trim leading and trailing silence" behavior.
 - [x] Blur or pixelate a region — core `build_blur_region_args` (split/crop/gblur/overlay filter_complex), CLI `blur-region`, sidecar (`/blur-region` + `/run/stream` op `blur_region`), Blur region tab (Video FX category). Verified E2E: 320x240 clip → output unchanged at 320x240 with blurred 80×60 region at (40,20); tab/panel/all fields present (8/8 checks); pytest 129 root + 85 sidecar; node:test 157.
+      **Bug fix (hunt):** `RunReq.sigma` (used by the shared `/run/stream` streaming
+      endpoint) was a single field commented `# blur-pad` and defaulting to 20 —
+      reused unconditionally by op=`blur_region` too, so a `/run/stream` call for
+      blur-region without an explicit sigma applied blur-pad's strength (20) instead
+      of blur-region's own default (10, matching the CLI and the dedicated
+      `/blur-region` endpoint). Fixed by making `sigma` `float | None = None` and
+      resolving the per-op default (10 for blur_region, 20 for blur_pad) in
+      `_build_op_args`, mirroring the existing fps/position per-op default pattern.
+      2 new sidecar regression tests (128 total); 246 root pytest (untouched) + 267
+      node:test (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
 - [x] Crossfade-concatenate two clips (`xfade`) — core `build_xfade_args` (transition/duration/offset,
       auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
       `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +
