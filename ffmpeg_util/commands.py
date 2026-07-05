@@ -721,9 +721,30 @@ def build_loudnorm_args(
     ]
 
 
+def loudnorm(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    target_i: float = -16.0,
+    tp: float = -1.5,
+    lra: float = 11.0,
+) -> None:
+    """Normalize loudness, rejecting inputs with no audio stream to normalize."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to normalize")
+    runner.run_ffmpeg(build_loudnorm_args(input_path, output_path, target_i, tp, lra))
+
+
 def build_volume_args(input_path: str, output_path: str, gain_db: float) -> list[str]:
     """Build args to adjust audio loudness by ``gain_db`` decibels (video copied)."""
     return ["-i", input_path, "-c:v", "copy", "-af", f"volume={gain_db}dB", output_path]
+
+
+def volume(runner: FfmpegRunner, input_path: str, output_path: str, gain_db: float) -> None:
+    """Adjust audio loudness, rejecting inputs with no audio stream to adjust."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to adjust volume on")
+    runner.run_ffmpeg(build_volume_args(input_path, output_path, gain_db))
 
 
 def build_reverse_args(input_path: str, output_path: str, *, audio: bool = True) -> list[str]:
@@ -831,9 +852,23 @@ def build_sample_rate_args(input_path: str, output_path: str, rate: int) -> list
     return ["-i", input_path, "-c:v", "copy", "-ar", str(rate), output_path]
 
 
+def sample_rate(runner: FfmpegRunner, input_path: str, output_path: str, rate: int) -> None:
+    """Resample audio, rejecting inputs with no audio stream to resample."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to resample")
+    runner.run_ffmpeg(build_sample_rate_args(input_path, output_path, rate))
+
+
 def build_mono_args(input_path: str, output_path: str) -> list[str]:
     """Downmix audio to a single (mono) channel; the video is stream-copied."""
     return ["-i", input_path, "-c:v", "copy", "-ac", "1", output_path]
+
+
+def mono(runner: FfmpegRunner, input_path: str, output_path: str) -> None:
+    """Downmix audio to mono, rejecting inputs with no audio stream to downmix."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to downmix")
+    runner.run_ffmpeg(build_mono_args(input_path, output_path))
 
 
 def build_mute_args(input_path: str, output_path: str) -> list[str]:
@@ -864,6 +899,22 @@ def build_trim_silence_args(
         f"stop_periods=1:stop_threshold={thr}:stop_duration={dur}"
     )
     return ["-i", input_path, "-c:v", "copy", "-af", sr, output_path]
+
+
+def trim_silence(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    *,
+    threshold_db: float = -50.0,
+    min_duration: float = 0.5,
+) -> None:
+    """Trim silence, rejecting inputs with no audio stream to trim."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to trim silence from")
+    runner.run_ffmpeg(build_trim_silence_args(
+        input_path, output_path, threshold_db=threshold_db, min_duration=min_duration,
+    ))
 
 
 def build_replace_audio_args(

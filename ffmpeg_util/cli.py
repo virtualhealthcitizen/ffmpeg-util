@@ -736,11 +736,11 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "loudnorm":
-        runner.run_ffmpeg(commands.build_loudnorm_args(args.input, args.output, args.target))
+        commands.loudnorm(runner, args.input, args.output, args.target)
         return 0
 
     if args.command == "volume":
-        runner.run_ffmpeg(commands.build_volume_args(args.input, args.output, args.gain))
+        commands.volume(runner, args.input, args.output, args.gain)
         return 0
 
     if args.command == "reverse":
@@ -779,19 +779,19 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "sample-rate":
-        runner.run_ffmpeg(commands.build_sample_rate_args(args.input, args.output, args.rate))
+        commands.sample_rate(runner, args.input, args.output, args.rate)
         return 0
 
     if args.command == "mono":
-        runner.run_ffmpeg(commands.build_mono_args(args.input, args.output))
+        commands.mono(runner, args.input, args.output)
         return 0
 
     if args.command == "trim-silence":
-        runner.run_ffmpeg(commands.build_trim_silence_args(
-            args.input, args.output,
+        commands.trim_silence(
+            runner, args.input, args.output,
             threshold_db=args.threshold,
             min_duration=args.min_duration,
-        ))
+        )
         return 0
 
     if args.command == "mute":

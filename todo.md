@@ -415,6 +415,21 @@ Packaging / tests:
       **Bug fix (hunt):** `stop_periods=-1` removed ALL silence (including internal pauses), not just
       leading and trailing. Fixed to `stop_periods=1` so only one trailing silence period is stripped,
       matching the documented "trim leading and trailing silence" behavior.
+      **Bug fix (hunt):** `trim_silence`, `mono`, `sample_rate` (this section) plus `volume` and
+      `loudnorm` (round 1) are audio-only transforms (video always stream-copied) that built their
+      ffmpeg args unconditionally, with no `has_audio()` probe/guard — unlike sibling ops (`fade`,
+      `change_speed`, `reverse_media`, `trim_segments`) that all check first. Running any of the five
+      against a video-only input (e.g. a muted screen recording) hit ffmpeg's cryptic
+      "Stream specifier ... matches no streams" error via the CLI, the dedicated endpoint, and
+      `/run/stream`, instead of a clear message — and there was nothing for these ops to do anyway
+      (no video-domain fallback). Fixed by adding `commands.loudnorm/volume/sample_rate/mono/
+      trim_silence()` wrappers that probe `has_audio()` and raise a clear `ValueError` ("input has no
+      audio stream to ...") when absent, matching the `fade`/`change_speed` pattern; CLI and the five
+      sidecar endpoints now call the wrappers, and `/run/stream`'s special-cased audio-detection block
+      (previously just `speed`/`reverse`/`fade`) covers all eight ops. 10 new regression tests (5 core
+      dry-run + 5 sidecar via the `media_no_audio` fixture, direct endpoint + `/run/stream`); 256 root
+      pytest (+10) + 136 sidecar pytest (+8) + 267 node:test (untouched) + headless E2E smoke ok=true
+      (53 nav tabs). ← next
 - [x] Blur or pixelate a region — core `build_blur_region_args` (split/crop/gblur/overlay filter_complex), CLI `blur-region`, sidecar (`/blur-region` + `/run/stream` op `blur_region`), Blur region tab (Video FX category). Verified E2E: 320x240 clip → output unchanged at 320x240 with blurred 80×60 region at (40,20); tab/panel/all fields present (8/8 checks); pytest 129 root + 85 sidecar; node:test 157.
       **Bug fix (hunt):** `RunReq.sigma` (used by the shared `/run/stream` streaming
       endpoint) was a single field commented `# blur-pad` and defaulting to 20 —
