@@ -1,6 +1,6 @@
 // Renderer: thin client over the sidecar HTTP API exposed via window.sidecar.
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
-const { baseUrl, token, pickFile, saveFile, getSettings, setSettings, getPathForFile, notify } =
+const { baseUrl, token, pickFile, pickFiles, saveFile, getSettings, setSettings, getPathForFile, notify } =
   window.sidecar;
 const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
@@ -22,7 +22,8 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
   addJobRecord, jobHistoryLabel, chainTabOptions,
-  addQueueItem, removeQueueItem, updateQueueItem, nextQueuedItem, queueItemLabel } = window.FfuLogic;
+  addQueueItem, removeQueueItem, updateQueueItem, nextQueuedItem, queueItemLabel,
+  batchFilePairs } = window.FfuLogic;
 const $ = (sel) => document.querySelector(sel);
 const val = (id) => $("#" + id).value.trim();
 const numOrNull = (id) => (val(id) === "" ? null : Number(val(id)));
@@ -1641,6 +1642,48 @@ async function runQueueAll() {
     opQueueData = [];
     setSettings({ opQueue: [] }).catch(() => {});
     renderQueue();
+  });
+})();
+
+// --- Batch mode: apply the active tab's operation to many picked files at once ---
+// Only supported on single-input tabs (id "<tab>-input" / "<tab>-output" / a
+// "run-<tab>" button) — multi-input tabs like concat/hstack/vstack/xfade-concat
+// use different field ids and are silently skipped with a status message.
+// Reuses the tab's own Run button (and therefore its own field-gathering,
+// validation, and runOrQueue call) once per file, forcing Queue mode so nothing
+// runs until the user reviews the queue and clicks "Run queue".
+(function setupBatchMode() {
+  const batchBtn = $("#batch-files");
+  if (!batchBtn) return;
+  batchBtn.addEventListener("click", async () => {
+    const tab = currentTab();
+    const inputEl = $("#" + tab + "-input");
+    const outputEl = $("#" + tab + "-output");
+    const runBtn = $("#run-" + tab);
+    if (!inputEl || !outputEl || !runBtn) {
+      setStatus("Batch mode needs a single-input tab (not available on " + tab + ").", true);
+      return;
+    }
+    const files = await pickFiles(recentDir(recentData));
+    const pairs = batchFilePairs(files, tab);
+    if (!pairs.length) return; // cancelled or picked nothing
+    const label = document.querySelector(".tabs button.active")?.textContent || tab;
+    const prevInput = inputEl.value;
+    const prevOutput = outputEl.value;
+    queueModeEnabled = true; // batch always queues, and stays on so the panel matches
+    try {
+      for (const pair of pairs) {
+        inputEl.value = pair.input;
+        outputEl.value = pair.output;
+        runBtn.click();
+      }
+    } finally {
+      inputEl.value = prevInput;
+      outputEl.value = prevOutput;
+    }
+    const queueToggle = $("#queue-mode-toggle");
+    if (queueToggle) queueToggle.checked = true; // reflect that Queue mode is now on
+    setStatus("Batch: queued " + pairs.length + " file(s) for " + label + ".");
   });
 })();
 

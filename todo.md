@@ -126,7 +126,20 @@ Packaging / tests:
 ### Workflow
 - [x] Cancel a running operation (kill the ffmpeg process mid-run) — Cancel button
       aborts the stream; sidecar kills ffmpeg on disconnect. (See round 9.)
-- [ ] Batch mode: apply one operation to many files / a whole folder
+- [x] Batch mode: apply one operation to many files / a whole folder — a
+      "🗂 Batch files…" header button opens a multi-select file picker (select-all
+      inside a folder to batch a whole folder); pure `batchFilePairs` in `logic.js`
+      builds one `{input, output}` pair per file (auto-suggested output via
+      `suggestOutputForTab`); the renderer feeds each pair into the active tab's own
+      input/output fields and clicks its own Run button once per file (forcing Queue
+      mode), reusing every other already-filled field unchanged. Only single-input
+      tabs are supported (`<tab>-input`/`<tab>-output`/`run-<tab>` must exist) —
+      multi-input tabs like concat/hstack/vstack are silently skipped with a status
+      message. New main-process IPC `dialog:openFiles` (multiSelections) + preload
+      `pickFiles`. Verified: node:test 253/253 (4 new) + committed smoke 5/5 +
+      a custom headless E2E (stubs `dialog:openFiles`, no real dialog opens) —
+      2 files queued, fields restored after batch-add, Queue mode toggled on,
+      both real compress outputs produced, both queue items marked done. ← next
 - [ ] Job queue + history (recent runs, re-run, clear)
 - [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
 - [x] "Reveal in Explorer" / open output after completion

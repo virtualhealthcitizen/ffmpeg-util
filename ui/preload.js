@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("sidecar", {
   baseUrl: `http://127.0.0.1:${readArg("sidecar-port")}`,
   token: readArg("sidecar-token"),
   pickFile: (defaultPath) => ipcRenderer.invoke("dialog:openFile", defaultPath),
+  pickFiles: (defaultPath) => ipcRenderer.invoke("dialog:openFiles", defaultPath),
   saveFile: (defaultPath) => ipcRenderer.invoke("dialog:saveFile", defaultPath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: (data) => ipcRenderer.invoke("settings:set", data),

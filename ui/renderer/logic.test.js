@@ -2122,3 +2122,29 @@ test("queueItemLabel: falls back to op name, handles missing item", () => {
   assert.equal(L.queueItemLabel({ op: "gif", status: "queued" }), "gif");
   assert.equal(L.queueItemLabel(null), "");
 });
+
+// --- Batch mode: batchFilePairs ---
+
+test("batchFilePairs: one {input, output} pair per file, tab-aware extension", () => {
+  const pairs = L.batchFilePairs(["a.mp4", "b.mov"], "compress");
+  assert.deepEqual(pairs, [
+    { input: "a.mp4", output: "a.small.mp4" },
+    { input: "b.mov", output: "b.small.mov" },
+  ]);
+});
+
+test("batchFilePairs: gif tab overrides the output extension", () => {
+  const pairs = L.batchFilePairs(["clip.mp4"], "gif");
+  assert.deepEqual(pairs, [{ input: "clip.mp4", output: "clip.anim.gif" }]);
+});
+
+test("batchFilePairs: filters out empty/non-string entries", () => {
+  assert.deepEqual(L.batchFilePairs(["a.mp4", "", null, undefined, "  "], "compress"), [
+    { input: "a.mp4", output: "a.small.mp4" },
+  ]);
+});
+
+test("batchFilePairs: handles empty/null file lists", () => {
+  assert.deepEqual(L.batchFilePairs([], "compress"), []);
+  assert.deepEqual(L.batchFilePairs(null, "compress"), []);
+});
