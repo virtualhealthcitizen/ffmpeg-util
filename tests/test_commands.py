@@ -1041,6 +1041,18 @@ def test_build_trim_segments_args_requires_a_segment():
         c.build_trim_segments_args("in.mp4", "out.mp4", [])
 
 
+def test_build_trim_segments_args_no_audio():
+    args = c.build_trim_segments_args(
+        "in.mp4", "out.mp4", [(0.0, 5.0), (10.0, 15.0)], audio=False
+    )
+    fc = args[args.index("-filter_complex") + 1]
+    assert "atrim" not in fc
+    assert "concat=n=2:v=1:a=0[v]" in fc
+    assert "[a]" not in fc
+    assert "-c:a" not in args
+    assert args[-1] == "out.mp4"
+
+
 def test_build_remux_args_preserves_output_path():
     args = c.build_remux_args("video.mp4", "video.mov")
     assert args[0] == "-i" and args[1] == "video.mp4"

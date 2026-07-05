@@ -933,7 +933,7 @@ def _dispatch(args: argparse.Namespace) -> int:
         else:
             segments_text = args.segments_inline or ""
         segments = commands.parse_segments_text(segments_text)
-        runner.run_ffmpeg(commands.build_trim_segments_args(args.input, args.output, segments))
+        commands.trim_segments(runner, args.input, args.output, segments)
         return 0
 
     return 2  # unreachable: argparse enforces a valid subcommand

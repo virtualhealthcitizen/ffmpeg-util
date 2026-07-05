@@ -1406,12 +1406,16 @@ def build_trim_segments_args(
     input_path: str,
     output_path: str,
     segments: Sequence[tuple[float, float]],
+    *,
+    audio: bool = True,
 ) -> list[str]:
     """Build args to cut multiple segments from one input and join them in order.
 
     Each segment is cut with the trim/atrim filters (frame-accurate — stream
     copy can't join arbitrary, non-keyframe-aligned cuts) and stitched together
-    with the concat filter, re-encoding the result.
+    with the concat filter, re-encoding the result. Pass ``audio=False`` for an
+    input with no audio stream — otherwise the ``[0:a]atrim`` filter references
+    a stream specifier that matches nothing and ffmpeg errors out.
     """
     if len(segments) < 1:
         raise ValueError("Need at least one segment.")
@@ -1419,21 +1423,38 @@ def build_trim_segments_args(
     fc_parts: list[str] = []
     for i, (start_s, end_s) in enumerate(segments):
         fc_parts.append(f"[0:v]trim=start={start_s}:end={end_s},setpts=PTS-STARTPTS[v{i}]")
-        fc_parts.append(f"[0:a]atrim=start={start_s}:end={end_s},asetpts=PTS-STARTPTS[a{i}]")
-    concat_in = "".join(f"[v{i}][a{i}]" for i in range(n))
-    fc_parts.append(f"{concat_in}concat=n={n}:v=1:a=1[v][a]")
+        if audio:
+            fc_parts.append(f"[0:a]atrim=start={start_s}:end={end_s},asetpts=PTS-STARTPTS[a{i}]")
+    if audio:
+        concat_in = "".join(f"[v{i}][a{i}]" for i in range(n))
+        fc_parts.append(f"{concat_in}concat=n={n}:v=1:a=1[v][a]")
+    else:
+        concat_in = "".join(f"[v{i}]" for i in range(n))
+        fc_parts.append(f"{concat_in}concat=n={n}:v=1:a=0[v]")
     fc = ";".join(fc_parts)
 
-    return [
-        "-i", input_path,
-        "-filter_complex", fc,
-        "-map", "[v]",
-        "-map", "[a]",
-        "-c:v", "libx264",
-        "-preset", "medium",
-        "-c:a", "aac",
-        output_path,
-    ]
+    args = ["-i", input_path, "-filter_complex", fc, "-map", "[v]"]
+    if audio:
+        args += ["-map", "[a]"]
+    args += ["-c:v", "libx264", "-preset", "medium"]
+    if audio:
+        args += ["-c:a", "aac"]
+    args.append(output_path)
+    return args
+
+
+def trim_segments(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    segments: Sequence[tuple[float, float]],
+    *,
+    audio: bool | None = None,
+) -> None:
+    """Cut and join ``segments`` from ``input_path``, detecting audio when present."""
+    if audio is None:
+        audio = has_audio(runner, input_path)
+    runner.run_ffmpeg(build_trim_segments_args(input_path, output_path, segments, audio=audio))
 
 
 def build_poster_frame_args(

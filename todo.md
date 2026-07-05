@@ -251,7 +251,20 @@ Packaging / tests:
       op `trim_segments`), Trim segments tab (Trim & Frames, textarea of `<start> <end>`
       lines). Verified: 245 node:test + 221 root pytest + 116 sidecar pytest (0–1s + 2–3s
       of a 3s clip → ~2s joined output, 320x240 preserved) + headless Electron E2E smoke
-      ok=true (53 nav tabs). ← next
+      ok=true (53 nav tabs).
+      **Bug fix (hunt):** `build_trim_segments_args` unconditionally emitted an
+      `[0:a]atrim=...` filter and `-map "[a]"`, unlike sibling ops (`reverse`, `speed`,
+      `fade`, `concat --reencode`) which all probe for an audio stream first — so
+      `trim-segments` on a video-only input hit a hard ffmpeg error ("Stream specifier
+      'a' ... matches no streams") via both the CLI and the sidecar (`/trim-segments`
+      and `/run/stream` op `trim_segments`). Fixed by adding an `audio: bool = True`
+      flag to `build_trim_segments_args` (skips the atrim filters/map/`-c:a` when
+      `False`, uses `concat=...:a=0[v]`) plus a new `trim_segments()` wrapper that
+      probes `has_audio` when not given explicitly, mirroring `change_speed`/
+      `reverse_media`; both sidecar call sites now detect audio before building args.
+      2 new regression tests (1 core pure-builder, 233 root pytest; 2 sidecar E2E
+      against a real video-only clip, 124 sidecar pytest) + 252 node:test (untouched)
+      + headless E2E smoke ok=true. ← next
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)

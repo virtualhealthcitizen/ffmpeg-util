@@ -53,6 +53,22 @@ def media(tmp_path_factory):
     return d, src
 
 
+@pytest.fixture(scope="session")
+def media_no_audio(tmp_path_factory):
+    """A real 3s video-only clip (no audio stream) plus its directory."""
+    d = tmp_path_factory.mktemp("media_no_audio")
+    src = d / "in_no_audio.mp4"
+    subprocess.run(
+        [
+            FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc=duration=3:size=320x240:rate=30",
+            "-c:v", "libx264", "-an", str(src),
+        ],
+        check=True,
+    )
+    return d, src
+
+
 @pytest.fixture
 def auth():
     return {"Authorization": f"Bearer {TOKEN}"}

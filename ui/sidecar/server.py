@@ -1308,7 +1308,7 @@ def trim_segments_op(req: TrimSegmentsReq, _: None = Depends(require_token)) -> 
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
         segments = commands.parse_segments_text(req.segments_text)
-        runner.run_ffmpeg(commands.build_trim_segments_args(req.input, req.output, segments))
+        commands.trim_segments(runner, req.input, req.output, segments)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -1634,7 +1634,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_chapters_args(req.input, meta_file, req.output), meta_file
     if op == "trim_segments":
         segments = commands.parse_segments_text(req.segments_text or "")
-        return commands.build_trim_segments_args(req.input, req.output, segments), None
+        audio = commands.has_audio(FfmpegRunner(), req.input)
+        return commands.build_trim_segments_args(req.input, req.output, segments, audio=audio), None
     raise ValueError(f"Unknown op: {op!r}")
 
 
