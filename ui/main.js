@@ -109,6 +109,17 @@ ipcMain.handle("dialog:openFile", async (_e, defaultPath) => {
   return res.canceled ? null : res.filePaths[0];
 });
 
+// Batch mode: pick many files at once (navigate into a folder and select-all to
+// batch a whole folder). Returns [] on cancel rather than null so the renderer
+// can treat it the same as "picked nothing".
+ipcMain.handle("dialog:openFiles", async (_e, defaultPath) => {
+  const res = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: defaultPath || undefined,
+    properties: ["openFile", "multiSelections"],
+  });
+  return res.canceled ? [] : res.filePaths;
+});
+
 ipcMain.handle("dialog:saveFile", async (_e, defaultPath) => {
   const res = await dialog.showSaveDialog(mainWindow, { defaultPath: defaultPath || undefined });
   return res.canceled ? null : res.filePath;

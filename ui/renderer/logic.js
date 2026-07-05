@@ -1763,6 +1763,19 @@
     return (item.label || item.op || "Operation") + suffix;
   }
 
+  // --- Batch mode: apply one tab's operation to many files at once ---
+  // Given file paths from a multi-file picker and the active tab, returns one
+  // { input, output } pair per file (auto-suggested output via suggestOutputForTab).
+  // The renderer feeds each pair into the tab's own input/output fields and clicks
+  // its Run button once per pair (forcing queue mode), so every other already-filled
+  // field (codec, crf, etc.) carries over unchanged to every file in the batch.
+  function batchFilePairs(files, tab) {
+    const list = Array.isArray(files) ? files : [];
+    return list
+      .filter((f) => typeof f === "string" && f.trim())
+      .map((f) => ({ input: f, output: suggestOutputForTab(f, tab) }));
+  }
+
   const api = {
     THEMES,
     resolveTheme,
@@ -1874,6 +1887,7 @@
     updateQueueItem,
     nextQueuedItem,
     queueItemLabel,
+    batchFilePairs,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
