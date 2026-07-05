@@ -1926,6 +1926,38 @@ test("pip: runInputEntries returns both input and overlay entries", () => {
   assert.ok(fields.includes("pip-overlay"), "should include pip-overlay field");
 });
 
+test("image_to_video: runInputEntries includes the optional audio field only when set", () => {
+  const withAudio = L.runInputEntries("image_to_video", {
+    input: "/images/still.png",
+    audio: "/audio/track.mp3",
+    output: "/out/clip.mp4",
+  });
+  const fieldsWithAudio = withAudio.map(([, id]) => id);
+  assert.ok(fieldsWithAudio.includes("image_to_video-input"), "should include image_to_video-input field");
+  assert.ok(fieldsWithAudio.includes("image_to_video-audio"), "should include image_to_video-audio field");
+
+  const withoutAudio = L.runInputEntries("image_to_video", {
+    input: "/images/still.png",
+    audio: "",
+    output: "/out/clip.mp4",
+  });
+  const fieldsWithoutAudio = withoutAudio.map(([, id]) => id);
+  assert.ok(fieldsWithoutAudio.includes("image_to_video-input"), "should include image_to_video-input field");
+  assert.ok(!fieldsWithoutAudio.includes("image_to_video-audio"), "should omit image_to_video-audio when blank");
+});
+
+test("image_to_video: buildCliCommand includes --audio when provided", () => {
+  const cmd = L.buildCliCommand("image_to_video", {
+    input: "still.png",
+    output: "clip.mp4",
+    seconds: 3,
+    audio: "track.mp3",
+    overwrite: true,
+  });
+  assert.ok(cmd.includes("--audio"), "should include --audio flag");
+  assert.ok(cmd.includes("track.mp3"), "should include audio path");
+});
+
 test("pip: buildCliCommand maps pip_size to --size flag", () => {
   const cmd = L.buildCliCommand("pip", {
     input: "base.mp4",

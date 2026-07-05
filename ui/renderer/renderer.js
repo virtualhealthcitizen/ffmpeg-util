@@ -2234,6 +2234,7 @@ $("#run-image_to_video").addEventListener("click", () => {
     output: val("image_to_video-output"),
     seconds: numOrNull("image_to_video-seconds"),
     fps: numOrNull("image_to_video-fps") || 30,
+    audio: val("image_to_video-audio") || null,
     overwrite: true,
   });
 });
