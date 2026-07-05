@@ -27,6 +27,13 @@ def test_expected_output_duration():
     assert server._expected_output_duration("trim", 30, duration="5") == 5
     assert server._expected_output_duration("trim", 30, start="10", end="00:00:25") == 15
     assert server._expected_output_duration("trim", 30, start="20") == 10
+    # trim_segments: joined output length is the sum of each segment's own
+    # span, not the original (pre-trim) input duration `total` holds.
+    assert server._expected_output_duration(
+        "trim_segments", 600, segments_text="0 15\n100 115",
+    ) == 30
+    # Bad/empty segments text falls back to `total` rather than raising.
+    assert server._expected_output_duration("trim_segments", 600, segments_text="") == 600
 
 
 def test_parse_time():
@@ -2069,6 +2076,13 @@ def test_run_stream_trim_segments_produces_output(client, media, auth):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream trim_segments should produce output"
+    # Regression: the progress "total" (expected output duration) used to
+    # fall through to the original 3s input clip's duration instead of the
+    # joined 2s (1-0 + 3-2) segment sum, making the progress bar read ~66% at
+    # completion instead of 100%.
+    progress = [e for e in events if e.get("type") == "progress" and e.get("total")]
+    assert progress, "expected at least one progress event with a total"
+    assert abs(progress[-1]["total"] - 2.0) < 0.2
 
 
 def test_trim_segments_no_audio_input(client, media_no_audio, auth):

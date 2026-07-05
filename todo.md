@@ -279,7 +279,23 @@ Packaging / tests:
       `reverse_media`; both sidecar call sites now detect audio before building args.
       2 new regression tests (1 core pure-builder, 233 root pytest; 2 sidecar E2E
       against a real video-only clip, 124 sidecar pytest) + 252 node:test (untouched)
-      + headless E2E smoke ok=true. ← next
+      + headless E2E smoke ok=true.
+      **Bug fix (hunt):** `_expected_output_duration` in `ui/sidecar/server.py` (used
+      by `/run/stream` to compute the live progress percentage) had no case for
+      `trim_segments`, so it fell through to `return total` — the *original,
+      pre-trim* input duration — instead of the joined output's actual (shorter)
+      length. A user joining e.g. two 15s segments from a 10-minute source saw the
+      progress bar stall around 5% and then jump straight to "Done" instead of
+      reaching 100%, the same failure family as the earlier sigma/position/fps
+      `RunReq`-default mismatches, just in the duration-estimation helper instead.
+      Fixed by adding a `trim_segments` case that parses `segments_text` via the
+      existing `parse_segments_text` and sums each segment's own `(end − start)`
+      span (falling back to `total` on a parse error, matching the function's
+      existing `trim` case). 2 new regression tests (1 unit test on
+      `_expected_output_duration`, 1 integration test asserting the streamed
+      `total` field reads ~2.0s for a 3s clip trimmed to two 1s segments instead
+      of ~3.0s); 256 root pytest (untouched) + 136 sidecar pytest (+2) + 267
+      node:test (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)

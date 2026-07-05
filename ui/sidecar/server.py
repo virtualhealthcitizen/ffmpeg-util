@@ -1660,6 +1660,7 @@ def _expected_output_duration(
     seconds: float | None = None,
     start_pct: float = 0.0,
     end_pct: float = 100.0,
+    segments_text: str | None = None,
 ) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
     if op == "image_to_video":
@@ -1668,6 +1669,14 @@ def _expected_output_duration(
     if op == "preview_clip":
         s = seconds if seconds is not None else 5.0
         return min(total, s) if total else s
+    if op == "trim_segments":
+        # The joined output is the sum of each segment's own length, not the
+        # original (pre-trim) input duration that `total` holds.
+        try:
+            segments = commands.parse_segments_text(segments_text or "")
+            return sum(max(0.0, e - s) for s, e in segments)
+        except ValueError:
+            return total
     if not total:
         return total
     if op == "speed" and factor:
@@ -1949,6 +1958,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 req.op, total, factor=req.factor, count=req.count,
                 start=req.start, end=req.end, duration=req.duration,
                 seconds=req.seconds, start_pct=req.start_pct, end_pct=req.end_pct,
+                segments_text=req.segments_text,
             )
             log_q: queue.Queue = queue.Queue()
             for fields in runner.iter_ffmpeg_progress(args, on_log=log_q.put):
