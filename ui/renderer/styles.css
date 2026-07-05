@@ -290,6 +290,11 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .compress-qp .qp-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
 .compress-qp .qp-chip { padding: 5px 11px; font-size: 12px; }
 
+/* Quick (factory) presets for Sharpen/Denoise — one-click fill of a filter strength. */
+.filter-qp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.filter-qp .qp-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.filter-qp .qp-chip { padding: 5px 11px; font-size: 12px; }
+
 /* Multi-input compatibility banner (hstack/vstack/concat). */
 .compat {
   padding: 10px 14px;

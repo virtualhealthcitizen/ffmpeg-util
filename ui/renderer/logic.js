@@ -943,6 +943,30 @@
     return p ? p.values : null;
   }
 
+  // --- Quick (factory) presets for the Sharpen tab ---
+  const SHARPEN_QUICK_PRESETS = [
+    { label: "Light", title: "Subtle sharpening — amount 0.8", values: { "sharpen-amount": "0.8" } },
+    { label: "Moderate", title: "Balanced sharpening — amount 1.5", values: { "sharpen-amount": "1.5" } },
+    { label: "Heavy", title: "Strong sharpening — amount 3", values: { "sharpen-amount": "3" } },
+  ];
+
+  function sharpenQuickPreset(name) {
+    const p = SHARPEN_QUICK_PRESETS.find((x) => x.label === name);
+    return p ? p.values : null;
+  }
+
+  // --- Quick (factory) presets for the Denoise tab ---
+  const DENOISE_QUICK_PRESETS = [
+    { label: "Light", title: "Light noise reduction — strength 2", values: { "denoise-strength": "2" } },
+    { label: "Moderate", title: "Balanced noise reduction — strength 4", values: { "denoise-strength": "4" } },
+    { label: "Heavy", title: "Heavy smoothing — strength 8", values: { "denoise-strength": "8" } },
+  ];
+
+  function denoiseQuickPreset(name) {
+    const p = DENOISE_QUICK_PRESETS.find((x) => x.label === name);
+    return p ? p.values : null;
+  }
+
   // --- Estimated-output readout: predict output duration/size from settings ---
 
   // Parse an ffmpeg-style time ("5", "1:05", "00:00:01.500") to seconds, or null.
@@ -1914,6 +1938,10 @@
     compareDividerPos,
     COMPRESS_QUICK_PRESETS,
     compressQuickPreset,
+    SHARPEN_QUICK_PRESETS,
+    sharpenQuickPreset,
+    DENOISE_QUICK_PRESETS,
+    denoiseQuickPreset,
     JOB_HISTORY_MAX,
     addJobRecord,
     jobHistoryLabel,

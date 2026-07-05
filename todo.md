@@ -297,7 +297,13 @@ Packaging / tests:
 - [x] GIF tuning: dithering mode + loop count — `make_gif` gains `dither` (sierra2_4a/bayer/floyd_steinberg/none) + `loop` (0=∞, -1=once); CLI `--dither`/`--loop`; sidecar `GifReq` + streaming path; Dither select + Loop field on GIF tab; persisted via STICKY. Verified: pytest 101+69 + node:test 126 + headless Electron E2E 6/6 (bayer+floyd_steinberg GIFs produced; all 4 dither options present; loop=-1 GIF produced). ← next
 - [x] Grayscale (desaturate) — core `build_grayscale_args` (`hue=s=0`), CLI `grayscale`,
       sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.
-- [ ] Denoise / sharpen / deinterlace filter presets
+- [x] Denoise / sharpen / deinterlace filter presets — Sharpen and Denoise tabs each
+      gain a "Quick presets" row (Light/Moderate/Heavy chips) that one-click-fills
+      `sharpen-amount` (0.8/1.5/3) or `denoise-strength` (2/4/8); `SHARPEN_QUICK_PRESETS`/
+      `sharpenQuickPreset` and `DENOISE_QUICK_PRESETS`/`denoiseQuickPreset` in `logic.js`
+      mirror the existing `COMPRESS_QUICK_PRESETS` pattern. Deinterlace has no adjustable
+      params (yadif runs with no options), so there's nothing to preset there. Verified:
+      267 node:test (+18 new) + headless E2E smoke ok=true. ← next
 - [x] System notification (and optional sound) on completion — DONE (see round 9 entry above)
 - [x] Remember window size & position across launches — done (see round 9: window
       bounds persisted in `settings.json`, restored via `windowOptions`).
@@ -816,7 +822,7 @@ Power-user flow:
       helper's try/finally lifecycle. 1 new sidecar regression test (asserts no
       `ffconcat_*.txt` survives a too-few-inputs `/run/stream` call); 249 node:test
       (untouched) + 221 root pytest (untouched) + 117 sidecar pytest (+1 new) +
-      headless E2E smoke ok=true. ← next
+      headless E2E smoke ok=true.
 - [x] Chain ops on one file — after a successful run, a "→ Send to" select+button
       in the completion-actions area populates any other tab's input with the output
       and switches to it. Pure `chainTabOptions(allTabData, currentTab)` in `logic.js`

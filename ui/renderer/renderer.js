@@ -21,6 +21,8 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   FIELD_VALIDATORS, validateField,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
+  SHARPEN_QUICK_PRESETS, sharpenQuickPreset,
+  DENOISE_QUICK_PRESETS, denoiseQuickPreset,
   addJobRecord, jobHistoryLabel, chainTabOptions,
   addQueueItem, removeQueueItem, updateQueueItem, nextQueuedItem, queueItemLabel,
   batchFilePairs } = window.FfuLogic;
@@ -1315,6 +1317,28 @@ document.getElementById("compress-quick-presets").addEventListener("click", (e) 
   const values = compressQuickPreset(btn.dataset.qp);
   if (!values) return;
   applyOptionValues("compress", values);
+  refreshSliders();
+  setStatus(`Applied "${btn.dataset.qp}" preset.`);
+});
+
+// --- Quick (factory) presets for Sharpen ---
+document.getElementById("sharpen-quick-presets").addEventListener("click", (e) => {
+  const btn = e.target.closest(".qp-chip");
+  if (!btn) return;
+  const values = sharpenQuickPreset(btn.dataset.qp);
+  if (!values) return;
+  applyOptionValues("sharpen", values);
+  refreshSliders();
+  setStatus(`Applied "${btn.dataset.qp}" preset.`);
+});
+
+// --- Quick (factory) presets for Denoise ---
+document.getElementById("denoise-quick-presets").addEventListener("click", (e) => {
+  const btn = e.target.closest(".qp-chip");
+  if (!btn) return;
+  const values = denoiseQuickPreset(btn.dataset.qp);
+  if (!values) return;
+  applyOptionValues("denoise", values);
   refreshSliders();
   setStatus(`Applied "${btn.dataset.qp}" preset.`);
 });
