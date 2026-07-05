@@ -262,6 +262,15 @@ def test_compute_aspect_crop_square_and_even():
     assert x == 40 and y == 0
 
 
+def test_crop_to_aspect_dry_run_falls_back_instead_of_raising(capsys):
+    # run_ffprobe always returns None in dry-run mode (no ffprobe call is made),
+    # so crop_to_aspect used to always raise here instead of printing a command.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.crop_to_aspect(runner, "in.mp4", "out.mp4", 16, 9)
+    out = capsys.readouterr().out
+    assert "crop=" in out and "out.mp4" in out
+
+
 def test_fps_args_build_filter():
     args = c.build_fps_args("in.mp4", "out.mp4", 15)
     assert args[args.index("-vf") + 1] == "fps=15"

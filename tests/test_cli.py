@@ -68,6 +68,26 @@ def test_autocrop_dry_run(capsys):
     assert "cropdetect=limit=16" in capsys.readouterr().out
 
 
+def test_crop_aspect_dry_run(capsys):
+    # Dry-run never calls ffprobe, so probe_dimensions always returns None here;
+    # crop_to_aspect must fall back to a placeholder instead of raising.
+    rc = main(["crop-aspect", "in.mp4", "out.mp4", "--aspect", "16:9",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "crop=" in out and "out.mp4" in out
+
+
+def test_concat_reencode_dry_run(capsys):
+    # Same dry-run-never-probes gap as crop-aspect, but hit via the CLI's own
+    # dims-is-None check rather than a commands.py helper.
+    rc = main(["concat", "in1.mp4", "in2.mp4", "-o", "out.mp4", "--reencode",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "filter_complex" in out and "out.mp4" in out
+
+
 def test_watermark_dry_run(capsys):
     rc = main(["watermark", "in.mp4", "out.mp4", "--text", "© 2024",
                "--position", "bottom-right", "--ffmpeg", "ffmpeg", "--dry-run"])
