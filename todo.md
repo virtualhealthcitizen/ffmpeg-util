@@ -260,6 +260,15 @@ Packaging / tests:
       in `index.html` + the 5 hardcoded strings in `renderer.js` + 2 FIELD_TOOLTIPS keys in
       `logic.js`; test assertions in `logic.test.js` updated to match. Verified: 190 node:test
       + headless Electron E2E ok=True.
+      **Bug fix (hunt):** `scene_thumbs` has a width-only field (`scene_thumbs-width`,
+      scales the thumbnail width while height follows proportionally) but was missing
+      from `DIMENSION_FIELDS` in `logic.js` — the same class of bug already fixed once
+      for `preview_clip` above, just on a different tab. So the probed-source "Size"
+      chip silently did nothing on Scene thumbs instead of one-click-filling the width
+      like its width-only siblings gif/thumbnail/preview_clip. Fixed by adding
+      `scene_thumbs: { w: "scene_thumbs-width" }` to `DIMENSION_FIELDS`. 1 new
+      regression test (277 node:test); 256 root pytest (untouched) + headless E2E
+      smoke ok=true (53 nav tabs). ← next
 - [x] Trim multiple segments and join them in one go — core `parse_segments_text`/
       `build_trim_segments_args` (trim/atrim + concat filter_complex, re-encoded), CLI
       `trim-segments --segments/--segments-file`, sidecar (`/trim-segments` + `/run/stream`
