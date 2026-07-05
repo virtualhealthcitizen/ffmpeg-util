@@ -21,6 +21,7 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   FIELD_VALIDATORS, validateField,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
+  ASPECT_RATIO_PRESETS, aspectRatioPreset,
   SHARPEN_QUICK_PRESETS, sharpenQuickPreset,
   DENOISE_QUICK_PRESETS, denoiseQuickPreset,
   addJobRecord, jobHistoryLabel, chainTabOptions,
@@ -1322,6 +1323,18 @@ document.getElementById("compress-quick-presets").addEventListener("click", (e) 
   applyOptionValues("compress", values);
   refreshSliders();
   setStatus(`Applied "${btn.dataset.qp}" preset.`);
+});
+
+// --- Aspect-ratio presets for Compress ---
+// One click forces an exact width+height pair for a common target ratio.
+document.getElementById("compress-aspect-presets").addEventListener("click", (e) => {
+  const btn = e.target.closest(".qp-chip");
+  if (!btn) return;
+  const values = aspectRatioPreset(btn.dataset.ar);
+  if (!values) return;
+  applyOptionValues("compress", values);
+  refreshSliders();
+  setStatus(`Applied ${btn.dataset.ar} aspect ratio.`);
 });
 
 // --- Quick (factory) presets for Sharpen ---
