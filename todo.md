@@ -371,6 +371,20 @@ Packaging / tests:
 - [x] Crop-to-aspect (auto-crop to 16:9 / 9:16 / 1:1) — core `compute_aspect_crop`/
       `crop_to_aspect`, CLI `crop-aspect`, sidecar (`/crop-aspect` + `/run/stream`),
       Aspect tab. Verified E2E: 320x240 -> 320x180 (16:9).
+      **Bug fix (hunt):** `FfmpegRunner.run_ffprobe` always returns `None` in
+      dry-run mode (no ffprobe call is made at all), but `crop_to_aspect` raised
+      `ValueError` unconditionally whenever `probe_dimensions` came back `None` —
+      so `ffmpeg-util crop-aspect ... --dry-run` crashed on every invocation,
+      even against a real, valid input file, instead of printing the would-be
+      command like sibling probe-dependent commands (`trim-pct`, `chapters`,
+      `autocrop`) already do. The CLI's `concat --reencode` dispatch branch in
+      `cli.py` had the identical bug (an unconditional `SystemExit` on a `None`
+      probe). Fixed both by falling back to a placeholder 1920x1080 size in
+      dry-run mode only, mirroring the existing `duration_s=dur or 0.0` pattern
+      used by trim-pct/chapters. 2 new regression tests (1 core, 1 CLI) + 1 new
+      `crop-aspect --dry-run` unit test; 238 root pytest (+3) + 126 sidecar
+      pytest (untouched) + 267 node:test (untouched) + headless E2E smoke
+      ok=true (53 nav tabs, real compress output produced). ← next
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
 - [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs).
       **Bug fix (hunt):** `build_pip_args` left the overlay filter output unlabeled and only mapped `0:a?` — so the PiP video stream was never included in the output (audio-only or silent failure depending on container). Similar overlay functions (`build_blur_region_args`, `build_blur_pad_args`) correctly label their output `[v]` and map it; pip was the odd one out. Fixed by appending `[v]` to the filter_complex overlay output and adding `-map [v]` before `-map 0:a?`. 1 new regression test (`test_build_pip_args_maps_video`); 188 core + 218 node:test + E2E smoke 5/5 green.

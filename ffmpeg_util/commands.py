@@ -919,7 +919,12 @@ def crop_to_aspect(runner: FfmpegRunner, input_path: str, output_path: str, aw: 
     """Crop ``input_path`` to the ``aw:ah`` aspect (centered), probing its size."""
     dims = probe_dimensions(runner, input_path)
     if not dims:
-        raise ValueError("could not determine input dimensions for crop-to-aspect")
+        if not runner.dry_run:
+            raise ValueError("could not determine input dimensions for crop-to-aspect")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how trim-pct/chapters tolerate a probe-less dry-run.
+        dims = (1920, 1080)
     cw, ch, x, y = compute_aspect_crop(dims[0], dims[1], aw, ah)
     runner.run_ffmpeg(build_crop_args(input_path, output_path, cw, ch, x, y))
 

@@ -610,7 +610,11 @@ def _dispatch(args: argparse.Namespace) -> int:
         if getattr(args, "reencode", False):
             dims = commands.probe_dimensions(runner, args.inputs[0])
             if dims is None:
-                raise SystemExit("Could not probe dimensions of the first input.")
+                if not runner.dry_run:
+                    raise SystemExit("Could not probe dimensions of the first input.")
+                # ffprobe is never invoked in dry-run mode, so fall back to a
+                # placeholder size purely to let the command print (see crop_to_aspect).
+                dims = (1920, 1080)
             tw, th = dims
             has_audio = [commands.probe_has_audio(runner, p) for p in args.inputs]
             ff = commands.build_concat_filter_args(args.inputs, args.output, tw, th, has_audio=has_audio)
