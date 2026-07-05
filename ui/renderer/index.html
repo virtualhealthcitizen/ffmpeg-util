@@ -324,6 +324,12 @@
         <button class="secondary qp-chip" data-qp="Tiny" title="Maximum compression — CRF 32, 480px wide, libx264 veryfast">Tiny</button>
         <button class="secondary qp-chip" data-qp="High quality" title="Archival quality — CRF 18, no resize, libx264 slow">High quality</button>
       </div>
+      <div class="compress-qp" id="compress-aspect-presets">
+        <span class="qp-label">Aspect ratio</span>
+        <button class="secondary qp-chip" data-ar="16:9" title="Widescreen — 1280x720">16:9</button>
+        <button class="secondary qp-chip" data-ar="9:16" title="Vertical (Reels/Shorts/TikTok) — 720x1280">9:16</button>
+        <button class="secondary qp-chip" data-ar="1:1" title="Square — 720x720">1:1</button>
+      </div>
       <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23). Target MB uses two-pass and overrides both.</p>
       <div class="row">
         <button class="secondary" id="estimate-compress-size"

@@ -943,6 +943,34 @@
     return p ? p.values : null;
   }
 
+  // --- Aspect-ratio presets for the Compress tab ---
+  // Each sets an exact width+height pair for a common target ratio (both fields
+  // forced, unlike the quick presets above which only ever set width and let
+  // ffmpeg's scale=-1 preserve the source aspect).
+  const ASPECT_RATIO_PRESETS = [
+    {
+      label: "16:9",
+      title: "Widescreen — 1280x720",
+      values: { "compress-width": "1280", "compress-height": "720" },
+    },
+    {
+      label: "9:16",
+      title: "Vertical (Reels/Shorts/TikTok) — 720x1280",
+      values: { "compress-width": "720", "compress-height": "1280" },
+    },
+    {
+      label: "1:1",
+      title: "Square — 720x720",
+      values: { "compress-width": "720", "compress-height": "720" },
+    },
+  ];
+
+  // Look up an aspect-ratio preset by label; return its values map or null if not found.
+  function aspectRatioPreset(name) {
+    const p = ASPECT_RATIO_PRESETS.find((x) => x.label === name);
+    return p ? p.values : null;
+  }
+
   // --- Quick (factory) presets for the Sharpen tab ---
   const SHARPEN_QUICK_PRESETS = [
     { label: "Light", title: "Subtle sharpening — amount 0.8", values: { "sharpen-amount": "0.8" } },
@@ -1938,6 +1966,8 @@
     compareDividerPos,
     COMPRESS_QUICK_PRESETS,
     compressQuickPreset,
+    ASPECT_RATIO_PRESETS,
+    aspectRatioPreset,
     SHARPEN_QUICK_PRESETS,
     sharpenQuickPreset,
     DENOISE_QUICK_PRESETS,

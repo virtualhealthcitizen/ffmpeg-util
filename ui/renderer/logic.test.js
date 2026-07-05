@@ -586,6 +586,46 @@ test("COMPRESS_QUICK_PRESETS all have label, title, and all 7 compress fields", 
   }
 });
 
+test("aspectRatioPreset returns values for every ASPECT_RATIO_PRESETS entry", () => {
+  for (const p of L.ASPECT_RATIO_PRESETS) {
+    const vals = L.aspectRatioPreset(p.label);
+    assert.ok(vals !== null, `${p.label} should return values`);
+    assert.strictEqual(typeof vals, "object");
+  }
+});
+
+test("aspectRatioPreset returns null for unknown name", () => {
+  assert.strictEqual(L.aspectRatioPreset("Nonexistent"), null);
+  assert.strictEqual(L.aspectRatioPreset(""), null);
+});
+
+test("aspectRatioPreset 16:9 sets 1280x720", () => {
+  const vals = L.aspectRatioPreset("16:9");
+  assert.strictEqual(vals["compress-width"], "1280");
+  assert.strictEqual(vals["compress-height"], "720");
+});
+
+test("aspectRatioPreset 9:16 sets 720x1280", () => {
+  const vals = L.aspectRatioPreset("9:16");
+  assert.strictEqual(vals["compress-width"], "720");
+  assert.strictEqual(vals["compress-height"], "1280");
+});
+
+test("aspectRatioPreset 1:1 sets a square 720x720", () => {
+  const vals = L.aspectRatioPreset("1:1");
+  assert.strictEqual(vals["compress-width"], "720");
+  assert.strictEqual(vals["compress-height"], "720");
+});
+
+test("ASPECT_RATIO_PRESETS all have label, title, and both compress width/height fields", () => {
+  for (const p of L.ASPECT_RATIO_PRESETS) {
+    assert.ok(typeof p.label === "string" && p.label.length > 0, "label required");
+    assert.ok(typeof p.title === "string" && p.title.length > 0, "title required");
+    assert.ok(Object.prototype.hasOwnProperty.call(p.values, "compress-width"), `${p.label} missing width`);
+    assert.ok(Object.prototype.hasOwnProperty.call(p.values, "compress-height"), `${p.label} missing height`);
+  }
+});
+
 test("sharpenQuickPreset returns values for every SHARPEN_QUICK_PRESETS entry", () => {
   for (const p of L.SHARPEN_QUICK_PRESETS) {
     const vals = L.sharpenQuickPreset(p.label);

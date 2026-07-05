@@ -362,7 +362,18 @@ Packaging / tests:
       truncation risk). 2 new regression tests. 187 core + 112 sidecar + 215 node:test +
       smoke 5/5 green.
 - [x] Per-op "open output folder" after completion
-- [ ] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform
+- [x] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform — a new
+      "Aspect ratio" chip row on the Compress tab (`ASPECT_RATIO_PRESETS`/
+      `aspectRatioPreset` in `logic.js`, reusing the existing quick-preset
+      `.qp-chip` mechanism) forces an exact width+height pair per ratio
+      (1280x720 / 720x1280 / 720x720) — unlike the existing quick presets,
+      which only ever set width and let ffmpeg's `scale=-1` preserve the
+      source aspect. Scoped to Compress only: Transform has no scale/resize
+      fields (rotate/flip only), so there was nothing to wire there. Verified:
+      284 node:test (+11 new) + 256 root pytest (untouched) + committed smoke
+      5/5 + a custom headless E2E (3 chips present; 9:16 sets 720x1280; 16:9
+      sets 1280x720; real 1:1 compress run produces an output measured via
+      ffprobe at exactly 720x720). ← next
 - [x] Loop a short clip N times — core `build_loop_args` (-stream_loop), CLI `loop`,
       sidecar (`/loop` + `/run/stream`), Loop tab. Verified E2E: count=3 -> ~3x duration.
 
