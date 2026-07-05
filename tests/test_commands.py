@@ -271,6 +271,31 @@ def test_crop_to_aspect_dry_run_falls_back_instead_of_raising(capsys):
     assert "crop=" in out and "out.mp4" in out
 
 
+def test_fade_dry_run_falls_back_instead_of_raising(capsys):
+    # Same dry-run-never-probes gap as crop_to_aspect: fade() used to always
+    # raise here instead of printing a command.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.fade(runner, "in.mp4", "out.mp4", 1.0)
+    out = capsys.readouterr().out
+    assert "fade=t=in" in out and "out.mp4" in out
+
+
+def test_contact_sheet_dry_run_falls_back_instead_of_raising(capsys):
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.contact_sheet(runner, "in.mp4", "out.jpg")
+    out = capsys.readouterr().out
+    assert "tile=" in out and "out.jpg" in out
+
+
+def test_compress_to_size_dry_run_falls_back_instead_of_raising(capsys):
+    # target_mb=0.5 would be "too small" against the 60s dry-run placeholder
+    # duration (negative bitrate budget), so use a target that clears it.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.compress_to_size(runner, "in.mp4", "out.mp4", 5)
+    out = capsys.readouterr().out
+    assert "-pass 1" in out and "-pass 2" in out and "out.mp4" in out
+
+
 def test_fps_args_build_filter():
     args = c.build_fps_args("in.mp4", "out.mp4", 15)
     assert args[args.index("-vf") + 1] == "fps=15"
