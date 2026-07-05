@@ -49,6 +49,21 @@ Renderer (web UI):
 - [x] Output path + overwrite handling; surface `FfmpegError` messages cleanly
 - [x] Progress: stream ffmpeg `-progress` sidecar→renderer via SSE (`/run/stream`);
       renderer shows a live progress bar + percent/speed (verified incremental events)
+      **Bug fix (hunt):** the renderer's `/run/stream` SSE loop in `run()` only set
+      `result` on an explicit `{type:"done"}` event and only threw on `{type:"error"}` —
+      but the sidecar's `run_stream` generator only catches `(FfmpegError, ValueError)`
+      before its final `yield done`, so any other exception (or the sidecar process
+      dying/getting killed mid-run) lets the HTTP stream close with neither event ever
+      parsed. The renderer treated that silently as success ("Done.", `lastRunRecord`
+      set, `run()` returns true), masking a failed/crashed op — worst in Queue mode,
+      where `runQueueAll` would mark the item "done" and continue past a real failure.
+      Fixed by adding a pure `sseIncompleteError(result)` helper in `logic.js` (returns
+      an error message when `result` is still falsy after the stream ends, null when a
+      real `done` event was received) and having `run()` throw it before the success
+      path, routing an unexpectedly-closed connection through the existing error/catch
+      handling instead. 2 new node:tests (259 total); 235 root pytest + 126 sidecar
+      pytest (untouched) + headless E2E smoke ok=true (53 nav tabs, real compress
+      output produced). ← next
 - [x] Preview generated output inline — images via `<img>` and videos via
       `<video>` (range-served by `/file`). Verified via E2E tests + screenshots.
 - [x] Persist last-used option fields (codecs, crf/bitrate, preset, sizes, trim start)

@@ -2,7 +2,7 @@
 // Pure helpers live in logic.js (window.FfuLogic) and are unit-tested separately.
 const { baseUrl, token, pickFile, pickFiles, saveFile, getSettings, setSettings, getPathForFile, notify } =
   window.sidecar;
-const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBuffer, dropUpdate, previewKind,
+const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBuffer, sseIncompleteError, dropUpdate, previewKind,
   filterTools, TOOL_ALIASES, summarizeProbe, sourceFillActions,
   DIMENSION_FIELDS, DIMENSION_PRESETS, presetDimensions,
   videoDims, compatReport, formatTimecode, timeTargetsForTab, timeHandlesForTab, timecodeFraction,
@@ -2013,6 +2013,8 @@ async function run(label, op, body, tab = currentTab()) {
         }
       }
     }
+    const incomplete = sseIncompleteError(result);
+    if (incomplete) throw new Error(incomplete);
     hideProgress();
     const doneBasename = result && result.output ? outputBaseName(result.output) || result.output : null;
     setStatus(doneBasename ? "Done — " + doneBasename : "Done.");
