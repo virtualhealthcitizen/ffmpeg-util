@@ -391,6 +391,16 @@ test("sourceFillActions fills the Preview clip tab's width-only field (regressio
   });
 });
 
+test("sourceFillActions fills the Scene thumbs tab's width-only field (regression)", () => {
+  // scene_thumbs had a width field in index.html but no DIMENSION_FIELDS entry,
+  // so the Size chip silently did nothing on that tab (unlike its width-only
+  // siblings gif/thumbnail/preview_clip, which the chip already fills correctly).
+  const data = { streams: [{ codec_type: "video", width: 640, height: 360 }] };
+  assert.deepEqual(L.sourceFillActions("scene_thumbs", data), {
+    Size: [{ id: "scene_thumbs-width", value: "640" }],
+  });
+});
+
 test("sourceFillActions returns {} when the tab has no fillable fields or no video", () => {
   const video = { streams: [{ codec_type: "video", width: 100, height: 50, avg_frame_rate: "30/1" }] };
   assert.deepEqual(L.sourceFillActions("convert", video), {}); // no dimension/fps fields
