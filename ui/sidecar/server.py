@@ -1372,9 +1372,10 @@ class RunReq(BaseModel):
     amount: float = 1.5
     # denoise
     strength: float = 4.0
-    # timecode / watermark
+    # timecode / watermark / pip (None = use per-op default: top-left for
+    # timecode, bottom-right for watermark/pip)
     font_size: int = 24
-    position: str = "top-left"
+    position: str | None = None
     color: str = "white"
     # watermark
     text: str = ""
@@ -1469,7 +1470,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
     if op == "timecode":
         return commands.build_timecode_args(
             req.input, req.output,
-            font_size=req.font_size, position=req.position, color=req.color,
+            font_size=req.font_size, position=req.position or "top-left",
+            color=req.color,
             font_file=_find_system_font(),
         ), None
     if op == "watermark":

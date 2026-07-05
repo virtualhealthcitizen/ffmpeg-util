@@ -1795,6 +1795,62 @@ def test_run_stream_pip_produces_output(client, media, auth):
     assert out.exists(), "/run/stream pip should produce output"
 
 
+def test_run_stream_pip_defaults_bottom_right(client, auth, tmp_path):
+    # Regression: RunReq.position defaulted to "top-left" (timecode's value,
+    # shared across the timecode/watermark/pip fields), so calling /run/stream
+    # op=pip without an explicit position landed the overlay in the top-left
+    # corner instead of the bottom-right default (matching the CLI + /pip
+    # endpoint + build_pip_args default).
+    import re
+    import subprocess
+    from conftest import FFMPEG
+
+    base = tmp_path / "pip_base.mp4"
+    overlay = tmp_path / "pip_overlay.mp4"
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=black:s=320x240:d=1:r=10",
+         "-c:v", "libx264", str(base)],
+        check=True,
+    )
+    subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "color=c=white:s=320x240:d=1:r=10",
+         "-c:v", "libx264", str(overlay)],
+        check=True,
+    )
+    out = tmp_path / "pip_default_position.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "pip", "input": str(base), "overlay": str(overlay),
+              "output": str(out), "pip_size": 25, "overwrite": True},
+        # no "position" field — exercises the RunReq default
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert events[-1]["type"] == "done"
+    assert out.exists()
+
+    def _corner_yavg(crop_expr):
+        p = subprocess.run(
+            [FFMPEG, "-hide_banner", "-i", str(out),
+             "-vf", rf"select=eq(n\,0),crop={crop_expr},signalstats,metadata=print",
+             "-frames:v", "1", "-f", "null", "-"],
+            capture_output=True, text=True,
+        )
+        m = re.search(r"lavfi\.signalstats\.YAVG=([\d.]+)", p.stdout + p.stderr)
+        assert m, p.stdout + p.stderr
+        return float(m.group(1))
+
+    # Overlay is 80x60 (25% of 320 wide, -2 aspect) placed at x=230,y=170 for
+    # bottom-right (W-w-10, H-h-10); sample a box fully inside that rect.
+    top_left = _corner_yavg("40:40:0:0")
+    bottom_right = _corner_yavg("30:30:250:180")
+    assert bottom_right > 150, f"expected white overlay near bottom-right, YAVG={bottom_right}"
+    assert top_left < 50, f"expected untouched black base at top-left, YAVG={top_left}"
+
+
 def test_pixfmt_converts_format(client, media, auth):
     d, src = media
     out = d / "pixfmt_out.mp4"
