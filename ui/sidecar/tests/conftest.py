@@ -56,3 +56,19 @@ def media(tmp_path_factory):
 @pytest.fixture
 def auth():
     return {"Authorization": f"Bearer {TOKEN}"}
+
+
+@pytest.fixture(scope="session")
+def nvenc_available(tmp_path_factory):
+    """Probe once whether h264_nvenc can actually encode (needs an NVIDIA GPU +
+    driver, not just an ffmpeg build with the codec compiled in)."""
+    if not FFMPEG:
+        return False
+    out = tmp_path_factory.mktemp("nvenc_probe") / "probe.mp4"
+    result = subprocess.run(
+        [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=25",
+         "-c:v", "h264_nvenc", "-rc", "vbr", "-cq", "30", str(out)],
+        capture_output=True, text=True,
+    )
+    return result.returncode == 0 and out.exists() and out.stat().st_size > 0

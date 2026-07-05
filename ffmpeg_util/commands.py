@@ -1555,6 +1555,13 @@ def stabilize(
         _shutil.rmtree(trf_dir, ignore_errors=True)
 
 
+# Hardware encoder selected in place of the software `vcodec` when hwaccel is
+# requested. Neither device accepts `-crf` (ffmpeg silently drops it — "Codec
+# AVOption crf ... has not been used for any stream" — instead of erroring),
+# so the quality flag is remapped per-device below.
+HWACCEL_VCODECS = {"nvenc": "h264_nvenc", "qsv": "h264_qsv"}
+
+
 def build_compress_args(
     input_path: str,
     output_path: str,
@@ -1565,14 +1572,27 @@ def build_compress_args(
     height: int | None = None,
     vcodec: str = "libx264",
     preset: str = "medium",
+    hwaccel: str = "none",
 ) -> list[str]:
     """Build args to compress/resize. CRF (quality) and bitrate are mutually
-    exclusive; CRF defaults to 23 when neither is given."""
+    exclusive; CRF defaults to 23 when neither is given.
+
+    ``hwaccel`` ("none"/"nvenc"/"qsv") swaps in a hardware encoder in place of
+    ``vcodec`` and its matching quality flag (nvenc: ``-rc vbr -cq``; qsv:
+    ``-global_quality``) so CRF-style quality control keeps working."""
     if crf is not None and bitrate is not None:
         raise ValueError("Pass only one of crf / bitrate, not both.")
+    if hwaccel != "none" and hwaccel not in HWACCEL_VCODECS:
+        raise ValueError(f"hwaccel must be one of none/{'/'.join(HWACCEL_VCODECS)}; got {hwaccel!r}")
+    if hwaccel != "none":
+        vcodec = HWACCEL_VCODECS[hwaccel]
     args = ["-i", input_path, "-c:v", vcodec, "-preset", preset]
     if bitrate is not None:
         args += ["-b:v", bitrate]
+    elif hwaccel == "nvenc":
+        args += ["-rc", "vbr", "-cq", str(crf if crf is not None else 23)]
+    elif hwaccel == "qsv":
+        args += ["-global_quality", str(crf if crf is not None else 23)]
     else:
         args += ["-crf", str(crf if crf is not None else 23)]
     if width or height:
