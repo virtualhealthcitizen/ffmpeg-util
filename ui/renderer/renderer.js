@@ -1195,7 +1195,10 @@ async function loadSettings() {
     recentOutputData = s.recentOutputs && typeof s.recentOutputs === "object" ? s.recentOutputs : {};
     for (const [tab, path] of Object.entries(recentOutputData)) {
       const el = document.getElementById(tab + "-output");
-      if (el && !el.value.trim()) el.value = path; // restore only if still empty
+      if (el && !el.value.trim()) {
+        el.value = path; // restore only if still empty
+        el.dataset.auto = "1"; // treat like an auto-fill so loading a new input can refresh it
+      }
     }
     favoritesData = normalizeFavorites(s.favorites);
     layoutNavGroups(); // re-lay-out so pinned tools lead the nav
