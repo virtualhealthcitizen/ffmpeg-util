@@ -322,6 +322,7 @@ class ImageToVideoReq(BaseModel):
     output: str
     seconds: float
     fps: int = 30
+    audio: str | None = None
     overwrite: bool = True
 
 
@@ -332,7 +333,9 @@ def image_to_video(req: ImageToVideoReq, _: None = Depends(require_token)) -> di
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
         runner.run_ffmpeg(
-            commands.build_image_to_video_args(req.input, req.output, req.seconds, fps=req.fps)
+            commands.build_image_to_video_args(
+                req.input, req.output, req.seconds, fps=req.fps, audio_path=req.audio
+            )
         )
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
@@ -1542,7 +1545,7 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         ), None
     if op == "image_to_video":
         return commands.build_image_to_video_args(
-            req.input, req.output, req.seconds, fps=req.fps or 30
+            req.input, req.output, req.seconds, fps=req.fps or 30, audio_path=req.audio
         ), None
     if op == "mute":
         return commands.build_mute_args(req.input, req.output), None

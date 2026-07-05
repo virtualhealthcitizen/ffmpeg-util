@@ -1512,6 +1512,14 @@
       if (sub) entries.push([sub, "hardsub-subtitle"]);
       return entries;
     }
+    if (tab === "image_to_video") {
+      const entries = [];
+      const img = String(b.input || "").trim();
+      if (img) entries.push([img, "image_to_video-input"]);
+      const aud = String(b.audio || "").trim();
+      if (aud) entries.push([aud, "image_to_video-audio"]);
+      return entries;
+    }
     const p = String(b.input || "").trim();
     return p ? [[p, tab + "-input"]] : [];
   }

@@ -603,6 +603,28 @@ def test_image_to_video_args_reject_bad_values():
         c.build_image_to_video_args("photo.png", "out.mp4", 5.0, fps=0)
 
 
+def test_image_to_video_args_with_audio():
+    args = c.build_image_to_video_args(
+        "photo.png", "out.mp4", 5.0, fps=24, audio_path="track.mp3"
+    )
+    assert args.count("-i") == 2
+    i_indexes = [i for i, a in enumerate(args) if a == "-i"]
+    assert args[i_indexes[0] + 1] == "photo.png"
+    assert args[i_indexes[1] + 1] == "track.mp3"
+    assert args[args.index("-t") + 1] == "5.0"  # -t still an output option
+    assert args[args.index("-c:a") + 1] == "aac"
+    assert "0:v" in args
+    assert "1:a" in args
+    assert args[-1] == "out.mp4"
+
+
+def test_image_to_video_args_without_audio_has_no_audio_map():
+    args = c.build_image_to_video_args("photo.png", "out.mp4", 5.0)
+    assert args.count("-i") == 1
+    assert "-c:a" not in args
+    assert "-map" not in args
+
+
 def test_pad_args_build_filter():
     args = c.build_pad_args("in.mp4", "o.mp4", 640, 480)
     vf = args[args.index("-vf") + 1]

@@ -342,7 +342,7 @@ Packaging / tests:
 - [x] Sharpen (`unsharp`) and denoise (`hqdn3d`) presets — core `build_sharpen_args` (`unsharp=lx=5:ly=5:la={amount}`)
       and `build_denoise_args` (`hqdn3d` scaled from defaults), CLI `sharpen --amount` / `denoise --strength`,
       sidecar (`/sharpen` + `/denoise` + `/run/stream` ops), Sharpen + Denoise tabs (Color category, sliders).
-      Verified E2E: both endpoints produce output, tabs/sliders/buttons present (14/14 checks); pytest 109 root + 72 sidecar; node:test 133. ← next
+      Verified E2E: both endpoints produce output, tabs/sliders/buttons present (14/14 checks); pytest 109 root + 72 sidecar; node:test 133.
 - [x] Deinterlace (`yadif`) — core `build_deinterlace_args` (`-vf yadif`), CLI `deinterlace`,
       sidecar (`/deinterlace` + `/run/stream` op `deinterlace`), Deinterlace tab (Color category).
       Verified E2E: tab present + nav, output produced via headless Electron against real sidecar
@@ -353,7 +353,17 @@ Packaging / tests:
 - [x] Side-by-side (`hstack`) two videos — core `build_hstack_args`, CLI `hstack`, sidecar (`/hstack` + `/run/stream`), Side-by-side tab. Verified E2E: 320 + 320 -> 640 wide. Plus vstack.
 - [x] Picture-in-picture overlay — core `build_pip_args` (scale overlay to % of base width + corner overlay), CLI `pip --overlay/--size/--position`, sidecar (`/pip` + `/run/stream` op `pip`), PiP tab (Combine, size slider + position select). Verified E2E: 176 root + 108 sidecar pytest + 195 node:test + smoke 5/5 (50 nav tabs).
       **Bug fix (hunt):** `build_pip_args` left the overlay filter output unlabeled and only mapped `0:a?` — so the PiP video stream was never included in the output (audio-only or silent failure depending on container). Similar overlay functions (`build_blur_region_args`, `build_blur_pad_args`) correctly label their output `[v]` and map it; pip was the odd one out. Fixed by appending `[v]` to the filter_complex overlay output and adding `-map [v]` before `-map 0:a?`. 1 new regression test (`test_build_pip_args_maps_video`); 188 core + 218 node:test + E2E smoke 5/5 green.
-- [ ] Still image → video (image + duration, optional audio)
+- [x] Still image → video (image + duration, optional audio) — audio muxing added on
+      top of the already-shipped Image → video tab: `build_image_to_video_args` gains
+      an optional `audio_path` (second `-i`, `-c:a aac`, `-map 0:v -map 1:a`; the
+      existing output-level `-t seconds` already bounds both streams so a shorter
+      track just ends early), CLI `image-to-video --audio`, sidecar (`ImageToVideoReq.audio`
+      + `/run/stream` op `image_to_video` reusing `RunReq.audio`), an optional Audio
+      field on the Image → video tab (no tooltip badge — matches the other secondary
+      file-path fields like replace_audio/hardsub, which are also un-tooltipped).
+      Verified: 235 root pytest (+2) + 125 sidecar pytest (+1) + 254 node:test (+4) +
+      committed smoke 5/5 + a custom headless E2E (tab/field present, no stray
+      tooltip badge, real image+audio → output produced with an audio stream). ← next
 - [x] Replace the audio track with an external audio file (see `replace-audio` above)
 - [ ] Set / clear metadata title
 

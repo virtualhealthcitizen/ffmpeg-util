@@ -502,19 +502,32 @@ def build_waveform_args(input_path: str, output_path: str, width: int = 1000, he
 
 
 def build_image_to_video_args(
-    image_path: str, output_path: str, seconds: float, fps: int = 30
+    image_path: str, output_path: str, seconds: float, fps: int = 30,
+    audio_path: str | None = None,
 ) -> list[str]:
-    """Build args to turn a still image into a ``seconds``-long video at ``fps``."""
+    """Build args to turn a still image into a ``seconds``-long video at ``fps``.
+
+    When ``audio_path`` is given, its track is muxed in as-is (``-c:a copy``
+    would fail across containers, so it's re-encoded to AAC); the output-level
+    ``-t seconds`` (placed after both inputs) already bounds both streams, so a
+    shorter audio track just ends early rather than looping or erroring.
+    """
     if seconds <= 0:
         raise ValueError("seconds must be > 0")
     if fps < 1:
         raise ValueError("fps must be >= 1")
-    return [
-        "-loop", "1", "-i", image_path, "-t", str(seconds), "-r", str(fps),
+    args = ["-loop", "1", "-i", image_path]
+    if audio_path:
+        args += ["-i", audio_path]
+    args += [
+        "-t", str(seconds), "-r", str(fps),
         "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-        output_path,
     ]
+    if audio_path:
+        args += ["-c:a", "aac", "-map", "0:v", "-map", "1:a"]
+    args += [output_path]
+    return args
 
 
 def build_grayscale_args(input_path: str, output_path: str) -> list[str]:

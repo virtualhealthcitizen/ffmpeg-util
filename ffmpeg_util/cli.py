@@ -206,6 +206,7 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
     p.add_argument("output")
     p.add_argument("--seconds", type=float, required=True, help="Output duration in seconds.")
     p.add_argument("--fps", type=int, default=30, help="Frame rate (default 30).")
+    p.add_argument("--audio", help="Optional audio file to mux into the clip.")
     _add_global_flags(p)
 
     # eq (color adjust)
@@ -685,7 +686,7 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "image-to-video":
         runner.run_ffmpeg(commands.build_image_to_video_args(
-            args.input, args.output, args.seconds, fps=args.fps))
+            args.input, args.output, args.seconds, fps=args.fps, audio_path=args.audio))
         return 0
 
     if args.command == "eq":
