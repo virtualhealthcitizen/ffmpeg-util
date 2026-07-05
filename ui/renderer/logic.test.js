@@ -1905,6 +1905,20 @@ test("validateField validates poster_frame-percent and trim_pct percentages", ()
   assert.ok(L.validateField("trim_pct-end-pct", "0") !== null, "0 below min 1");
 });
 
+test("tabFieldValidatorIds scopes ids to the given tab's own prefix", () => {
+  assert.deepEqual(L.tabFieldValidatorIds("gif"), ["gif-fps", "gif-width", "gif-loop", "gif-start", "gif-duration"]);
+  assert.deepEqual(L.tabFieldValidatorIds("compress"), ["compress-crf", "compress-target"]);
+  assert.deepEqual(L.tabFieldValidatorIds("trim_pct"), ["trim_pct-start-pct", "trim_pct-end-pct"]);
+  assert.deepEqual(L.tabFieldValidatorIds("no-such-tab"), []);
+});
+
+test("tabFieldValidatorIds does not leak a sibling tab's fields (e.g. trim vs trim_pct)", () => {
+  const trimIds = L.tabFieldValidatorIds("trim");
+  assert.ok(trimIds.includes("trim-start"));
+  assert.ok(trimIds.includes("trim-end"));
+  assert.ok(!trimIds.some((id) => id.startsWith("trim_pct-")), "trim_pct fields must not appear under trim");
+});
+
 test("watermark: OUTPUT_SPECS has wm tag", () => {
   assert.equal(L.OUTPUT_SPECS.watermark.tag, "wm");
 });

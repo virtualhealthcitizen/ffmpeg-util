@@ -1533,6 +1533,15 @@
     return fn ? fn(String(value ?? "")) : null;
   }
 
+  // The subset of FIELD_VALIDATORS ids that belong to a given tab (ids are
+  // always "<tab>-<field>"). Used to scope pre-run validation to the tab an
+  // op actually belongs to (e.g. a queued item) rather than whichever tab
+  // happens to be visible on-screen right now.
+  function tabFieldValidatorIds(tab) {
+    const prefix = tab + "-";
+    return Object.keys(FIELD_VALIDATORS).filter((id) => id.startsWith(prefix));
+  }
+
   // --- Pre-run path validation helpers ---
 
   // [path, fieldId] pairs for every input of a run body so the renderer can
@@ -1961,6 +1970,7 @@
     notifyComplete,
     FIELD_VALIDATORS,
     validateField,
+    tabFieldValidatorIds,
     shouldShowCompare,
     compareSliderPercent,
     compareClipInset,

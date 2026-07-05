@@ -800,7 +800,25 @@ Safety / correctness (latent gaps in the current UI):
       status; valid run clears highlight + output produced).
       **Bug fix (hunt):** `runInputEntries` missed `b.audio` on Replace Audio — a
       bad audio path bypassed field-error highlight and hit ffmpeg as a raw error.
-      Fixed in `logic.js`; 2 new node:tests (128 total); E2E smoke green. ← next
+      Fixed in `logic.js`; 2 new node:tests (128 total); E2E smoke green.
+      **Bug fix (hunt):** `validateRunPaths`'s `FIELD_VALIDATORS` loop decided which
+      fields to check via `el.offsetParent === null` ("not in the active panel")
+      instead of the function's own `tab` parameter — but `run()`'s queue path calls
+      `validateRunPaths(next.tab, body)` for whatever tab an item was originally
+      queued from, which may not be the tab on-screen when "Run queue" fires (the
+      whole reason `run()` takes an explicit `tab` param, per the `next.tab` fix
+      documented above under Operation queue). So queuing an op with an
+      out-of-range field (e.g. GIF fps `-5`) then switching tabs before running the
+      queue silently skipped that field's validation — the bad value reached ffmpeg
+      directly instead of being blocked with the friendly inline message. Fixed by
+      extracting a pure `tabFieldValidatorIds(tab)` in `logic.js` (filters
+      `FIELD_VALIDATORS` keys by the `"<tab>-"` id prefix, which every field id
+      already follows) and scoping the loop to it instead of DOM visibility. 2 new
+      node:tests (276 total) + a custom headless E2E (queue an invalid gif-fps from
+      the GIF tab, switch to Convert, run the queue → item settles "error" with the
+      "fps: Must be ≥ 1" status message and no GIF file is produced; reverting the
+      fix reproduces a raw ffmpeg "Invalid argument" failure instead) + committed
+      smoke 5/5. ← next
 - [x] **Warn on odd width/height for x264 (must be even) before the run fails** — a
       `#dim-warn` banner flags a typed odd width/height on the re-encode tabs
       (compress/crop/pad/blur_pad) with the nearest-even fix, before ffmpeg fails
