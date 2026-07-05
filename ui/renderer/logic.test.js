@@ -110,6 +110,15 @@ test("parseSseBuffer ignores malformed blocks", () => {
   assert.equal(events[0].type, "done");
 });
 
+test("sseIncompleteError flags a stream that ended without a done event", () => {
+  assert.equal(L.sseIncompleteError(null), "Connection to the sidecar closed before the operation finished.");
+  assert.equal(L.sseIncompleteError(undefined), "Connection to the sidecar closed before the operation finished.");
+});
+
+test("sseIncompleteError passes through a real done event", () => {
+  assert.equal(L.sseIncompleteError({ type: "done", output: "o.mp4" }), null);
+});
+
 test("inputTargetForTab maps tabs to fields", () => {
   assert.deepEqual(L.inputTargetForTab("convert"), { id: "convert-input", append: false });
   assert.deepEqual(L.inputTargetForTab("compress"), { id: "compress-input", append: false });

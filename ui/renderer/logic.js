@@ -235,6 +235,17 @@
     return { events, remainder };
   }
 
+  // A `/run/stream` SSE loop should always end on an explicit "done" or "error"
+  // event (the sidecar's generator yields one or the other before closing).
+  // If the connection drops for any other reason — sidecar crash, killed
+  // ffmpeg, an uncaught exception type the sidecar doesn't wrap as an SSE
+  // error — the reader just sees EOF with no terminal event ever parsed.
+  // Returns an error message when that happened (result is falsy), or null
+  // when a "done" event was actually received and it's safe to report success.
+  function sseIncompleteError(result) {
+    return result ? null : "Connection to the sidecar closed before the operation finished.";
+  }
+
   // Which input field a dropped file should populate for the active tab.
   // Concat collects multiple paths (append); the two-input stack tabs drop into
   // the first slot; every other tab uses a single `{tab}-input` field.
@@ -1877,6 +1888,7 @@
     parseLines,
     fieldLabel,
     parseSseBuffer,
+    sseIncompleteError,
     inputTargetForTab,
     dropUpdate,
     addRecentFile,
