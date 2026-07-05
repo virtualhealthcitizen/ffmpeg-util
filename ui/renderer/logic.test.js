@@ -381,6 +381,16 @@ test("sourceFillActions handles width-only tabs and the FPS tab", () => {
   assert.deepEqual(L.sourceFillActions("fps", data), { FPS: [{ id: "fps-fps", value: "25" }] });
 });
 
+test("sourceFillActions fills the Preview clip tab's width-only field (regression)", () => {
+  // preview_clip had a width field in index.html but no DIMENSION_FIELDS entry,
+  // so the Size chip silently did nothing on that tab (unlike its width-only
+  // siblings gif/thumbnail, which the chip already fills correctly).
+  const data = { streams: [{ codec_type: "video", width: 640, height: 360 }] };
+  assert.deepEqual(L.sourceFillActions("preview_clip", data), {
+    Size: [{ id: "preview_clip-width", value: "640" }],
+  });
+});
+
 test("sourceFillActions returns {} when the tab has no fillable fields or no video", () => {
   const video = { streams: [{ codec_type: "video", width: 100, height: 50, avg_frame_rate: "30/1" }] };
   assert.deepEqual(L.sourceFillActions("convert", video), {}); // no dimension/fps fields
@@ -397,6 +407,7 @@ test("dimensionPresetTabs covers both-width-and-height tabs only", () => {
   // width-only tabs have no height field, so they're excluded
   assert.equal(tabs.includes("gif"), false);
   assert.equal(tabs.includes("thumbnail"), false);
+  assert.equal(tabs.includes("preview_clip"), false);
 });
 
 test("presetDimensions returns fixed resolutions verbatim", () => {

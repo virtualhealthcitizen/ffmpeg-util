@@ -489,7 +489,15 @@ Packaging / tests:
 - [x] Add chapters from a list — core `parse_chapters_text`/`write_chapters_meta`/`build_chapters_args` (ffmetadata format, 1/1000 timebase, special-char escaping), CLI `chapters --chapters/--chapters-file`, sidecar (`/chapters` + `/run/stream` op `chapters`), Chapters tab (Metadata category, textarea). Verified: 200 core + 112 sidecar + 228 node:test + smoke 5/5 (52 nav tabs). ← next
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [x] Auto-orient from rotation metadata, then strip it — core `build_autorotate_args` (-vf null forces decode-through-filter-graph applying the display matrix; -metadata:s:v:0 rotate=0 strips the tag), CLI `auto-orient`, sidecar (`/autorotate` + `/run/stream` op `auto_orient`), Auto-orient tab (Video FX). Verified E2E: 143 core + 92 sidecar + 160 node:test + smoke 5/5 (45 tabs). ← next
-- [x] Export a short preview clip (first N seconds, downscaled) — core `build_preview_clip_args` (-t + scale=W:-2 + -c:a copy), CLI `preview-clip --seconds/--width`, sidecar (`/preview-clip` + `/run/stream` op `preview_clip`), Preview clip tab (Trim & Frames). Verified E2E: 10s clip → 3.018s output at 160px; 127 core + 84 sidecar + 154 node:test + E2E 9/9 (sidecar, endpoint, duration ≤3.5s, tab/panel present, 41 nav tabs). ← next
+- [x] Export a short preview clip (first N seconds, downscaled) — core `build_preview_clip_args` (-t + scale=W:-2 + -c:a copy), CLI `preview-clip --seconds/--width`, sidecar (`/preview-clip` + `/run/stream` op `preview_clip`), Preview clip tab (Trim & Frames). Verified E2E: 10s clip → 3.018s output at 160px; 127 core + 84 sidecar + 154 node:test + E2E 9/9 (sidecar, endpoint, duration ≤3.5s, tab/panel present, 41 nav tabs).
+      **Bug fix (hunt):** `preview_clip` never got an entry in `DIMENSION_FIELDS` (logic.js),
+      unlike its width-only siblings `gif`/`thumbnail` — so the probed-source "Size" chip
+      silently did nothing on the Preview clip tab (`sourceFillActions` returned `{}`,
+      no click handler ever attached) instead of one-click-filling the width field like
+      every other tab with a size-fillable field. Fixed by adding
+      `preview_clip: { w: "preview_clip-width" }` to `DIMENSION_FIELDS`. 1 new regression
+      test; 274 node:test (+1) + 256 root pytest (untouched) + headless E2E smoke
+      ok=true (53 nav tabs). ← next
 - [x] Convert audio sample rate — core `build_sample_rate_args`, CLI `sample-rate`, sidecar (`/sample-rate` + `/run/stream`), Sample rate tab. Verified E2E: 44100 -> 22050.
 - [x] Change container only (remux, `-c copy`) — core `build_remux_args`, CLI `remux`, sidecar
       (`/remux` + `/run/stream` op `remux`), Remux tab (Convert category). Verified E2E: 119 core

@@ -659,6 +659,7 @@
     thumbnail: { w: "thumbnail-width" },
     gif: { w: "gif-width" },
     waveform: { w: "waveform-width", h: "waveform-height" },
+    preview_clip: { w: "preview_clip-width" },
   };
   // Tabs whose FPS field the FPS chip can fill.
   const FPS_FIELDS = { fps: "fps-fps" };
