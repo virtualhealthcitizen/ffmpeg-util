@@ -18,7 +18,7 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   revealLabel, outputBaseName,
   runInputEntries, runOutputDirEntry,
   fieldTooltip, notifyComplete,
-  FIELD_VALIDATORS, validateField,
+  FIELD_VALIDATORS, validateField, tabFieldValidatorIds,
   shouldShowCompare, compareSliderPercent, compareClipInset, compareDividerPos,
   COMPRESS_QUICK_PRESETS, compressQuickPreset,
   ASPECT_RATIO_PRESETS, aspectRatioPreset,
@@ -1956,10 +1956,13 @@ async function confirmOverwrite(output) {
 // Best-effort: a sidecar error always returns {ok: true} so the run still fires.
 async function validateRunPaths(tab, body) {
   clearFieldErrors();
-  // Block the run if any visible validated field has an invalid value.
-  for (const id of Object.keys(FIELD_VALIDATORS)) {
+  // Block the run if any of THIS tab's validated fields has an invalid value.
+  // Scoped to `tab` rather than DOM visibility — a queued item's tab may not
+  // be the one on-screen right now (see the `tab` param note on run() below),
+  // but its fields still hold their real values underneath the hidden panel.
+  for (const id of tabFieldValidatorIds(tab)) {
     const el = document.getElementById(id);
-    if (!el || el.offsetParent === null) continue; // not in the active panel
+    if (!el) continue;
     const msg = validateField(id, el.value);
     if (msg) {
       markFieldInvalid(el, msg);
