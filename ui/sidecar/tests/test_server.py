@@ -1852,3 +1852,39 @@ def test_run_stream_trim_segments_produces_output(client, media, auth):
     events = _sse_events(r.text)
     assert any(e.get("type") == "done" for e in events)
     assert out.exists(), "/run/stream trim_segments should produce output"
+
+
+def test_trim_segments_no_audio_input(client, media_no_audio, auth):
+    # Regression: build_trim_segments_args used to always emit an [0:a]atrim
+    # filter, which errors out on a video-only input ("Stream specifier 'a'
+    # in filter ... matches no streams"). /trim-segments must detect the
+    # missing audio stream and skip the audio filter chain.
+    d, src = media_no_audio
+    out = d / "trim_segments_no_audio_out.mp4"
+    r = client.post(
+        "/trim-segments",
+        json={
+            "input": str(src), "output": str(out),
+            "segments_text": "0 1\n2 3",
+            "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200, r.text
+    assert out.exists()
+    assert abs(_duration(out) - 2.0) < 0.2
+
+
+def test_run_stream_trim_segments_no_audio_input(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "trim_segments_stream_no_audio.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_segments", "input": str(src), "output": str(out),
+              "segments_text": "0 1\n2 3", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events), r.text
+    assert out.exists(), "/run/stream trim_segments should produce output for a video-only input"
