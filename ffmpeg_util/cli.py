@@ -645,9 +645,7 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "poster-frame":
-        runner.run_ffmpeg(commands.build_poster_frame_args(
-            args.input, args.output, percent=args.percent, width=args.width,
-        ))
+        commands.poster_frame(runner, args.input, args.output, percent=args.percent, width=args.width)
         return 0
 
     if args.command == "waveform":
