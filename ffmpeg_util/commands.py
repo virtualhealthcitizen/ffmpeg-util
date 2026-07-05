@@ -347,7 +347,12 @@ def compress_to_size(
     if duration_s is None:
         duration_s = probe_duration(runner, input_path)
     if not duration_s:
-        raise ValueError("could not determine input duration for target-size encoding")
+        if not runner.dry_run:
+            raise ValueError("could not determine input duration for target-size encoding")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how crop-to-aspect/trim-pct/chapters tolerate a probe-less dry-run.
+        duration_s = 60.0
     vkbps = target_video_bitrate_kbps(target_mb, duration_s, audio_kbps)
 
     fd, log = tempfile.mkstemp(prefix="ff2pass_")
@@ -693,7 +698,12 @@ def fade(
     if total_s is None:
         total_s = probe_duration(runner, input_path)
     if not total_s:
-        raise ValueError("could not determine input duration for fade")
+        if not runner.dry_run:
+            raise ValueError("could not determine input duration for fade")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how crop-to-aspect/trim-pct/chapters tolerate a probe-less dry-run.
+        total_s = 60.0
     if audio is None:
         audio = has_audio(runner, input_path)
     runner.run_ffmpeg(build_fade_args(input_path, output_path, fade_s, total_s, audio=audio))
@@ -1038,7 +1048,12 @@ def contact_sheet(
     if duration_s is None:
         duration_s = probe_duration(runner, input_path)
     if not duration_s:
-        raise ValueError("could not determine input duration for the contact sheet")
+        if not runner.dry_run:
+            raise ValueError("could not determine input duration for the contact sheet")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how crop-to-aspect/trim-pct/chapters tolerate a probe-less dry-run.
+        duration_s = 60.0
     runner.run_ffmpeg(
         build_contact_sheet_args(
             input_path, output_path, duration_s=duration_s, cols=cols, rows=rows, width=width

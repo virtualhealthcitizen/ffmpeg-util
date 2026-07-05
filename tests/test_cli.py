@@ -52,6 +52,34 @@ def test_compress_hwaccel_rejects_target_size(capsys):
     assert "error" in capsys.readouterr().err.lower()
 
 
+def test_compress_target_size_dry_run(capsys):
+    # Dry-run never probes duration, so compress_to_size used to always raise
+    # here instead of printing the two would-be encode passes.
+    rc = main(["compress", "in.mp4", "out.mp4", "--target-size", "5",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "-pass 1" in out and "-pass 2" in out and "out.mp4" in out
+
+
+def test_fade_dry_run(capsys):
+    # Same dry-run-never-probes gap as crop-aspect/target-size, hit via fade's
+    # own duration probe.
+    rc = main(["fade", "in.mp4", "out.mp4", "--duration", "1",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "fade=t=in" in out and "out.mp4" in out
+
+
+def test_contact_sheet_dry_run(capsys):
+    rc = main(["contact-sheet", "in.mp4", "out.jpg",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "tile=" in out and "out.jpg" in out
+
+
 def test_thumbnail_dry_run(capsys):
     rc = main(["thumbnail", "in.mp4", "out.png", "--time", "00:00:03",
                "--ffmpeg", "ffmpeg", "--dry-run"])
