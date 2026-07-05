@@ -701,10 +701,56 @@ function refreshInputs() {
 // visual mirror of it. Dragging a row reorders the lines and writes them back,
 // so every existing reader (run-concat, drop/append, compat banner) is unchanged.
 let concatDragIndex = null;
+let concatThumbUrls = [];
+
+function revokeConcatThumbs() {
+  concatThumbUrls.forEach((u) => URL.revokeObjectURL(u));
+  concatThumbUrls = [];
+}
+
+// Fetches the file once (same auth'd blob pattern as the output preview) and
+// paints it into the row's thumbnail slot. Best-effort: a failed fetch just
+// leaves the placeholder empty, it never blocks reordering.
+async function loadConcatThumb(el, path) {
+  const { kind, path: resolved } = previewKind(path);
+  if (!kind) return;
+  try {
+    const res = await fetch(baseUrl + "/file?path=" + encodeURIComponent(resolved), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    // The list may have re-rendered (or the row been dragged away) while this
+    // fetch was in flight; a detached slot means our render is stale.
+    if (!el.isConnected) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    concatThumbUrls.push(url);
+    if (kind === "image") {
+      const img = document.createElement("img");
+      img.src = url;
+      el.appendChild(img);
+    } else {
+      const vid = document.createElement("video");
+      vid.src = url;
+      vid.muted = true;
+      vid.preload = "metadata";
+      // Some renderers leave the frame blank until a seek is requested.
+      vid.addEventListener("loadedmetadata", () => { vid.currentTime = 0; }, { once: true });
+      el.appendChild(vid);
+    }
+  } catch (_) {
+    // best-effort thumbnail; leave the placeholder empty on failure
+  }
+}
+
 function renderConcatList() {
   const ul = $("#concat-list");
   if (!ul) return;
   const items = parseLines($("#concat-inputs").value);
+  revokeConcatThumbs();
   ul.innerHTML = "";
   // Reordering only makes sense with two or more files.
   if (items.length < 2) {
@@ -720,12 +766,15 @@ function renderConcatList() {
     const handle = document.createElement("span");
     handle.className = "reorder-handle";
     handle.textContent = "⠿";
+    const thumb = document.createElement("span");
+    thumb.className = "reorder-thumb";
     const label = document.createElement("span");
     label.className = "reorder-name";
     label.textContent = `${i + 1}. ${recentFileLabel(path)}`;
     label.title = path; // full path on hover
-    li.append(handle, label);
+    li.append(handle, thumb, label);
     ul.appendChild(li);
+    loadConcatThumb(thumb, path);
   });
 }
 

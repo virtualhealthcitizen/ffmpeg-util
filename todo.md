@@ -446,7 +446,15 @@ Workflow / feedback components:
 - [ ] Cancel button — kill the running ffmpeg process mid-op.
 - [x] "Show ffmpeg command" + copy-to-clipboard — delivered by the round-9 "Copy as
       CLI" component (`buildCliCommand` in `logic.js`, `#cli-command` row + Copy button).
-- [ ] Drag-to-reorder the concat list, with per-row thumbnails.
+- [x] Drag-to-reorder the concat list, with per-row thumbnails — each reorder row
+      grows a `.reorder-thumb` slot next to the handle; `loadConcatThumb` fetches
+      the file (same auth'd blob pattern as the output preview) and paints an
+      `<img>` or a muted `<video>` (seeked to frame 0 on `loadedmetadata`) into it,
+      revoking prior blob URLs on every re-render so nothing leaks across drags or
+      tab switches. No new pure logic needed (reuses `previewKind`). Verified:
+      node:test 249/249 (untouched) + committed smoke 5/5 + a custom headless E2E
+      (2 clips → both thumbnail `<video>` blobs populate, drag-reorder still
+      updates the textarea, thumbnails re-populate after the drag). ← next
 - [x] Output presets dropdown ("Web MP4", "Discord 8 MB", "GIF", …) — `COMPRESS_QUICK_PRESETS` in `logic.js`; 5 factory-preset chips (Web MP4/Mobile 720p/Discord/Tiny/High quality) on the Compress tab that one-click fill all compress fields. Verified: node:test 208/208 (5 new) + headless Electron E2E 12/12 (chips present, Web MP4→CRF 23/1280px/libx264, Discord→target 8/CRF cleared, Tiny→CRF 32/480px, status updated).
 - [x] Job history strip — recent runs with re-run / reveal-in-Explorer. `addJobRecord`/`jobHistoryLabel` pure fns in `logic.js`; `#job-history` panel (card-header + `<ul>`) in `index.html`; `pushJobRecord`/`renderJobHistory` in renderer.js wired into the success path; persisted under `jobHistory` in `settings.json` (shallow-merge); Clear button empties the list. Verified: node:test 225/225 (+8 new) + headless Electron E2E 11/11 (hidden before run; visible with 1 entry after compress; label = "Compressing — basename · time"; Re-run + Reveal buttons present; persisted + restored across two launches; Clear hides panel). ← next
 - [ ] "Reveal in Explorer" / open-output button on completion.

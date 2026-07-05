@@ -440,6 +440,22 @@ textarea { width: 100%; resize: vertical; }
   cursor: grab;
 }
 .reorder-row .reorder-handle { color: var(--muted); cursor: grab; user-select: none; }
+.reorder-row .reorder-thumb {
+  flex: none;
+  width: 44px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--btn);
+  overflow: hidden;
+}
+.reorder-row .reorder-thumb img,
+.reorder-row .reorder-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
 .reorder-row .reorder-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reorder-row.dragging { opacity: 0.5; cursor: grabbing; }
 .reorder-row.drop-target { border-color: var(--accent); }
