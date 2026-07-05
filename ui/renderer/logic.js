@@ -349,6 +349,8 @@
     crop_aspect: "aspect ratio square vertical wide 16 9 1 reframe",
     mono: "downmix single channel audio",
     title: "metadata tag name rename",
+    chapters: "metadata timestamps markers bookmarks index sections toc table of contents",
+    autocrop: "black bars pillarbox cropdetect trim edges auto detect remove",
     waveform: "audio visual spectrum showwaves wave png",
     sample_rate: "audio hz khz resample rate 44100 48000",
     hstack: "side by side horizontal compare two videos",

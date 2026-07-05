@@ -539,6 +539,14 @@ Workflow / feedback components:
       name + alias; Ctrl/Cmd+K focus, Enter jumps to first match, Esc clears, "no
       tools match" state. CLI/sidecar untouched. Verified: node:test unit tests +
       headless Electron E2E (typed "rotate" → only Transform visible, screenshot).
+      **Bug fix (hunt):** `chapters` and `autocrop` had nav buttons + `OUTPUT_SPECS`/
+      `TOOL_CATEGORIES` entries but no `TOOL_ALIASES` entry, so the search box
+      couldn't find them by any keyword other than their exact label (typing
+      "black bars" or "timestamps" surfaced nothing). Added alias keywords for
+      both; also added a full-coverage regression test (every `TOOL_CATEGORIES`
+      tab must have a `TOOL_ALIASES` entry) since the existing tests only
+      spot-checked individual tabs. 257 node:test (+3) + 235 root pytest
+      (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
 
 ### UI/UX components (round 8) — build on the source card + search
 > Now that there's an embedded source player + live probe data on every tab, a lot
