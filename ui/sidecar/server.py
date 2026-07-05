@@ -1577,8 +1577,18 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             return commands.build_concat_filter_args(inputs, req.output, tw, th, has_audio=has_audio), None
         fd, list_file = tempfile.mkstemp(suffix=".txt", prefix="ffconcat_")
         os.close(fd)
-        commands.write_concat_list(inputs, list_file)
-        return commands.build_concat_args(inputs, req.output, list_file), list_file
+        try:
+            commands.write_concat_list(inputs, list_file)
+            args = commands.build_concat_args(inputs, req.output, list_file)
+        except Exception:
+            # build_concat_args raises for <2 inputs; don't leak the manifest
+            # we already wrote to disk when that happens.
+            try:
+                os.remove(list_file)
+            except OSError:
+                pass
+            raise
+        return args, list_file
     if op == "pixfmt":
         return commands.build_pixfmt_args(req.input, req.output, req.pix_fmt), None
     if op == "chapters":
