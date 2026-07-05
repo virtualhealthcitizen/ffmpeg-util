@@ -1382,8 +1382,8 @@ class RunReq(BaseModel):
     opacity: float = 1.0
     # crop-aspect
     aspect: str = "16:9"
-    # blur-pad
-    sigma: float = 20
+    # blur-region / blur-pad (None = use per-op default: 10 for blur-region, 20 for blur-pad)
+    sigma: float | None = None
     # image-to-video
     seconds: float = 5.0
     # autocrop
@@ -1537,13 +1537,15 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         if not req.width or not req.height:
             raise ValueError("blur-region requires width and height")
         return commands.build_blur_region_args(
-            req.input, req.output, req.x, req.y, req.width, req.height, sigma=req.sigma
+            req.input, req.output, req.x, req.y, req.width, req.height,
+            sigma=req.sigma if req.sigma is not None else 10,
         ), None
     if op == "blur_pad":
         if not req.width or not req.height:
             raise ValueError("blur-pad requires width and height")
         return commands.build_blur_pad_args(
-            req.input, req.output, req.width, req.height, req.sigma
+            req.input, req.output, req.width, req.height,
+            req.sigma if req.sigma is not None else 20,
         ), None
     if op == "image_to_video":
         return commands.build_image_to_video_args(
