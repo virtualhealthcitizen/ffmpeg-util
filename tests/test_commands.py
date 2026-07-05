@@ -287,6 +287,16 @@ def test_contact_sheet_dry_run_falls_back_instead_of_raising(capsys):
     assert "tile=" in out and "out.jpg" in out
 
 
+def test_poster_frame_dry_run_falls_back_instead_of_crashing(capsys):
+    # Real ffmpeg rejects a raw "<pct>%" -ss value ("Invalid duration for option
+    # ss"), so poster_frame() must probe a real/placeholder duration rather than
+    # letting build_poster_frame_args() emit that unusable percent-syntax string.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.poster_frame(runner, "in.mp4", "out.png", percent=25.0)
+    out = capsys.readouterr().out
+    assert "-ss" in out and "%" not in out and "out.png" in out
+
+
 def test_compress_to_size_dry_run_falls_back_instead_of_raising(capsys):
     # target_mb=0.5 would be "too small" against the 60s dry-run placeholder
     # duration (negative bitrate budget), so use a target that clears it.

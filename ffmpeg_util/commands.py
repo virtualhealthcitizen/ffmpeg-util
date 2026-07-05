@@ -1501,7 +1501,11 @@ def build_poster_frame_args(
     """Build args to extract a single frame at ``percent``% of the clip duration.
 
     When ``duration_s`` is supplied the timestamp is computed here; otherwise
-    ``-ss`` uses a percent-syntax string (``<pct>%``) that ffmpeg 5+ accepts.
+    ``-ss`` falls back to a raw ``<pct>%`` string, which real ffmpeg does NOT
+    accept as a time value (it errors with "Invalid duration for option ss") —
+    this path only exists so callers that can't probe (e.g. ``--dry-run``) still
+    get a command printed. Real runs must supply ``duration_s`` (see
+    :func:`poster_frame`, which probes it and calls this).
     Outputs a PNG/JPEG depending on the output extension.
     """
     if not 0 <= percent <= 100:
@@ -1517,6 +1521,37 @@ def build_poster_frame_args(
         args += ["-vf", f"scale={width}:-1"]
     args.append(output_path)
     return args
+
+
+def poster_frame(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    *,
+    percent: float = 10.0,
+    width: int | None = None,
+) -> None:
+    """Extract a single frame at ``percent``% of the clip duration, probing it first.
+
+    Real ffmpeg has no percentage syntax for ``-ss`` (it only accepts elapsed-time
+    formats and rejects e.g. ``25.0%`` outright), so a probed duration is required
+    for a working command; ``build_poster_frame_args``'s ``duration_s``-less path
+    exists only to let ``--dry-run`` still print something when ffprobe can't run.
+    """
+    duration_s = probe_duration(runner, input_path)
+    if not duration_s:
+        if not runner.dry_run:
+            raise ValueError("could not determine input duration for poster-frame")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how crop-to-aspect/trim-pct/chapters/fade/contact-sheet tolerate a
+        # probe-less dry-run.
+        duration_s = 60.0
+    runner.run_ffmpeg(
+        build_poster_frame_args(
+            input_path, output_path, percent=percent, duration_s=duration_s, width=width
+        )
+    )
 
 
 def build_autorotate_args(input_path: str, output_path: str) -> list[str]:

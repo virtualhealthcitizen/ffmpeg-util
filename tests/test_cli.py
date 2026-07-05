@@ -106,6 +106,18 @@ def test_crop_aspect_dry_run(capsys):
     assert "crop=" in out and "out.mp4" in out
 
 
+def test_poster_frame_dry_run(capsys):
+    # Same dry-run-never-probes gap as crop-aspect/fade, but here it used to
+    # reach real ffmpeg unfixed: without a probed duration, build_poster_frame_args
+    # falls back to a raw "<pct>%" -ss value that real ffmpeg rejects outright
+    # ("Invalid duration for option ss"), so the CLI command crashed on every run.
+    rc = main(["poster-frame", "in.mp4", "out.png", "--percent", "25",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "-ss" in out and "%" not in out and "out.png" in out
+
+
 def test_concat_reencode_dry_run(capsys):
     # Same dry-run-never-probes gap as crop-aspect, but hit via the CLI's own
     # dims-is-None check rather than a commands.py helper.
