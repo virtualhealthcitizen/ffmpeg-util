@@ -1602,6 +1602,72 @@ def build_compress_args(
     return args
 
 
+def estimate_compress_size(
+    runner: FfmpegRunner,
+    input_path: str,
+    *,
+    crf: int | None = None,
+    bitrate: str | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    vcodec: str = "libx264",
+    preset: str = "medium",
+    hwaccel: str = "none",
+    duration_s: float | None = None,
+    sample_seconds: float = 3.0,
+) -> dict:
+    """Predict a ``compress`` output size by really encoding a short sample
+    with the exact same args and extrapolating by duration.
+
+    CRF/quality encodes have no formula for output size (unlike an explicit
+    bitrate or two-pass target), so the only reliable estimate is a real,
+    short sample encode. Returns a dict with ``estimated_bytes``,
+    ``sample_bytes``, ``sample_seconds`` (actual, may be less than the
+    input's full duration), and ``duration_s``.
+    """
+    if duration_s is None:
+        duration_s = probe_duration(runner, input_path)
+    if not duration_s or duration_s <= 0:
+        raise ValueError("could not determine input duration for size estimation")
+    sample_dur = min(sample_seconds, duration_s)
+    if sample_dur <= 0:
+        raise ValueError("sample_seconds must be > 0")
+
+    fd, tmp_out = tempfile.mkstemp(suffix=".mp4", prefix="ffsizeest_")
+    os.close(fd)
+    # ffmpeg refuses to run at all if both -y and -n land on its command line
+    # (it doesn't just take the last one), so we can't force overwrite with an
+    # extra flag alongside the caller's runner.overwrite-derived -y/-n. Instead,
+    # remove the placeholder mkstemp created so the path doesn't exist yet —
+    # then neither -y nor -n needs to make an overwrite decision.
+    os.remove(tmp_out)
+    try:
+        args = build_compress_args(
+            input_path, tmp_out,
+            crf=crf, bitrate=bitrate, width=width, height=height,
+            vcodec=vcodec, preset=preset, hwaccel=hwaccel,
+        )
+        # -t as an output option (before the trailing output path) caps the
+        # sample to sample_dur regardless of where in the arg list it lands.
+        args = [*args[:-1], "-t", str(sample_dur), args[-1]]
+        runner.run_ffmpeg(args)
+        sample_bytes = os.path.getsize(tmp_out)
+        actual_sample_dur = probe_duration(runner, tmp_out) or sample_dur
+    finally:
+        try:
+            os.remove(tmp_out)
+        except OSError:
+            pass
+
+    estimated_bytes = int(sample_bytes * duration_s / actual_sample_dur)
+    return {
+        "estimated_bytes": estimated_bytes,
+        "sample_bytes": sample_bytes,
+        "sample_seconds": actual_sample_dur,
+        "duration_s": duration_s,
+    }
+
+
 _PIP_POSITIONS = {
     "top-left":     ("10", "10"),
     "top-right":    ("W-w-10", "10"),

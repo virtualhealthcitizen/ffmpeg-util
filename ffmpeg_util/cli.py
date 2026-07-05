@@ -555,6 +555,9 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
     p.add_argument("--preset", default="medium", help="x264/x265 preset.")
     p.add_argument("--hwaccel", choices=["none", "nvenc", "qsv"], default="none",
                    help="Hardware-accelerated encoder in place of --vcodec, when available.")
+    p.add_argument("--estimate-size", action="store_true",
+                   help="Predict the output size (via a short real sample encode) "
+                        "instead of compressing; OUTPUT is not written.")
     _add_global_flags(p)
 
     return parser
@@ -867,6 +870,21 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "compress":
+        if args.estimate_size:
+            if args.target_size is not None:
+                raise ValueError("--estimate-size is not compatible with --target-size (size is already known).")
+            if runner.dry_run:
+                raise ValueError("--estimate-size requires a real sample encode and does not support --dry-run.")
+            result = commands.estimate_compress_size(
+                runner, args.input,
+                crf=args.crf, bitrate=args.bitrate, width=args.width, height=args.height,
+                vcodec=args.vcodec, preset=args.preset, hwaccel=args.hwaccel,
+            )
+            mb = result["estimated_bytes"] / 1_000_000
+            print(f"Estimated output size: ~{mb:.2f} MB "
+                  f"(from a {result['sample_seconds']:.1f}s sample, "
+                  f"full duration {result['duration_s']:.1f}s)")
+            return 0
         if args.target_size is not None:
             if args.crf is not None or args.bitrate is not None:
                 raise ValueError("Pass only one of --target-size / --crf / --bitrate.")

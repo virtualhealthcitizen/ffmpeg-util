@@ -1007,6 +1007,19 @@
     return `~${formatDuration(out)}`;
   }
 
+  // Format a `/compress/estimate-size` sidecar response (estimated_bytes,
+  // sample_seconds, duration_s) into a display string, or null when the
+  // response doesn't carry a usable estimate. This is CRF's only size
+  // preview — a real short sample encode, extrapolated by duration — since
+  // CRF (unlike bitrate/target-MB) has no formula to predict size from.
+  function compressSizeEstimateLabel(result) {
+    if (!result) return null;
+    const bytes = Number(result.estimated_bytes);
+    if (!isFinite(bytes) || bytes < 0) return null;
+    const sample = Number(result.sample_seconds) || 0;
+    return `~${formatBytes(bytes)} (from a ${sample.toFixed(1)}s sample)`;
+  }
+
   // --- Live ETA: remaining time for an in-flight op from a progress event ---
 
   // Parse ffmpeg's `speed` field ("1.05x", "0.5x", "N/A") into a positive number
@@ -1794,6 +1807,7 @@
     parseTimeToSeconds,
     parseBitrateBps,
     estimateOutput,
+    compressSizeEstimateLabel,
     parseSpeed,
     etaSeconds,
     etaLabel,

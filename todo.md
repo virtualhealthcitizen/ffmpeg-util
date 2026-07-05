@@ -255,7 +255,17 @@ Packaging / tests:
 - [x] Output filename templating (tokens: `{name}`, `{w}x{h}`, `{date}`) — see
       "Output filename templating with tokens" under round 8.
 - [ ] "Show ffmpeg command" / copy-to-clipboard for any op (dry-run surfaced in UI)
-- [ ] Estimate output size before encoding (compress preview)
+- [x] Estimate output size before encoding (compress preview) — core
+      `estimate_compress_size` (real short sample encode with the exact same
+      crf/bitrate/width/height/vcodec/preset/hwaccel args, extrapolated by
+      duration — the only reliable predictor for CRF, which has no size
+      formula), CLI `compress --estimate-size` (rejects `--dry-run` and
+      `--target-size`; OUTPUT is not written), sidecar `/compress/estimate-size`,
+      "Estimate size…" button + readout on the Compress tab. Verified: 232 root
+      pytest (+2) + 122 sidecar pytest (+2) + 252 node:test (+2) + committed
+      smoke 5/5 + a custom headless E2E 6/6 (button/readout present, hidden
+      initially, CRF-based estimate produced e.g. "~108 KB (from a 3.0s
+      sample)", real output never written by the estimate call). ← next
 - [x] GIF tuning: dithering mode + loop count — `make_gif` gains `dither` (sierra2_4a/bayer/floyd_steinberg/none) + `loop` (0=∞, -1=once); CLI `--dither`/`--loop`; sidecar `GifReq` + streaming path; Dither select + Loop field on GIF tab; persisted via STICKY. Verified: pytest 101+69 + node:test 126 + headless Electron E2E 6/6 (bayer+floyd_steinberg GIFs produced; all 4 dither options present; loop=-1 GIF produced). ← next
 - [x] Grayscale (desaturate) — core `build_grayscale_args` (`hue=s=0`), CLI `grayscale`,
       sidecar (`/grayscale` + `/run/stream`), Grayscale tab. Verified E2E: SATAVG -> ~0.

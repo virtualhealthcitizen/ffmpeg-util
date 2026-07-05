@@ -8,7 +8,7 @@ const { suggestOutputForTab, defaultSavePath, parseLines, fieldLabel, parseSseBu
   videoDims, compatReport, formatTimecode, timeTargetsForTab, timeHandlesForTab, timecodeFraction,
   clampPoint, normalizeDragRect, rectToCrop, cropToRect,
   overwriteMessage, isPathFieldId, presetNames, getPreset, withPreset,
-  withoutPreset, estimateOutput, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
+  withoutPreset, estimateOutput, compressSizeEstimateLabel, oddDimensionWarning, friendlyError, summarizeBeforeAfter,
   buildCliCommand, previewPath, keyboardAction, nextVisibleTab,
   TOOL_CATEGORIES, groupTabs, templatedOutputForTab,
   groupTabsWithFavorites, toggleFavorite, isFavorite, normalizeFavorites,
@@ -2562,6 +2562,32 @@ $("#run-compress").addEventListener("click", () => {
     hwaccel: val("compress-hwaccel") || "none",
     overwrite: true,
   });
+});
+
+$("#estimate-compress-size").addEventListener("click", async () => {
+  if (!requireFields("compress-input")) return;
+  const btn = $("#estimate-compress-size");
+  const out = $("#compress-size-estimate");
+  btn.disabled = true;
+  out.classList.remove("hidden");
+  out.textContent = "Estimating (encoding a short sample)…";
+  try {
+    const result = await api("/compress/estimate-size", {
+      input: val("compress-input"),
+      crf: numOrNull("compress-crf"),
+      bitrate: strOrNull("compress-bitrate"),
+      width: numOrNull("compress-width"),
+      height: numOrNull("compress-height"),
+      vcodec: val("compress-vcodec") || "libx264",
+      preset: val("compress-preset") || "medium",
+      hwaccel: val("compress-hwaccel") || "none",
+    });
+    out.textContent = compressSizeEstimateLabel(result) || "Could not estimate.";
+  } catch (err) {
+    out.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 $("#run-autocrop").addEventListener("click", () => {
