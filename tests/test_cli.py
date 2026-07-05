@@ -1,4 +1,9 @@
-"""CLI smoke tests driven through --dry-run so no ffmpeg is required."""
+"""CLI smoke tests, mostly driven through --dry-run so no ffmpeg is required;
+one real sample-encode test is skipped cleanly when ffmpeg isn't on PATH."""
+
+import shutil
+
+import pytest
 
 from ffmpeg_util.cli import main
 
@@ -104,3 +109,36 @@ def test_trim_segments_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "filter_complex" in out and "concat=n=2" in out and "out.mp4" in out
+
+
+def test_compress_estimate_size_rejects_dry_run(capsys):
+    rc = main(["compress", "in.mp4", "out.mp4", "--crf", "28", "--estimate-size",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    assert "dry-run" in capsys.readouterr().err.lower()
+
+
+def test_compress_estimate_size_rejects_target_size(capsys):
+    rc = main(["compress", "in.mp4", "out.mp4", "--target-size", "5", "--estimate-size",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    assert "error" in capsys.readouterr().err.lower()
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not on PATH")
+def test_compress_estimate_size_real(tmp_path, capsys):
+    src = tmp_path / "in.mp4"
+    import subprocess
+    subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+         "-f", "lavfi", "-i", "testsrc=duration=4:size=320x240:rate=30",
+         "-f", "lavfi", "-i", "sine=frequency=440:duration=4",
+         "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src)],
+        check=True,
+    )
+    out_path = tmp_path / "out.mp4"
+    rc = main(["compress", str(src), str(out_path), "--crf", "30", "--estimate-size"])
+    assert rc == 0
+    assert not out_path.exists()  # estimate-only: OUTPUT is never written
+    out = capsys.readouterr().out
+    assert "Estimated output size:" in out

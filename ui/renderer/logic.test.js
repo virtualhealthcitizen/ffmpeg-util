@@ -654,6 +654,24 @@ test("estimateOutput trim_pct defaults empty fields to 0/100 (form initial state
   assert.equal(L.estimateOutput("trim_pct", 10, { "start-pct": "25", "end-pct": "" }), "~0:08");
 });
 
+test("compressSizeEstimateLabel formats a sample-encode response", () => {
+  assert.equal(
+    L.compressSizeEstimateLabel({ estimated_bytes: 5 * 1024 * 1024, sample_seconds: 3 }),
+    "~5.0 MB (from a 3.0s sample)"
+  );
+  assert.equal(
+    L.compressSizeEstimateLabel({ estimated_bytes: 500, sample_seconds: 1.25 }),
+    "~500 B (from a 1.3s sample)"
+  );
+});
+
+test("compressSizeEstimateLabel returns null for missing/invalid input", () => {
+  assert.equal(L.compressSizeEstimateLabel(null), null);
+  assert.equal(L.compressSizeEstimateLabel({}), null);
+  assert.equal(L.compressSizeEstimateLabel({ estimated_bytes: "not-a-number" }), null);
+  assert.equal(L.compressSizeEstimateLabel({ estimated_bytes: -5 }), null);
+});
+
 test("friendlyError maps common ffmpeg failures to a hint", () => {
   assert.match(
     L.friendlyError("clip.mp4: No such file or directory"),

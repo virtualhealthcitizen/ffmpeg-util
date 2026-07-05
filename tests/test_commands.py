@@ -1,4 +1,7 @@
-"""Unit tests for command-arg builders. No ffmpeg binary required."""
+"""Unit tests for command-arg builders (most need no ffmpeg binary; a few real
+sample-encode tests are skipped cleanly when ffmpeg isn't on PATH)."""
+
+import shutil
 
 import pytest
 
@@ -202,6 +205,30 @@ def test_compress_hwaccel_bitrate_path_keeps_bv_no_quality_flag():
 def test_compress_rejects_bad_hwaccel():
     with pytest.raises(ValueError):
         c.build_compress_args("in.mp4", "out.mp4", hwaccel="cuda")
+
+
+def test_estimate_compress_size_rejects_missing_duration(monkeypatch):
+    # duration_s explicitly None and probe_duration unable to determine one.
+    monkeypatch.setattr(c, "probe_duration", lambda runner, path: None)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-real")
+    with pytest.raises(ValueError):
+        c.estimate_compress_size(runner, "in.mp4", crf=28)
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not on PATH")
+def test_estimate_compress_size_real_sample_encode(tmp_path):
+    runner = FfmpegRunner(overwrite=True)
+    src = tmp_path / "in.mp4"
+    runner.run_ffmpeg([
+        "-f", "lavfi", "-i", "testsrc=duration=6:size=320x240:rate=30",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=6",
+        "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src),
+    ])
+    result = c.estimate_compress_size(runner, str(src), crf=30, sample_seconds=2)
+    assert result["estimated_bytes"] > 0
+    assert result["sample_bytes"] > 0
+    assert result["duration_s"] == pytest.approx(6, abs=0.5)
+    assert 0 < result["sample_seconds"] <= 3  # sampled, not the full 6s
 
 
 def test_waveform_args_build_filter():

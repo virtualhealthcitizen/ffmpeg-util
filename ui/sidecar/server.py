@@ -1125,6 +1125,33 @@ def compress(req: CompressReq, _: None = Depends(require_token)) -> dict:
     return {"output": req.output}
 
 
+class CompressEstimateReq(BaseModel):
+    input: str
+    crf: int | None = None
+    bitrate: str | None = None
+    width: int | None = None
+    height: int | None = None
+    vcodec: str = "libx264"
+    preset: str = "medium"
+    hwaccel: str = "none"
+    sample_seconds: float = 3.0
+
+
+@app.post("/compress/estimate-size")
+def compress_estimate_size(req: CompressEstimateReq, _: None = Depends(require_token)) -> dict:
+    runner = FfmpegRunner(overwrite=True)
+    try:
+        result = commands.estimate_compress_size(
+            runner, req.input,
+            crf=req.crf, bitrate=req.bitrate, width=req.width, height=req.height,
+            vcodec=req.vcodec, preset=req.preset, hwaccel=req.hwaccel,
+            sample_seconds=req.sample_seconds,
+        )
+    except (FfmpegError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=_msg(exc))
+    return result
+
+
 class RemuxReq(BaseModel):
     input: str
     output: str

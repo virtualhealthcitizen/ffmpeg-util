@@ -196,6 +196,30 @@ def test_compress(client, media, auth):
     assert out.exists()
 
 
+def test_compress_estimate_size(client, media, auth):
+    d, src = media
+    r = client.post(
+        "/compress/estimate-size",
+        json={"input": str(src), "crf": 30, "width": 160, "sample_seconds": 1},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["estimated_bytes"] > 0
+    assert body["sample_bytes"] > 0
+    assert body["duration_s"] == pytest.approx(3, abs=0.5)  # `media` is a 3s clip
+    assert 0 < body["sample_seconds"] <= 3
+
+
+def test_compress_estimate_size_missing_input_400(client, auth, tmp_path):
+    r = client.post(
+        "/compress/estimate-size",
+        json={"input": str(tmp_path / "does-not-exist.mp4"), "crf": 30},
+        headers=auth,
+    )
+    assert r.status_code == 400
+
+
 def _duration(path):
     import subprocess
     from conftest import FFPROBE

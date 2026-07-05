@@ -325,6 +325,11 @@
         <button class="secondary qp-chip" data-qp="High quality" title="Archival quality — CRF 18, no resize, libx264 slow">High quality</button>
       </div>
       <p class="hint">CRF <em>or</em> bitrate, not both (CRF defaults to 23). Target MB uses two-pass and overrides both.</p>
+      <div class="row">
+        <button class="secondary" id="estimate-compress-size"
+                title="Predict the output size by really encoding a short sample with these settings (works for CRF too, unlike the live estimate above).">Estimate size…</button>
+        <span id="compress-size-estimate" class="hint hidden"></span>
+      </div>
       <div class="row"><button class="primary" id="run-compress">Compress</button></div>
     </section>
 
