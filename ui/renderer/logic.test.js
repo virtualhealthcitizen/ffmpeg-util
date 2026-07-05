@@ -586,6 +586,60 @@ test("COMPRESS_QUICK_PRESETS all have label, title, and all 7 compress fields", 
   }
 });
 
+test("sharpenQuickPreset returns values for every SHARPEN_QUICK_PRESETS entry", () => {
+  for (const p of L.SHARPEN_QUICK_PRESETS) {
+    const vals = L.sharpenQuickPreset(p.label);
+    assert.ok(vals !== null, `${p.label} should return values`);
+    assert.strictEqual(typeof vals, "object");
+  }
+});
+
+test("sharpenQuickPreset returns null for unknown name", () => {
+  assert.strictEqual(L.sharpenQuickPreset("Nonexistent"), null);
+  assert.strictEqual(L.sharpenQuickPreset(""), null);
+});
+
+test("sharpenQuickPreset Light/Moderate/Heavy set increasing amounts", () => {
+  assert.strictEqual(L.sharpenQuickPreset("Light")["sharpen-amount"], "0.8");
+  assert.strictEqual(L.sharpenQuickPreset("Moderate")["sharpen-amount"], "1.5");
+  assert.strictEqual(L.sharpenQuickPreset("Heavy")["sharpen-amount"], "3");
+});
+
+test("SHARPEN_QUICK_PRESETS all have label, title, and sharpen-amount", () => {
+  for (const p of L.SHARPEN_QUICK_PRESETS) {
+    assert.ok(typeof p.label === "string" && p.label.length > 0, "label required");
+    assert.ok(typeof p.title === "string" && p.title.length > 0, "title required");
+    assert.ok(Object.prototype.hasOwnProperty.call(p.values, "sharpen-amount"), `${p.label} missing sharpen-amount`);
+  }
+});
+
+test("denoiseQuickPreset returns values for every DENOISE_QUICK_PRESETS entry", () => {
+  for (const p of L.DENOISE_QUICK_PRESETS) {
+    const vals = L.denoiseQuickPreset(p.label);
+    assert.ok(vals !== null, `${p.label} should return values`);
+    assert.strictEqual(typeof vals, "object");
+  }
+});
+
+test("denoiseQuickPreset returns null for unknown name", () => {
+  assert.strictEqual(L.denoiseQuickPreset("Nonexistent"), null);
+  assert.strictEqual(L.denoiseQuickPreset(""), null);
+});
+
+test("denoiseQuickPreset Light/Moderate/Heavy set increasing strengths", () => {
+  assert.strictEqual(L.denoiseQuickPreset("Light")["denoise-strength"], "2");
+  assert.strictEqual(L.denoiseQuickPreset("Moderate")["denoise-strength"], "4");
+  assert.strictEqual(L.denoiseQuickPreset("Heavy")["denoise-strength"], "8");
+});
+
+test("DENOISE_QUICK_PRESETS all have label, title, and denoise-strength", () => {
+  for (const p of L.DENOISE_QUICK_PRESETS) {
+    assert.ok(typeof p.label === "string" && p.label.length > 0, "label required");
+    assert.ok(typeof p.title === "string" && p.title.length > 0, "title required");
+    assert.ok(Object.prototype.hasOwnProperty.call(p.values, "denoise-strength"), `${p.label} missing denoise-strength`);
+  }
+});
+
 test("parseSseBuffer reassembles an event split across chunks", () => {
   // Simulate streaming: first chunk has a partial event, second completes it.
   let buf = 'data: {"type":"prog';

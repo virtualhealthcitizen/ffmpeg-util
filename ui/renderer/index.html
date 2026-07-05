@@ -826,6 +826,12 @@
           </div>
         </label>
       </div>
+      <div class="filter-qp" id="sharpen-quick-presets">
+        <span class="qp-label">Quick presets</span>
+        <button class="secondary qp-chip" data-qp="Light" title="Subtle sharpening — amount 0.8">Light</button>
+        <button class="secondary qp-chip" data-qp="Moderate" title="Balanced sharpening — amount 1.5">Moderate</button>
+        <button class="secondary qp-chip" data-qp="Heavy" title="Strong sharpening — amount 3">Heavy</button>
+      </div>
       <p class="hint">Sharpen edges via unsharp mask. Positive amounts sharpen; negative amounts soften. 0 = no-op.</p>
       <div class="row"><button class="primary" id="run-sharpen">Sharpen</button></div>
     </section>
@@ -851,6 +857,12 @@
             <input id="denoise-strength" type="number" step="0.5" min="1" class="sl-num" />
           </div>
         </label>
+      </div>
+      <div class="filter-qp" id="denoise-quick-presets">
+        <span class="qp-label">Quick presets</span>
+        <button class="secondary qp-chip" data-qp="Light" title="Light noise reduction — strength 2">Light</button>
+        <button class="secondary qp-chip" data-qp="Moderate" title="Balanced noise reduction — strength 4">Moderate</button>
+        <button class="secondary qp-chip" data-qp="Heavy" title="Heavy smoothing — strength 8">Heavy</button>
       </div>
       <p class="hint">Reduce noise via hqdn3d. Higher strength smooths more. 4 is a balanced start for moderate noise.</p>
       <div class="row"><button class="primary" id="run-denoise">Denoise</button></div>
