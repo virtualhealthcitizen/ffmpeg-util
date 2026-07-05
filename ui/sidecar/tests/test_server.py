@@ -1,6 +1,9 @@
 """End-to-end integration tests for the sidecar against real ffmpeg."""
 
+import glob
 import json
+import os
+import tempfile
 
 
 def _sse_events(text: str) -> list:
@@ -1218,6 +1221,24 @@ def test_run_stream_error_event(client, media, auth):
     events = _sse_events(r.text)
     assert events[-1]["type"] == "error"
     assert events[-1]["detail"]
+
+
+def test_run_stream_concat_too_few_inputs_cleans_up_manifest(client, media, auth):
+    d, src = media
+    before = set(glob.glob(os.path.join(tempfile.gettempdir(), "ffconcat_*.txt")))
+    r = client.post(
+        "/run/stream",
+        json={"op": "concat", "inputs": [str(src)], "output": str(d / "joined.mp4"),
+              "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    last = _sse_events(r.text)[-1]
+    assert last["type"] == "error"
+    assert "two input" in last["detail"].lower()
+    after = set(glob.glob(os.path.join(tempfile.gettempdir(), "ffconcat_*.txt")))
+    # The concat-list manifest written before validation failed must not leak.
+    assert after - before == set()
 
 
 def test_run_stream_requires_token(client, media):

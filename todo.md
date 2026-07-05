@@ -719,7 +719,19 @@ Power-user flow:
       tab happened to be visible when that item executed, not the tab it belonged to.
       Fixed by giving `run()` a `tab = currentTab()` parameter (unchanged default for a
       direct Run click) and having `runQueueAll` pass `next.tab` explicitly. 245 node:test
-      (untouched, still green) + headless E2E smoke ok=true. ← next
+      (untouched, still green) + headless E2E smoke ok=true.
+      **Bug fix (hunt):** `/run/stream`'s `_build_op_args` concat branch wrote its
+      `ffconcat_*.txt` manifest to a temp file *before* calling `build_concat_args`,
+      which raises `ValueError` for fewer than two inputs. Because that raise happens
+      inside `_build_op_args`, the `args, cleanup = _build_op_args(...)` assignment in
+      `run_stream` never completes, so `cleanup` stays `None` and the `finally` block's
+      `os.remove(cleanup)` never runs — every rejected concat (0/1 inputs) leaked a
+      manifest file in the OS temp dir. Wrapped the write + build in a try/except that
+      removes the manifest before re-raising, matching the existing `commands.concat()`
+      helper's try/finally lifecycle. 1 new sidecar regression test (asserts no
+      `ffconcat_*.txt` survives a too-few-inputs `/run/stream` call); 249 node:test
+      (untouched) + 221 root pytest (untouched) + 117 sidecar pytest (+1 new) +
+      headless E2E smoke ok=true. ← next
 - [x] Chain ops on one file — after a successful run, a "→ Send to" select+button
       in the completion-actions area populates any other tab's input with the output
       and switches to it. Pure `chainTabOptions(allTabData, currentTab)` in `logic.js`
