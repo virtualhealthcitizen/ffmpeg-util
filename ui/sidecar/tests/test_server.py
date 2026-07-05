@@ -545,6 +545,50 @@ def test_volume_attenuates_by_gain(client, media, auth):
     assert abs((before - 6.0) - after) < 1.5, f"before={before} after={after}"
 
 
+def test_loudnorm_no_audio_input_rejected(client, media_no_audio, auth):
+    # Regression: loudnorm/volume/mono/sample-rate/trim-silence are audio-only
+    # ops that used to be sent straight to ffmpeg with no audio-stream check,
+    # crashing with a cryptic ffmpeg stream-specifier error on a video-only
+    # input instead of a clear 400.
+    d, src = media_no_audio
+    out = d / "loudnorm_no_audio_out.mp4"
+    r = client.post(
+        "/loudnorm",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
+
+
+def test_volume_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "volume_no_audio_out.mp4"
+    r = client.post(
+        "/volume",
+        json={"input": str(src), "output": str(out), "gain": -6.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
+
+
+def test_run_stream_volume_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "volume_stream_no_audio_out.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "volume", "input": str(src), "output": str(out), "gain": -6.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "error" for e in events), r.text
+    assert not out.exists()
+
+
 def test_vstack_doubles_height(client, media, auth):
     d, src = media  # 320x240
     out = d / "stacked.mp4"
@@ -918,6 +962,46 @@ def test_mono_downmixes_to_one_channel(client, media, auth):
     )
     assert r.status_code == 200
     assert _audio_channels(out) == 1
+
+
+def test_sample_rate_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "sr_no_audio_out.mp4"
+    r = client.post(
+        "/sample-rate",
+        json={"input": str(src), "output": str(out), "rate": 22050, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
+
+
+def test_run_stream_sample_rate_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "sr_stream_no_audio_out.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "sample_rate", "input": str(src), "output": str(out), "rate": 22050, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "error" for e in events), r.text
+    assert not out.exists()
+
+
+def test_mono_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "mono_no_audio_out.mp4"
+    r = client.post(
+        "/mono",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
 
 
 def test_mute_removes_audio(client, media, auth):
@@ -1447,6 +1531,33 @@ def test_trim_silence_via_run_stream(client, media, auth):
     done = [e for e in events if e["type"] == "done"]
     assert done and done[0].get("output") == str(out)
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_trim_silence_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "trim_silence_no_audio_out.mp4"
+    r = client.post(
+        "/trim-silence",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
+
+
+def test_run_stream_trim_silence_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "trim_silence_stream_no_audio_out.mp4"
+    r = client.post(
+        "/run/stream",
+        json={"op": "trim_silence", "input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "error" for e in events), r.text
+    assert not out.exists()
 
 
 def test_run_stream_image_to_video_defaults_30fps(client, media, auth):

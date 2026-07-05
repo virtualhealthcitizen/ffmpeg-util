@@ -530,6 +530,38 @@ def test_volume_args_build_filter():
     assert args[args.index("-c:v") + 1] == "copy"
 
 
+def test_loudnorm_rejects_no_audio_input(monkeypatch):
+    # Regression: loudnorm/volume/mono/sample-rate/trim-silence are audio-only
+    # transforms that used to be sent straight to ffmpeg with no audio-stream
+    # check, crashing with a cryptic "matches no streams" error on a video-only
+    # input instead of a clear message.
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.loudnorm(runner, "in.mp4", "out.mp4")
+
+
+def test_loudnorm_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.loudnorm(runner, "in.mp4", "out.mp4", -14.0)
+    assert "loudnorm=I=-14.0" in capsys.readouterr().out
+
+
+def test_volume_rejects_no_audio_input(monkeypatch):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.volume(runner, "in.mp4", "out.mp4", -6.0)
+
+
+def test_volume_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.volume(runner, "in.mp4", "out.mp4", -6.0)
+    assert "volume=-6.0dB" in capsys.readouterr().out
+
+
 def test_reverse_args_with_audio():
     args = c.build_reverse_args("in.mp4", "out.mp4", audio=True)
     fc = args[args.index("-filter_complex") + 1]
@@ -703,6 +735,34 @@ def test_mono_args_downmix():
     assert args[args.index("-ac") + 1] == "1"
     assert args[args.index("-c:v") + 1] == "copy"
     assert args[-1] == "out.mp4"
+
+
+def test_sample_rate_rejects_no_audio_input(monkeypatch):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.sample_rate(runner, "in.mp4", "out.mp4", 22050)
+
+
+def test_sample_rate_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.sample_rate(runner, "in.mp4", "out.mp4", 22050)
+    assert "-ar" in capsys.readouterr().out
+
+
+def test_mono_rejects_no_audio_input(monkeypatch):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.mono(runner, "in.mp4", "out.mp4")
+
+
+def test_mono_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.mono(runner, "in.mp4", "out.mp4")
+    assert "-ac" in capsys.readouterr().out
 
 
 def test_mute_args_strip_audio():
@@ -973,6 +1033,20 @@ def test_build_trim_silence_args_custom():
 def test_build_trim_silence_args_rejects_negative_duration():
     with pytest.raises(ValueError, match="min_duration"):
         c.build_trim_silence_args("in.mp4", "out.mp4", min_duration=-0.1)
+
+
+def test_trim_silence_rejects_no_audio_input(monkeypatch):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.trim_silence(runner, "in.mp4", "out.mp4")
+
+
+def test_trim_silence_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.trim_silence(runner, "in.mp4", "out.mp4")
+    assert "silenceremove" in capsys.readouterr().out
 
 
 def test_build_remux_args_uses_copy():

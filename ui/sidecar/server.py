@@ -686,7 +686,7 @@ def loudnorm(req: LoudnormReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_loudnorm_args(req.input, req.output, req.target_i))
+        commands.loudnorm(runner, req.input, req.output, req.target_i)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -705,7 +705,7 @@ def volume(req: VolumeReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_volume_args(req.input, req.output, req.gain))
+        commands.volume(runner, req.input, req.output, req.gain)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -890,7 +890,7 @@ def sample_rate(req: SampleRateReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_sample_rate_args(req.input, req.output, req.rate))
+        commands.sample_rate(runner, req.input, req.output, req.rate)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -908,7 +908,7 @@ def mono(req: MonoReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_mono_args(req.input, req.output))
+        commands.mono(runner, req.input, req.output)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -928,11 +928,11 @@ def trim_silence_op(req: TrimSilenceReq, _: None = Depends(require_token)) -> di
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_trim_silence_args(
-            req.input, req.output,
+        commands.trim_silence(
+            runner, req.input, req.output,
             threshold_db=req.threshold_db,
             min_duration=req.min_duration,
-        ))
+        )
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -1457,8 +1457,6 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             req.input, req.output,
             brightness=req.brightness, contrast=req.contrast, saturation=req.saturation,
         ), None
-    if op == "loudnorm":
-        return commands.build_loudnorm_args(req.input, req.output, req.target_i), None
     if op == "grayscale":
         return commands.build_grayscale_args(req.input, req.output), None
     if op == "invert":
@@ -1519,8 +1517,6 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             duration=req.xfade_duration,
             offset=offset,
         ), None
-    if op == "volume":
-        return commands.build_volume_args(req.input, req.output, req.gain), None
     if op == "frames":
         return commands.build_extract_frames_args(req.input, req.output, req.every), None
     if op == "scene_thumbs":
@@ -1557,16 +1553,6 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         if not req.audio:
             raise ValueError("replace-audio requires an audio file")
         return commands.build_replace_audio_args(req.input, req.audio, req.output), None
-    if op == "mono":
-        return commands.build_mono_args(req.input, req.output), None
-    if op == "trim_silence":
-        return commands.build_trim_silence_args(
-            req.input, req.output,
-            threshold_db=req.threshold_db,
-            min_duration=req.min_duration,
-        ), None
-    if op == "sample_rate":
-        return commands.build_sample_rate_args(req.input, req.output, req.rate), None
     if op == "title":
         return commands.build_title_args(req.input, req.output, req.title), None
     if op == "crop":
@@ -1907,7 +1893,10 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     _shutil.rmtree(trf_dir, ignore_errors=True)
                 yield _sse({"type": "done", "output": req.output})
                 return
-            if req.op in ("speed", "reverse", "fade"):
+            if req.op in (
+                "speed", "reverse", "fade",
+                "volume", "loudnorm", "mono", "sample_rate", "trim_silence",
+            ):
                 # These need audio detection (and fade needs duration) and don't fit
                 # the pure _build_op_args path.
                 audio = commands.has_audio(runner, req.input)
@@ -1917,8 +1906,27 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                     if not total:
                         raise ValueError("could not determine input duration for fade")
                     args = commands.build_fade_args(req.input, req.output, req.fade, total, audio=audio)
-                else:
+                elif req.op == "reverse":
                     args = commands.build_reverse_args(req.input, req.output, audio=audio)
+                else:
+                    # volume/loudnorm/mono/sample_rate/trim_silence are audio-only
+                    # transforms with no video-domain fallback — a missing audio
+                    # stream leaves nothing for the op to do.
+                    if not audio:
+                        raise ValueError("input has no audio stream to adjust")
+                    if req.op == "volume":
+                        args = commands.build_volume_args(req.input, req.output, req.gain)
+                    elif req.op == "loudnorm":
+                        args = commands.build_loudnorm_args(req.input, req.output, req.target_i)
+                    elif req.op == "mono":
+                        args = commands.build_mono_args(req.input, req.output)
+                    elif req.op == "sample_rate":
+                        args = commands.build_sample_rate_args(req.input, req.output, req.rate)
+                    else:
+                        args = commands.build_trim_silence_args(
+                            req.input, req.output,
+                            threshold_db=req.threshold_db, min_duration=req.min_duration,
+                        )
                 cleanup = None
             elif req.op == "crop_aspect":
                 dims = commands.probe_dimensions(runner, req.input)
