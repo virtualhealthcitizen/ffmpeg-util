@@ -2205,3 +2205,28 @@ test("batchFilePairs: handles empty/null file lists", () => {
   assert.deepEqual(L.batchFilePairs([], "compress"), []);
   assert.deepEqual(L.batchFilePairs(null, "compress"), []);
 });
+
+// Regression: chapters/autocrop had a nav button + OUTPUT_SPECS/TOOL_CATEGORIES
+// entry but no TOOL_ALIASES entry, so the tool-search box couldn't find them by
+// any keyword other than their exact label (e.g. "black bars" never matched
+// Autocrop). Assert full coverage, not just individual spot-checks, so a future
+// tab addition can't silently skip this table again.
+test("TOOL_ALIASES covers every tab in TOOL_CATEGORIES", () => {
+  const allTabs = L.TOOL_CATEGORIES.flatMap((c) => c.tabs);
+  const missing = allTabs.filter((tab) => !L.TOOL_ALIASES[tab]);
+  assert.deepEqual(missing, [], "every tab must have a non-empty TOOL_ALIASES entry");
+});
+
+test("TOOL_ALIASES has metadata/marker keywords for chapters", () => {
+  const alias = L.TOOL_ALIASES["chapters"];
+  assert.ok(alias && alias.length > 0, "chapters must have aliases");
+  assert.ok(alias.includes("markers"), "alias must include 'markers'");
+  assert.ok(alias.includes("timestamps"), "alias must include 'timestamps'");
+});
+
+test("TOOL_ALIASES has black-bar keywords for autocrop", () => {
+  const alias = L.TOOL_ALIASES["autocrop"];
+  assert.ok(alias && alias.length > 0, "autocrop must have aliases");
+  assert.ok(alias.includes("black bars"), "alias must include 'black bars'");
+  assert.ok(alias.includes("cropdetect"), "alias must include 'cropdetect'");
+});
