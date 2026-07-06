@@ -1971,6 +1971,25 @@ test("tabFieldValidatorIds includes fps-fps for the fps tab", () => {
   assert.deepEqual(L.tabFieldValidatorIds("fps"), ["fps-fps"]);
 });
 
+// Regression: build_scene_thumbs_args (commands.py) raises ValueError for a
+// threshold outside (0, 1], and the scene_thumbs-threshold input's HTML
+// min="0.01" max="1" attrs are cosmetic only (no <form> submission blocks a
+// typed value) -- but unlike its siblings (poster_frame-percent, trim_pct
+// percentages), scene_thumbs-threshold had no FIELD_VALIDATORS entry, so an
+// invalid value skipped the inline highlight and hit a raw backend error.
+test("validateField validates scene_thumbs-threshold (backend rejects threshold outside (0, 1])", () => {
+  assert.equal(L.validateField("scene_thumbs-threshold", "0.3"), null);
+  assert.equal(L.validateField("scene_thumbs-threshold", "1"), null);
+  assert.equal(L.validateField("scene_thumbs-threshold", ""), null);
+  assert.ok(L.validateField("scene_thumbs-threshold", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("scene_thumbs-threshold", "-0.1") !== null, "negative is invalid");
+  assert.ok(L.validateField("scene_thumbs-threshold", "1.5") !== null, "above 1 is invalid");
+});
+
+test("tabFieldValidatorIds includes scene_thumbs-threshold for the scene_thumbs tab", () => {
+  assert.deepEqual(L.tabFieldValidatorIds("scene_thumbs"), ["scene_thumbs-threshold"]);
+});
+
 test("tabFieldValidatorIds does not leak a sibling tab's fields (e.g. trim vs trim_pct)", () => {
   const trimIds = L.tabFieldValidatorIds("trim");
   assert.ok(trimIds.includes("trim-start"));
