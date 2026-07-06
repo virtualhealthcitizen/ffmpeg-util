@@ -134,6 +134,17 @@ def test_concat_filter_no_shortest_when_all_have_audio():
     assert "-shortest" not in default_args
 
 
+def test_probe_has_audio_assumes_true_in_dry_run():
+    # run_ffprobe never invokes ffprobe in dry-run mode (returns None), so
+    # probe_has_audio must assume audio is present -- matching its sibling
+    # has_audio() -- rather than silently reporting no audio. Otherwise the
+    # CLI's `concat --reencode --dry-run` (the only caller that can hit
+    # dry-run) prints the anullsrc/-shortest silent-track branch even for
+    # real audio-bearing inputs, diverging from what the real run would do.
+    runner = FfmpegRunner(ffprobe="ffprobe-sentinel-not-on-path", dry_run=True)
+    assert c.probe_has_audio(runner, "in.mp4") is True
+
+
 def test_concat_filter_three_inputs():
     args = c.build_concat_filter_args(["a.mp4", "b.mp4", "c.mp4"], "out.mp4", 640, 360)
     fc = args[args.index("-filter_complex") + 1]

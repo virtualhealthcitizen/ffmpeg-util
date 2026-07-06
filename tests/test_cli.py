@@ -139,6 +139,12 @@ def test_concat_reencode_dry_run(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "filter_complex" in out and "out.mp4" in out
+    # probe_has_audio() must assume audio is present in dry-run (ffprobe is
+    # never actually invoked), so the printed command uses the real aformat
+    # audio path -- not the anullsrc/-shortest silent-track fallback, which
+    # would misrepresent what a real run against audio-bearing inputs does.
+    assert "anullsrc" not in out and "-shortest" not in out
+    assert "aformat" in out
 
 
 def test_watermark_dry_run(capsys):
