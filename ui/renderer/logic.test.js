@@ -2436,3 +2436,21 @@ test("TOOL_ALIASES has black-bar keywords for autocrop", () => {
   assert.ok(alias.includes("black bars"), "alias must include 'black bars'");
   assert.ok(alias.includes("cropdetect"), "alias must include 'cropdetect'");
 });
+
+// Regression: the Scene thumbs run button kept its original id="run-scene-thumbs"
+// (hyphenated) while every other tab's fields/ids were migrated to the
+// underscore convention that "tab + '-input'"-style generic lookups rely on
+// (`currentTab()` returns the `data-tab` value, i.e. "scene_thumbs"). Two
+// generic, tab-name-derived lookups — the Ctrl/Cmd+Enter "run active tab"
+// shortcut and Batch mode's `$("#run-" + tab)` — silently failed to find the
+// button, so both were dead on Scene thumbs even though it's an ordinary
+// single-input tab. Assert every nav tab's run button id follows the
+// convention so a future tab addition can't reintroduce this drift.
+test("every TOOL_CATEGORIES tab has a run-<tab> button id in index.html", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const allTabs = L.TOOL_CATEGORIES.flatMap((c) => c.tabs);
+  const missing = allTabs.filter((tab) => !html.includes('id="run-' + tab + '"'));
+  assert.deepEqual(missing, [], "every tab must have a matching id=\"run-<tab>\" button");
+});

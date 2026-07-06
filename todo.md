@@ -285,7 +285,28 @@ Packaging / tests:
       wiring — no renderer.js changes needed). 2 new regression tests (286
       node:test total); 262 root pytest (untouched, no Python touched) +
       headless E2E smoke ok=true (53 nav tabs, real compress output
-      produced). ← next
+      produced).
+      **Bug fix (hunt):** the Scene thumbs run button kept its original
+      `id="run-scene-thumbs"` (hyphenated) even after the earlier hunt-fix
+      above standardized every *field* id to the underscore convention
+      (`scene_thumbs-input` etc.) — the button id is a separate DOM id the
+      prior fix never touched. Two generic, tab-name-derived lookups —
+      the Ctrl/Cmd+Enter "run active tab" keyboard shortcut
+      (`getElementById("run-" + currentTab())`) and Batch mode
+      (`$("#run-" + tab)`) — derive the expected id from `currentTab()`,
+      which returns the `data-tab` value `"scene_thumbs"` (underscored), so
+      both silently found nothing on this tab: Ctrl+Enter did nothing, and
+      Batch mode wrongly reported "needs a single-input tab" for an
+      ordinary single-input tab. Fixed by renaming the button id to
+      `run-scene_thumbs` in `index.html` and its click-handler selector in
+      `renderer.js`. Added a coverage regression test (`every
+      TOOL_CATEGORIES tab has a run-<tab> button id in index.html`, reading
+      `index.html` directly) so a future tab addition can't reintroduce
+      this drift. 286 node:test (+1) + 269 root pytest (untouched, no
+      Python touched) + committed smoke 5/5 (53 nav tabs) + a custom
+      headless E2E (Ctrl+Enter on Scene thumbs with a hard-cut red→blue
+      clip now produces a scene-cut PNG; reverting the fix reproduces the
+      dead-shortcut failure). ← next
 - [x] Trim multiple segments and join them in one go — core `parse_segments_text`/
       `build_trim_segments_args` (trim/atrim + concat filter_complex, re-encoded), CLI
       `trim-segments --segments/--segments-file`, sidecar (`/trim-segments` + `/run/stream`
