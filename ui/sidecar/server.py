@@ -1661,6 +1661,9 @@ def _expected_output_duration(
     start_pct: float = 0.0,
     end_pct: float = 100.0,
     segments_text: str | None = None,
+    inputs: list[str] | None = None,
+    xfade_duration: float = 1.0,
+    xfade_offset: float | None = None,
 ) -> float | None:
     """Output duration for progress %, since some ops change length vs the input."""
     if op == "image_to_video":
@@ -1677,6 +1680,17 @@ def _expected_output_duration(
             return sum(max(0.0, e - s) for s, e in segments)
         except ValueError:
             return total
+    if op == "xfade_concat":
+        # The output plays clip 1 up to the transition offset, then plays all
+        # of clip 2 — its length is offset + clip 2's own duration, not
+        # `total` (clip 1's duration alone, which `total` holds since only the
+        # first input is probed above).
+        ins = inputs or []
+        if not total or len(ins) < 2:
+            return total
+        offset = xfade_offset if xfade_offset is not None else max(0.0, total - xfade_duration)
+        dur2 = commands.probe_duration(FfmpegRunner(), ins[1])
+        return offset + dur2 if dur2 else total
     if not total:
         return total
     if op == "speed" and factor:
@@ -1959,6 +1973,8 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 start=req.start, end=req.end, duration=req.duration,
                 seconds=req.seconds, start_pct=req.start_pct, end_pct=req.end_pct,
                 segments_text=req.segments_text,
+                inputs=req.inputs, xfade_duration=req.xfade_duration,
+                xfade_offset=req.xfade_offset,
             )
             log_q: queue.Queue = queue.Queue()
             for fields in runner.iter_ffmpeg_progress(args, on_log=log_q.put):
