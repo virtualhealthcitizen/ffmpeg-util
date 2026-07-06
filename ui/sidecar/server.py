@@ -1237,10 +1237,7 @@ def poster_frame_op(req: PosterFrameReq, _: None = Depends(require_token)) -> di
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        dur = commands.probe_duration(runner, req.input)
-        runner.run_ffmpeg(commands.build_poster_frame_args(
-            req.input, req.output, percent=req.percent, duration_s=dur, width=req.width,
-        ))
+        commands.poster_frame(runner, req.input, req.output, percent=req.percent, width=req.width)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}

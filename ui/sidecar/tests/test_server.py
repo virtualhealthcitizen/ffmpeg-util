@@ -1727,6 +1727,25 @@ def test_poster_frame(client, media, auth):
     assert out.exists() and out.stat().st_size > 0
 
 
+def test_poster_frame_reports_clear_error_when_duration_unprobeable(client, media, auth, monkeypatch):
+    # The endpoint must go through commands.poster_frame() (which raises a clear
+    # ValueError -> 400 when duration probing fails on a real run) rather than
+    # calling build_poster_frame_args() directly with duration_s=None, which
+    # would emit an unusable "<pct>%" -ss value and crash inside ffmpeg instead.
+    import server
+    monkeypatch.setattr(server.commands, "probe_duration", lambda runner, path: None)
+    d, src = media
+    out = d / "poster_unprobeable.png"
+    r = client.post(
+        "/poster-frame",
+        json={"input": str(src), "output": str(out), "percent": 50.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "could not determine input duration" in r.json()["detail"]
+    assert not out.exists()
+
+
 def test_poster_frame_rejects_bad_percent(client, media, auth):
     d, src = media
     out = d / "bad_poster.png"
