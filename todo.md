@@ -360,7 +360,7 @@ Packaging / tests:
       `/concat` + `/run/stream` op `concat` with `reencode=True`, UI "Re-encode to match"
       checkbox (STICKY) on Concat tab with tooltip + updated compat banner hint.
       Verified: 202 node:test + 185 core pytest + 112 sidecar pytest + headless Electron E2E
-      7/7 (checkbox present + unchecked, help updated, /concat reencode=True → 200 + output). ← next
+      7/7 (checkbox present + unchecked, help updated, /concat reencode=True → 200 + output).
       **Bug fix (hunt):** `build_concat_filter_args` synthesized a silent track for an
       input with no audio via `anullsrc`, which is an INFINITE source — so the
       concatenated `[a]` stream never reached EOF and `concat --reencode` (CLI + both
@@ -370,6 +370,19 @@ Packaging / tests:
       duration, both streams intact); omitted when every input has real audio (no
       truncation risk). 2 new regression tests. 187 core + 112 sidecar + 215 node:test +
       smoke 5/5 green.
+      **Bug fix (hunt):** `_expected_output_duration` in `ui/sidecar/server.py` (used by
+      `/run/stream` to compute the live progress percentage) had no case for `concat`, so
+      it fell through to `total` — the FIRST input's duration alone, since only the first
+      input is probed for `total` in `run_stream`. The concat demuxer/filter joins every
+      input sequentially, so the real output spans the sum of all their durations — the
+      same failure family as the `trim_segments`/`xfade_concat` fixes above: the progress
+      bar hit 100% after just the first clip and stalled while ffmpeg kept encoding the
+      rest. Fixed by adding a `concat` case that probes each remaining input's duration
+      and sums them with the already-probed `total` for the first. 2 new regression tests
+      (1 unit test on `_expected_output_duration` with 3 concatenated 3s clips, 1
+      integration test asserting the streamed `total` field reads ~6.0s for two 3s clips
+      joined instead of ~3.0s); 259 root pytest (untouched) + 141 sidecar pytest (+2) +
+      278 node:test (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
 - [x] Per-op "open output folder" after completion
 - [x] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform — a new
       "Aspect ratio" chip row on the Compress tab (`ASPECT_RATIO_PRESETS`/

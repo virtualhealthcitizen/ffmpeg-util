@@ -1688,6 +1688,23 @@ def _expected_output_duration(
         offset = xfade_offset if xfade_offset is not None else max(0.0, total - xfade_duration)
         dur2 = commands.probe_duration(FfmpegRunner(), ins[1])
         return offset + dur2 if dur2 else total
+    if op == "concat":
+        # The concat demuxer/filter joins every input sequentially, so the
+        # output spans the SUM of all their durations — not `total` alone,
+        # which only holds the first input's duration (the only one probed
+        # above in run_stream). Same failure family as trim_segments/
+        # xfade_concat above: without this, progress hits 100% after just
+        # the first clip and stalls while ffmpeg keeps encoding the rest.
+        ins = inputs or []
+        if not total or len(ins) < 2:
+            return total
+        durs = [total]
+        for p in ins[1:]:
+            d = commands.probe_duration(FfmpegRunner(), p)
+            if d is None:
+                return total
+            durs.append(d)
+        return sum(durs)
     if not total:
         return total
     if op == "speed" and factor:
