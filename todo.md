@@ -573,7 +573,22 @@ Packaging / tests:
       settles sends the correct ~3.0 offset; reverting the fix reproduces the `8`
       failure. 278 node:test (untouched, no pure-fn change — this is renderer-only DOM
       wiring) + 259 root pytest (untouched) + 139 sidecar pytest (untouched) + committed
-      smoke 5/5 (53 nav tabs) + the custom headless E2E 5/5. ← next
+      smoke 5/5 (53 nav tabs) + the custom headless E2E 5/5.
+      **Bug fix (hunt):** `build_xfade_args` (core) rejects `duration <= 0` with a
+      clear `ValueError` ("transition duration must be positive"), but `logic.js`'s
+      `FIELD_VALIDATORS` had no entry for `xfade_concat-xfade_duration` — the same
+      missing-inline-validator class of bug just fixed for `blur_region-sigma`/
+      `blur_pad-sigma` above, on a different tab/field. The renderer's click handler
+      (`$("#run-xfade_concat")`) reads the field with `Number(...) || 1.0`, which only
+      falls back for `0`/`NaN`/blank — a typed negative value (e.g. `-2`) is truthy and
+      passes straight through as `xfade_duration: -2`, so it reached the sidecar/ffmpeg
+      and surfaced a raw backend error instead of the same-tab-as-siblings "Must be > 0"
+      inline highlight. Fixed by adding a `xfade_concat-xfade_duration` entry to
+      `FIELD_VALIDATORS` — picked up automatically by the existing generic wiring
+      (`tabFieldValidatorIds`/`markFieldInvalid`/`validateRunPaths`), no renderer.js
+      changes needed. 1 new regression test (280 node:test total); 262 root pytest
+      (untouched, no Python touched) + headless E2E smoke ok=true (53 nav tabs, real
+      compress output produced). ← next
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138.
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
       **Bug fix (hunt):** `build_blur_pad_args` never validated its `sigma`

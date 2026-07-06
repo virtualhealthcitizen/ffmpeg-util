@@ -1535,6 +1535,11 @@
       const n = Number(raw);
       return isFinite(n) && n > 0 ? null : "Must be > 0";
     };
+    v["xfade_concat-xfade_duration"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
     return v;
   })();
 
