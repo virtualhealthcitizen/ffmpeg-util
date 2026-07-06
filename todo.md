@@ -382,7 +382,24 @@ Packaging / tests:
       (1 unit test on `_expected_output_duration` with 3 concatenated 3s clips, 1
       integration test asserting the streamed `total` field reads ~6.0s for two 3s clips
       joined instead of ~3.0s); 259 root pytest (untouched) + 141 sidecar pytest (+2) +
-      278 node:test (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
+      278 node:test (untouched) + headless E2E smoke ok=true (53 nav tabs).
+      **Bug fix (hunt):** `probe_has_audio` (used only by the CLI's `concat
+      --reencode` dispatch to build the per-input `has_audio` flags) returned
+      `False` whenever `run_ffprobe` came back `None` — which only happens in
+      `--dry-run` mode, since ffprobe is never actually invoked there. Its
+      near-identical sibling `has_audio()` (used by the audio-only-transform
+      wrappers) already assumes `True` in that same situation, by design. So
+      `ffmpeg-util concat --reencode --dry-run` silently printed the wrong
+      command for ordinary audio-bearing inputs — the `anullsrc`-silent-track
+      + `-shortest` branch meant only for silent inputs — instead of the real
+      per-input `aformat` audio path a non-dry-run invocation would actually
+      use. Fixed by making `probe_has_audio` return `True` on a `None` probe,
+      matching `has_audio()`'s convention. 1 new core pytest (`probe_has_audio`
+      assumes audio in dry-run) + strengthened the existing
+      `test_concat_reencode_dry_run` to assert the printed command uses
+      `aformat` and never `anullsrc`/`-shortest`; 262 root pytest (+2) + 143
+      sidecar pytest (untouched) + 278 node:test (untouched) + headless E2E
+      smoke ok=true (53 nav tabs). ← next
 - [x] Per-op "open output folder" after completion
 - [x] Aspect-ratio presets (16:9, 9:16, 1:1) for compress/transform — a new
       "Aspect ratio" chip row on the Compress tab (`ASPECT_RATIO_PRESETS`/

@@ -207,12 +207,14 @@ def concat(runner: FfmpegRunner, inputs: Sequence[str], output_path: str) -> Non
 
 
 def probe_has_audio(runner: FfmpegRunner, path: str) -> bool:
-    """Return True if ``path`` contains at least one audio stream."""
+    """Return True if ``path`` contains at least one audio stream (assumes True in dry-run)."""
     proc = runner.run_ffprobe(
         ["-v", "error", "-select_streams", "a:0",
          "-show_entries", "stream=codec_type", "-of", "csv=p=0", path]
     )
-    return bool((proc.stdout or "").strip()) if proc else False
+    if proc is None:
+        return True
+    return bool((proc.stdout or "").strip())
 
 
 def build_concat_filter_args(
