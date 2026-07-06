@@ -525,6 +525,24 @@ Packaging / tests:
 - [x] Trim by percentage (e.g. middle 50%) — core `build_trim_pct_args` (duration-based timestamps), CLI `trim-pct --start-pct/--end-pct`, sidecar (`/trim-pct` + `/run/stream` op `trim_pct`), Trim % tab. Verified: 142 core + 91 sidecar + 159 node:test + E2E smoke 5/5 (44 tabs).
       **Bug fix (hunt):** `_build_op_args` in server.py built `trim_pct` args without forwarding `reencode=req.reencode`, so the "Re-encode (frame-accurate)" checkbox in the UI was silently ignored on the streaming path — the operation always used stream-copy regardless. Fixed by adding `reencode=req.reencode` to the `trim_pct` branch; 1 new regression test (`test_run_stream_trim_pct_reencode`); 143 core + 93 sidecar + 160 node:test + smoke 5/5 green.
       **Bug fix (hunt):** `build_trim_pct_args` used `-to end_s` for both stream-copy and re-encode paths. With stream copy, input PTS is preserved so `-to end_s` correctly stops at the absolute timestamp. But with re-encode, input-seeking (`-ss` before `-i`) resets output PTS to 0, so `-to end_s` produced `end_s` seconds of output instead of the intended `(end_s − start_s)`. Fixed by splitting the paths: stream copy keeps `-to end_s`; re-encode uses `-t (end_s − start_s)`. 1 new duration regression test (`test_run_stream_trim_pct_reencode_duration`); 139 core + 98 sidecar + 168 node:test + smoke 5/5 green.
+      **Bug fix (hunt):** the CLI's `trim-pct` dispatch fed a bare `dur or 0.0`
+      into `build_trim_pct_args` whenever `probe_duration` came back `None` —
+      but `run_ffprobe` always returns `None` in `--dry-run` mode (no ffprobe
+      call is made at all), and `build_trim_pct_args` hard-raises
+      `"duration_s must be positive"` on `0.0`. So `ffmpeg-util trim-pct
+      ... --dry-run` crashed on every invocation instead of printing the
+      would-be command, unlike sibling probe-dependent commands
+      (`crop-aspect`, `contact-sheet`, `poster-frame`, `fade`) which all
+      fall back to a placeholder duration in dry-run. Fixed by adding a
+      `commands.trim_pct()` wrapper (probes duration, falls back to a 60s
+      placeholder in dry-run mode, mirroring `crop_to_aspect`/
+      `contact_sheet`) and switching the CLI to call it instead of building
+      args directly; the sidecar's own `/trim-pct`/`/run/stream` call sites
+      are untouched (they never run in dry-run mode and already raise a
+      clear error on a real probe failure). 2 new regression tests (1 core,
+      1 CLI dry-run); 258 root pytest (+2) + 138 sidecar pytest (untouched)
+      + 278 node:test (untouched) + headless E2E smoke ok=true (53 nav
+      tabs). ← next
 - [x] Add chapters from a list — core `parse_chapters_text`/`write_chapters_meta`/`build_chapters_args` (ffmetadata format, 1/1000 timebase, special-char escaping), CLI `chapters --chapters/--chapters-file`, sidecar (`/chapters` + `/run/stream` op `chapters`), Chapters tab (Metadata category, textarea). Verified: 200 core + 112 sidecar + 228 node:test + smoke 5/5 (52 nav tabs). ← next
 - [x] Burn a timestamp/elapsed overlay — see "Timestamp / timecode overlay" in round 5 above.
 - [x] Auto-orient from rotation metadata, then strip it — core `build_autorotate_args` (-vf null forces decode-through-filter-graph applying the display matrix; -metadata:s:v:0 rotate=0 strips the tag), CLI `auto-orient`, sidecar (`/autorotate` + `/run/stream` op `auto_orient`), Auto-orient tab (Video FX). Verified E2E: 143 core + 92 sidecar + 160 node:test + smoke 5/5 (45 tabs). ← next

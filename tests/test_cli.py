@@ -106,6 +106,19 @@ def test_crop_aspect_dry_run(capsys):
     assert "crop=" in out and "out.mp4" in out
 
 
+def test_trim_pct_dry_run(capsys):
+    # Dry-run never calls ffprobe, so probe_duration always returns None here;
+    # trim-pct crashed with "error: duration_s must be positive" on every
+    # --dry-run invocation because the CLI fed a bare `dur or 0.0` straight
+    # into build_trim_pct_args instead of falling back to a placeholder like
+    # crop-aspect/contact-sheet/poster-frame do.
+    rc = main(["trim-pct", "in.mp4", "out.mp4", "--start-pct", "10", "--end-pct", "50",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "-ss" in out and "-to" in out and "out.mp4" in out
+
+
 def test_poster_frame_dry_run(capsys):
     # Same dry-run-never-probes gap as crop-aspect/fade, but here it used to
     # reach real ffmpeg unfixed: without a probed duration, build_poster_frame_args
