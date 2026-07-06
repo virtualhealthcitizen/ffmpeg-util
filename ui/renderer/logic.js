@@ -655,6 +655,7 @@
     crop: { w: "crop-width", h: "crop-height" },
     pad: { w: "pad-width", h: "pad-height" },
     blur_pad: { w: "blur_pad-width", h: "blur_pad-height" },
+    blur_region: { w: "blur_region-width", h: "blur_region-height" },
     compress: { w: "compress-width", h: "compress-height" },
     thumbnail: { w: "thumbnail-width" },
     gif: { w: "gif-width" },
