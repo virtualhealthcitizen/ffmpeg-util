@@ -558,6 +558,22 @@ Packaging / tests:
 - [x] Stabilize shaky video (`vidstab`, two-pass) — core `build_vidstab_detect_args` / `build_vidstab_transform_args` / `stabilize` (mkdtemp + bare trf filename + cwd to avoid Windows drive-colon filter-parse bug), CLI `stabilize --shakiness/--smoothing`, sidecar (`/stabilize` + `/run/stream` op `stabilize` with two-pass streaming: thread-based detect + heartbeat SSE + pass 2 progress), Stabilize tab (Video FX, after Auto-orient). Verified E2E: 155 core + 97 sidecar + 168 node:test + smoke 5/5 (47 nav tabs). ← next
 - [x] Convert to a specific pixel format / 10-bit — core `build_pixfmt_args` (`format=` filter), CLI `pixfmt --pix-fmt`, sidecar (`/pixfmt` + `/run/stream` op `pixfmt`), Pixel format tab (Convert, curated dropdown). Verified E2E: 180 root + 111 sidecar pytest + 199 node:test + smoke 5/5 (51 nav tabs).
 - [x] Generate a waveform PNG from audio (`showwavespic`) — core `build_waveform_args`, CLI `waveform`, sidecar (`/waveform` + `/run/stream`), Waveform tab. Verified E2E: 640x120 image.
+      **Bug fix (hunt):** `build_waveform_args` (`showwavespic`, an audio-only
+      filter) was called directly by the CLI, the `/waveform` endpoint, and
+      `/run/stream`'s `_build_op_args`, with no `has_audio()` guard — unlike
+      every other audio-only transform (loudnorm/volume/mono/sample-rate/
+      trim-silence), which all reject a video-only input with a clear
+      `ValueError` via a wrapper. A video-only input hit a raw ffmpeg
+      filtergraph crash instead. Fixed by adding a `commands.waveform()`
+      wrapper (mirrors `loudnorm`/`volume`) and switching the CLI + both
+      sidecar call sites to use it; `/run/stream` now handles `waveform`
+      in the existing audio-detection branch alongside its siblings instead
+      of the unguarded `_build_op_args` path. 2 new core pytest + 2 new
+      sidecar pytest (direct endpoint + streaming); 261 root pytest (+2) +
+      143 sidecar pytest (+2, 1 pre-existing unrelated failure in
+      `test_pad_produces_target_frame` confirmed present on main before this
+      change) + 278 node:test (untouched) + headless E2E smoke ok=true
+      (53 nav tabs). ← next
 
 ### More ideas (round 6)
 - [x] Set / clear a metadata title tag — core `build_title_args`, CLI `title`, sidecar (`/title` + `/run/stream`), Title tab. Verified E2E: ffprobe title tag set.

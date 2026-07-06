@@ -644,8 +644,7 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "waveform":
-        runner.run_ffmpeg(commands.build_waveform_args(
-            args.input, args.output, width=args.width, height=args.height))
+        commands.waveform(runner, args.input, args.output, width=args.width, height=args.height)
         return 0
 
     if args.command == "crop-aspect":

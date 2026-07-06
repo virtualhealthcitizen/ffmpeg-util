@@ -243,6 +243,25 @@ def test_waveform_args_reject_bad_size():
         c.build_waveform_args("in.mp4", "wave.png", 0, 100)
 
 
+def test_waveform_rejects_no_audio_input(monkeypatch):
+    # Regression: build_waveform_args (showwavespic, an audio-only filter) was
+    # called directly by the CLI/sidecar with no has_audio() guard, unlike its
+    # sibling audio-only ops (loudnorm/volume/mono/sample-rate/trim-silence) —
+    # a video-only input crashed ffmpeg with a cryptic filtergraph error instead
+    # of the codebase's normal clear message.
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: False)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="no audio stream"):
+        c.waveform(runner, "in.mp4", "wave.png")
+
+
+def test_waveform_runs_when_audio_present(monkeypatch, capsys):
+    monkeypatch.setattr(c, "has_audio", lambda runner, path: True)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.waveform(runner, "in.mp4", "wave.png", 800, 120)
+    assert "showwavespic=s=800x120" in capsys.readouterr().out
+
+
 def test_parse_aspect():
     assert c.parse_aspect("16:9") == (16, 9)
     assert c.parse_aspect("1:1") == (1, 1)

@@ -506,6 +506,15 @@ def build_waveform_args(input_path: str, output_path: str, width: int = 1000, he
     ]
 
 
+def waveform(
+    runner: FfmpegRunner, input_path: str, output_path: str, width: int = 1000, height: int = 200
+) -> None:
+    """Render the audio waveform, rejecting inputs with no audio stream to draw."""
+    if not has_audio(runner, input_path):
+        raise ValueError("input has no audio stream to render a waveform from")
+    runner.run_ffmpeg(build_waveform_args(input_path, output_path, width, height))
+
+
 def build_image_to_video_args(
     image_path: str, output_path: str, seconds: float, fps: int = 30,
     audio_path: str | None = None,
