@@ -227,7 +227,7 @@ def waveform(req: WaveformReq, _: None = Depends(require_token)) -> dict:
     try:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
-        runner.run_ffmpeg(commands.build_waveform_args(req.input, req.output, req.width, req.height))
+        commands.waveform(runner, req.input, req.output, req.width, req.height)
     except (FfmpegError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=_msg(exc))
     return {"output": req.output}
@@ -1443,10 +1443,6 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
         return commands.build_preview_clip_args(
             req.input, req.output, seconds=req.seconds, width=req.width or 320
         ), None
-    if op == "waveform":
-        return commands.build_waveform_args(
-            req.input, req.output, req.width or 1000, req.height or 200
-        ), None
     if op == "fps":
         return commands.build_fps_args(req.input, req.output, req.fps or 0), None
     if op == "eq":
@@ -1932,7 +1928,7 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 return
             if req.op in (
                 "speed", "reverse", "fade",
-                "volume", "loudnorm", "mono", "sample_rate", "trim_silence",
+                "volume", "loudnorm", "mono", "sample_rate", "trim_silence", "waveform",
             ):
                 # These need audio detection (and fade needs duration) and don't fit
                 # the pure _build_op_args path.
@@ -1946,9 +1942,9 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                 elif req.op == "reverse":
                     args = commands.build_reverse_args(req.input, req.output, audio=audio)
                 else:
-                    # volume/loudnorm/mono/sample_rate/trim_silence are audio-only
-                    # transforms with no video-domain fallback — a missing audio
-                    # stream leaves nothing for the op to do.
+                    # volume/loudnorm/mono/sample_rate/trim_silence/waveform are
+                    # audio-only transforms with no video-domain fallback — a
+                    # missing audio stream leaves nothing for the op to do.
                     if not audio:
                         raise ValueError("input has no audio stream to adjust")
                     if req.op == "volume":
@@ -1959,6 +1955,10 @@ def run_stream(req: RunReq, _: None = Depends(require_token)) -> StreamingRespon
                         args = commands.build_mono_args(req.input, req.output)
                     elif req.op == "sample_rate":
                         args = commands.build_sample_rate_args(req.input, req.output, req.rate)
+                    elif req.op == "waveform":
+                        args = commands.build_waveform_args(
+                            req.input, req.output, req.width or 1000, req.height or 200
+                        )
                     else:
                         args = commands.build_trim_silence_args(
                             req.input, req.output,

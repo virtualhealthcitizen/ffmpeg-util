@@ -327,6 +327,37 @@ def test_waveform_produces_image_of_size(client, media, auth):
     assert _dims(out) == (640, 120)
 
 
+def test_waveform_no_audio_input_rejected(client, media_no_audio, auth):
+    # Regression: showwavespic (an audio-only filter) was sent straight to
+    # ffmpeg with no has_audio() guard, unlike the sibling audio-only ops
+    # (loudnorm/volume/mono/sample-rate/trim-silence) — a video-only input hit
+    # a raw ffmpeg filtergraph crash instead of a clear 400.
+    d, src = media_no_audio
+    out = d / "wave_no_audio_out.png"
+    r = client.post(
+        "/waveform",
+        json={"input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "audio" in r.json()["detail"].lower()
+    assert not out.exists()
+
+
+def test_run_stream_waveform_no_audio_input_rejected(client, media_no_audio, auth):
+    d, src = media_no_audio
+    out = d / "wave_stream_no_audio_out.png"
+    r = client.post(
+        "/run/stream",
+        json={"op": "waveform", "input": str(src), "output": str(out), "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "error" for e in events), r.text
+    assert not out.exists()
+
+
 def test_crop_aspect_produces_target_ratio(client, media, auth):
     d, src = media  # 320x240 (4:3)
     out = d / "wide.mp4"
