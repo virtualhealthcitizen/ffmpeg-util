@@ -476,7 +476,22 @@ Packaging / tests:
       resolving the per-op default (10 for blur_region, 20 for blur_pad) in
       `_build_op_args`, mirroring the existing fps/position per-op default pattern.
       2 new sidecar regression tests (128 total); 246 root pytest (untouched) + 267
-      node:test (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
+      node:test (untouched) + headless E2E smoke ok=true (53 nav tabs).
+      **Bug fix (hunt):** `blur_region` had both a width and a height field in
+      `index.html` (`blur_region-width`/`blur_region-height`, matching the exact
+      naming convention of its dual-field siblings `crop`/`pad`/`blur_pad`) but no
+      entry in `DIMENSION_FIELDS` (`logic.js`) — the same class of bug already fixed
+      twice for the width-only tabs `preview_clip` and `scene_thumbs`. So the
+      probed-source "Size" chip silently did nothing on the Blur region tab, and it
+      was also silently excluded from the "Frame size" dimension-preset row that
+      every other required-width+height tab gets (both are driven purely off
+      `DIMENSION_FIELDS`/`dimensionPresetTabs()`). Fixed by adding
+      `blur_region: { w: "blur_region-width", h: "blur_region-height" }` to
+      `DIMENSION_FIELDS`. 2 new regression tests (279 node:test total, +1 new plus 1
+      updated `dimensionPresetTabs` assertion); 256 root pytest (untouched) +
+      headless E2E smoke ok=true (53 nav tabs) + a custom headless E2E (Size chip
+      now clickable on Blur region, fills width=320/height=240 from a probed
+      320×240 clip; Frame-size preset row now visible with 10 chips). ← next
 - [x] Crossfade-concatenate two clips (`xfade`) — core `build_xfade_args` (transition/duration/offset,
       auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
       `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +

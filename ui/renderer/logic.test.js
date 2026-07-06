@@ -401,6 +401,19 @@ test("sourceFillActions fills the Scene thumbs tab's width-only field (regressio
   });
 });
 
+test("sourceFillActions fills the Blur region tab's width+height fields (regression)", () => {
+  // blur_region had both width and height fields in index.html but no
+  // DIMENSION_FIELDS entry, so the Size chip silently did nothing on that tab
+  // (unlike its width+height siblings crop/pad/blur_pad/compress).
+  const data = { streams: [{ codec_type: "video", width: 640, height: 360 }] };
+  assert.deepEqual(L.sourceFillActions("blur_region", data), {
+    Size: [
+      { id: "blur_region-width", value: "640" },
+      { id: "blur_region-height", value: "360" },
+    ],
+  });
+});
+
 test("sourceFillActions returns {} when the tab has no fillable fields or no video", () => {
   const video = { streams: [{ codec_type: "video", width: 100, height: 50, avg_frame_rate: "30/1" }] };
   assert.deepEqual(L.sourceFillActions("convert", video), {}); // no dimension/fps fields
@@ -411,7 +424,7 @@ test("sourceFillActions returns {} when the tab has no fillable fields or no vid
 
 test("dimensionPresetTabs covers both-width-and-height tabs only", () => {
   const tabs = L.dimensionPresetTabs();
-  for (const t of ["crop", "pad", "blur_pad", "compress", "waveform"]) {
+  for (const t of ["crop", "pad", "blur_pad", "blur_region", "compress", "waveform"]) {
     assert.ok(tabs.includes(t), `expected ${t} in dimension preset tabs`);
   }
   // width-only tabs have no height field, so they're excluded
