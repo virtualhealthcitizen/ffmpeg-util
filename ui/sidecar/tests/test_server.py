@@ -1840,6 +1840,29 @@ def test_run_stream_poster_frame(client, media, auth):
     assert out.exists() and out.stat().st_size > 0
 
 
+def test_run_stream_poster_frame_reports_clear_error_when_duration_unprobeable(client, media, auth, monkeypatch):
+    # _build_op_args's poster_frame branch (used by /run/stream, the path the
+    # UI's Poster frame tab actually calls) must reject a None duration instead
+    # of passing it straight to build_poster_frame_args, which would emit an
+    # unusable "<pct>%" -ss value and crash inside ffmpeg — the same class of
+    # bug already fixed for the CLI and the dedicated /poster-frame endpoint.
+    import server
+    monkeypatch.setattr(server.commands, "probe_duration", lambda runner, path: None)
+    d, src = media
+    out = d / "poster_stream_unprobeable.png"
+    r = client.post(
+        "/run/stream",
+        json={"op": "poster_frame", "input": str(src), "output": str(out),
+              "percent": 25.0, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    errors = [e for e in events if e.get("type") == "error"]
+    assert errors and "could not determine input duration" in errors[0]["detail"]
+    assert not out.exists()
+
+
 def test_trim_pct(client, media, auth):
     d, src = media
     out = d / "trim_pct.mp4"
