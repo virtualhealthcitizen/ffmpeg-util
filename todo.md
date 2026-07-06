@@ -481,7 +481,22 @@ Packaging / tests:
       auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
       `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +
       96 sidecar + 162 node:test + smoke 5/5 (46 nav tabs).
-- [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138. ← next
+      **Bug fix (hunt):** `_expected_output_duration` in `ui/sidecar/server.py` (used by
+      `/run/stream` to compute the live progress percentage) had no case for `xfade_concat`,
+      so it fell through to `total` — clip 1's own duration alone, since only the first input
+      is probed for `total`. The real xfade output plays clip 1 up to the transition offset
+      then all of clip 2, so it runs past clip 1's end — the same failure family as the
+      earlier `trim_segments`/blur-region-sigma/image_to_video-fps `RunReq`-default and
+      duration-estimation mismatches: the progress bar hit 100% and stalled while ffmpeg kept
+      encoding into clip 2 instead of reaching 100% at actual completion. Fixed by adding a
+      `xfade_concat` case that mirrors the auto-offset calc already used in `_build_op_args`
+      (`offset = xfade_offset or (total - xfade_duration)`) and probes clip 2's own duration,
+      returning `offset + clip2_duration`. 2 new regression tests (1 unit test on
+      `_expected_output_duration` with real probed durations, 1 integration test asserting the
+      streamed `total` field reads ~5.0s for two 3s clips crossfaded with a 1s transition
+      instead of ~3.0s); 256 root pytest (untouched) + 138 sidecar pytest (+2) + 277 node:test
+      (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
+- [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138.
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
 - [x] Stabilize shaky video (`vidstab`, two-pass) — core `build_vidstab_detect_args` / `build_vidstab_transform_args` / `stabilize` (mkdtemp + bare trf filename + cwd to avoid Windows drive-colon filter-parse bug), CLI `stabilize --shakiness/--smoothing`, sidecar (`/stabilize` + `/run/stream` op `stabilize` with two-pass streaming: thread-based detect + heartbeat SSE + pass 2 progress), Stabilize tab (Video FX, after Auto-orient). Verified E2E: 155 core + 97 sidecar + 168 node:test + smoke 5/5 (47 nav tabs). ← next
 - [x] Convert to a specific pixel format / 10-bit — core `build_pixfmt_args` (`format=` filter), CLI `pixfmt --pix-fmt`, sidecar (`/pixfmt` + `/run/stream` op `pixfmt`), Pixel format tab (Convert, curated dropdown). Verified E2E: 180 root + 111 sidecar pytest + 199 node:test + smoke 5/5 (51 nav tabs).

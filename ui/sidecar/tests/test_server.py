@@ -678,6 +678,52 @@ def test_xfade_concat_requires_two_400(client, media, auth):
     assert r.status_code == 400
 
 
+def test_expected_output_duration_xfade_concat(media):
+    # Regression: `_expected_output_duration` had no case for xfade_concat, so
+    # it fell through to `total` — clip 1's own duration alone, since only the
+    # first input is probed for `total` in run_stream. The real xfade output
+    # plays clip 1 up to the transition offset then all of clip 2, so it runs
+    # past clip 1's end; the progress bar used to hit 100% and stall while
+    # ffmpeg kept encoding into clip 2.
+    import server
+    _, src = media  # 3s clip
+    s = str(src)
+    total = server.commands.probe_duration(server.FfmpegRunner(), s)
+    result = server._expected_output_duration(
+        "xfade_concat", total, inputs=[s, s], xfade_duration=1.0,
+    )
+    assert abs(result - 5.0) < 0.2  # auto offset (3 - 1 = 2) + clip 2's 3s
+    # Explicit offset is honoured over the auto-computed one.
+    assert abs(
+        server._expected_output_duration(
+            "xfade_concat", total, inputs=[s, s], xfade_offset=1.0,
+        ) - 4.0
+    ) < 0.2
+    # Fewer than two inputs, or no probed `total` — safe fallback.
+    assert server._expected_output_duration("xfade_concat", total, inputs=[s]) == total
+    assert server._expected_output_duration("xfade_concat", None, inputs=[s, s]) is None
+
+
+def test_run_stream_xfade_concat_progress_total(client, media, auth):
+    d, src = media  # 3s 320x240 clip
+    out = d / "xfade_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={
+            "op": "xfade_concat", "inputs": [str(src), str(src)], "output": str(out),
+            "transition": "fade", "xfade_duration": 1.0, "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream xfade_concat should produce output"
+    progress = [e for e in events if e.get("type") == "progress" and e.get("total")]
+    assert progress, "expected at least one progress event with a total"
+    assert abs(progress[-1]["total"] - 5.0) < 0.2
+
+
 def test_boomerang_doubles_duration(client, media, auth):
     d, src = media
     out = d / "boomerang.mp4"
