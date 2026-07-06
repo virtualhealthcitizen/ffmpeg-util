@@ -1938,6 +1938,14 @@ test("validateField validates blur_region-sigma and blur_pad-sigma (backend reje
   assert.ok(L.validateField("blur_pad-sigma", "-1") !== null, "negative is invalid");
 });
 
+test("validateField validates xfade_concat-xfade_duration (backend rejects duration <= 0)", () => {
+  assert.equal(L.validateField("xfade_concat-xfade_duration", "1.0"), null);
+  assert.equal(L.validateField("xfade_concat-xfade_duration", "0.5"), null);
+  assert.equal(L.validateField("xfade_concat-xfade_duration", ""), null);
+  assert.ok(L.validateField("xfade_concat-xfade_duration", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("xfade_concat-xfade_duration", "-2") !== null, "negative is invalid");
+});
+
 test("tabFieldValidatorIds scopes ids to the given tab's own prefix", () => {
   assert.deepEqual(L.tabFieldValidatorIds("gif"), ["gif-fps", "gif-width", "gif-loop", "gif-start", "gif-duration"]);
   assert.deepEqual(L.tabFieldValidatorIds("compress"), ["compress-crf", "compress-target"]);
