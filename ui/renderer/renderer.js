@@ -500,6 +500,11 @@ async function refreshSource() {
   if (!path) return hideSource();
   if (path === lastSourcePath) { renderSourceActions(); renderCropOverlay(); return refreshEstimate(); } // re-target for this tab
   lastSourcePath = path;
+  // Clear the stale probe duration immediately (not just the chips) — otherwise
+  // anything that reads lastSourceDuration while the probe below is still in
+  // flight (e.g. the xfade_concat run handler) would silently use the PREVIOUS
+  // file's duration instead of the new one's.
+  lastSourceDuration = null;
   $("#source").classList.remove("hidden");
   renderChips([]); // clear stale chips while loading
   await showSourceMedia(path);

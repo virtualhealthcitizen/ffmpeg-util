@@ -510,7 +510,25 @@ Packaging / tests:
       `_expected_output_duration` with real probed durations, 1 integration test asserting the
       streamed `total` field reads ~5.0s for two 3s clips crossfaded with a 1s transition
       instead of ~3.0s); 256 root pytest (untouched) + 138 sidecar pytest (+2) + 277 node:test
-      (untouched) + headless E2E smoke ok=true (53 nav tabs). ← next
+      (untouched) + headless E2E smoke ok=true (53 nav tabs).
+      **Bug fix (hunt):** `refreshSource()` in `renderer.js` set `lastSourcePath` to the
+      new input path synchronously but left the stale `lastSourceDuration` from the
+      PREVIOUS file untouched until its async `/probe` fetch resolved — so switching to
+      the Crossfade tab (or any tab) and clicking Run before that probe landed used a
+      completely unrelated file's duration to compute `xfade_offset`, silently sending
+      the wrong crossfade start point to the sidecar (confirmed: switching from a 9s clip
+      on Trim to a 4s clip A on Crossfade and clicking immediately sent `xfade_offset: 8`
+      instead of the correct ~3.0, an offset past clip A's actual end). Fixed by clearing
+      `lastSourceDuration = null` in the same synchronous block that updates
+      `lastSourcePath`, so the existing `lastSourceDuration != null` null-fallback (which
+      already defers to the sidecar's own probe) engages correctly during the race window
+      instead of reading the wrong file's cached duration. A custom headless E2E
+      (intercepts `/run/stream` request bodies) reproduces the exact race — asserts the
+      raced click sends `xfade_offset: null` and a second click after the real probe
+      settles sends the correct ~3.0 offset; reverting the fix reproduces the `8`
+      failure. 278 node:test (untouched, no pure-fn change — this is renderer-only DOM
+      wiring) + 259 root pytest (untouched) + 139 sidecar pytest (untouched) + committed
+      smoke 5/5 (53 nav tabs) + the custom headless E2E 5/5. ← next
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138.
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
       **Bug fix (hunt):** `build_blur_pad_args` never validated its `sigma`
