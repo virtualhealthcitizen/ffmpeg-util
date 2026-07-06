@@ -1114,7 +1114,22 @@ Persistence / memory:
       path → field seeded from it on load; loading a new input then
       re-suggests an output instead of staying pinned to the stale path;
       reverting the fix reproduces the stale-path failure) + committed smoke
-      5/5. ← next
+      5/5.
+      **Bug fix (hunt):** `/run/stream`'s `chapters` op in `_build_op_args`
+      mkstemp'd its `ffchapters_*.txt` ffmetadata manifest, then called
+      `write_chapters_meta`, which raises `ValueError` for a chapter starting
+      at/past the probed duration (the guard added by the immediately-prior
+      hunt). Because that raise happens before the `return` that hands back
+      `meta_file` as the cleanup target, `run_stream`'s outer `finally` never
+      saw a value to remove — every rejected chapters request leaked a temp
+      file, the same bug class already fixed for `concat`'s manifest but never
+      applied to `chapters` (the dedicated `/chapters` endpoint already had a
+      try/finally; only the streaming dispatcher was missing it). Wrapped
+      `write_chapters_meta` in try/except to remove the manifest before
+      re-raising. 1 new sidecar regression test (asserts no `ffchapters_*.txt`
+      survives a past-duration `/run/stream` chapters call, and fails without
+      the fix); 147 sidecar pytest (+1) + 271 root pytest (untouched) + 285
+      node:test (untouched) + headless E2E smoke ok=true. ← next
 - [x] Save/load named presets (profiles) per tool — a Presets bar (save-as name +
       Save, a dropdown + Load/Delete) captures the active tab's option fields
       (path inputs excluded) under a name, scoped per tool, persisted in
