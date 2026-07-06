@@ -1525,6 +1525,16 @@
       const n = Number(raw);
       return Number.isInteger(n) && n >= 2 ? null : "Must be ≥ 2";
     };
+    v["blur_region-sigma"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
+    v["blur_pad-sigma"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
     return v;
   })();
 
