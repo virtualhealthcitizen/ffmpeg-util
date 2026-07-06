@@ -1436,6 +1436,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             duration_s=total, reencode=req.reencode,
         ), None
     if op == "poster_frame":
+        if total is None:
+            raise ValueError("could not determine input duration for poster-frame")
         return commands.build_poster_frame_args(
             req.input, req.output, percent=req.percent, duration_s=total, width=req.width,
         ), None
