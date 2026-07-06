@@ -1540,6 +1540,11 @@
       const n = Number(raw);
       return isFinite(n) && n > 0 ? null : "Must be > 0";
     };
+    v["fps-fps"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 ? null : "Must be > 0";
+    };
     return v;
   })();
 

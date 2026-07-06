@@ -472,6 +472,22 @@ Packaging / tests:
 ### More ideas (round 5)
 - [x] Change frame rate without changing speed (`fps` filter) — core `build_fps_args`,
       CLI `fps`, sidecar (`/fps` + `/run/stream`), FPS tab. Verified E2E: 30fps -> 15fps.
+      **Bug fix (hunt):** `build_fps_args` rejects `fps <= 0` with a clear `ValueError`
+      ("fps must be > 0"), and the FPS tab's `fps-fps` input has an HTML `min="1"`
+      attribute — but that's cosmetic only (doesn't block a typed `0` or negative
+      value, since the app has no `<form>` submission to trigger native validation).
+      Unlike its siblings `gif-fps`/`loop-count`/`preview_clip-seconds`, `logic.js`'s
+      `FIELD_VALIDATORS` had no entry for `fps-fps` — the same missing-inline-validator
+      class of bug already fixed 3 times for `blur_region-sigma`/`blur_pad-sigma`/
+      `xfade_concat-xfade_duration`. So typing `0` or a negative fps showed no inline
+      error and didn't block the run — the user only found out via a raw backend
+      error after the sidecar/ffmpeg rejected it, instead of the same-tab-as-siblings
+      "Must be > 0" highlight. Fixed by adding a `fps-fps` entry to `FIELD_VALIDATORS`
+      — picked up automatically by the existing generic wiring (`tabFieldValidatorIds`/
+      `markFieldInvalid`/`validateRunPaths`), no renderer.js changes needed. 2 new
+      regression tests (282 node:test total); 262 root pytest (untouched, no Python
+      touched) + headless E2E smoke ok=true (53 nav tabs, real compress output
+      produced). ← next
 - [x] Downmix audio to mono — core `build_mono_args` (`-ac 1`), CLI `mono`, sidecar
       (`/mono` + `/run/stream`), Mono tab. Verified E2E: stereo source -> 1 channel out.
 - [x] Trim silence from the ends (`silenceremove`) — core `build_trim_silence_args` (threshold_db/min_duration),

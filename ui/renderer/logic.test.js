@@ -1953,6 +1953,24 @@ test("tabFieldValidatorIds scopes ids to the given tab's own prefix", () => {
   assert.deepEqual(L.tabFieldValidatorIds("no-such-tab"), []);
 });
 
+// Regression: the FPS tab's fps-fps field has an HTML min="1" attribute, which is
+// cosmetic only (doesn't block a typed "0" or negative value), and the backend
+// build_fps_args() raises ValueError for fps <= 0 -- but unlike its siblings
+// (gif-fps, loop-count, preview_clip-seconds), fps-fps had no FIELD_VALIDATORS
+// entry, so an invalid value skipped the inline "Must be > 0" highlight and hit a
+// raw backend error instead.
+test("validateField validates fps-fps (backend rejects fps <= 0)", () => {
+  assert.equal(L.validateField("fps-fps", "30"), null);
+  assert.equal(L.validateField("fps-fps", "23.976"), null);
+  assert.equal(L.validateField("fps-fps", ""), null);
+  assert.ok(L.validateField("fps-fps", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("fps-fps", "-5") !== null, "negative is invalid");
+});
+
+test("tabFieldValidatorIds includes fps-fps for the fps tab", () => {
+  assert.deepEqual(L.tabFieldValidatorIds("fps"), ["fps-fps"]);
+});
+
 test("tabFieldValidatorIds does not leak a sibling tab's fields (e.g. trim vs trim_pct)", () => {
   const trimIds = L.tabFieldValidatorIds("trim");
   assert.ok(trimIds.includes("trim-start"));
