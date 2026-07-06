@@ -608,6 +608,8 @@ def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "concat":
         if getattr(args, "reencode", False):
+            if len(args.inputs) < 2:
+                raise ValueError("concat needs at least two input files.")
             dims = commands.probe_dimensions(runner, args.inputs[0])
             if dims is None:
                 if not runner.dry_run:

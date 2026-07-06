@@ -165,6 +165,20 @@ def test_concat_too_few_inputs_400(client, media, auth):
     assert r.status_code == 400
 
 
+def test_concat_reencode_too_few_inputs_400(client, media, auth):
+    # The reencode branch indexes inputs[0] directly; a single input used to
+    # skip past this endpoint's own validation (the non-reencode path validates
+    # via build_concat_args) and silently re-encode a lone file instead of 400ing.
+    d, src = media
+    r = client.post(
+        "/concat",
+        json={"inputs": [str(src)], "output": str(d / "x.mp4"), "reencode": True},
+        headers=auth,
+    )
+    assert r.status_code == 400
+    assert "at least two input files" in r.json()["detail"]
+
+
 def test_concat_reencode_produces_output(client, media, auth):
     d, src = media
     out = d / "joined_reenc.mp4"
@@ -1569,6 +1583,25 @@ def test_run_stream_concat_too_few_inputs_cleans_up_manifest(client, media, auth
     after = set(glob.glob(os.path.join(tempfile.gettempdir(), "ffconcat_*.txt")))
     # The concat-list manifest written before validation failed must not leak.
     assert after - before == set()
+
+
+def test_run_stream_concat_reencode_too_few_inputs_clean_error(client, media, auth):
+    # Before the fix, /run/stream's concat+reencode branch indexed inputs[0]
+    # with no length guard, raising an unhandled IndexError -- which isn't
+    # caught by this endpoint's `except (FfmpegError, ValueError)` clause, so
+    # the stream broke instead of yielding a clean {"type":"error"} event like
+    # every other validation failure in this handler.
+    d, src = media
+    r = client.post(
+        "/run/stream",
+        json={"op": "concat", "inputs": [str(src)], "output": str(d / "joined.mp4"),
+              "reencode": True, "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    last = _sse_events(r.text)[-1]
+    assert last["type"] == "error"
+    assert "at least two input files" in last["detail"]
 
 
 def test_run_stream_requires_token(client, media):

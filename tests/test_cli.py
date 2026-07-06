@@ -147,6 +147,17 @@ def test_concat_reencode_dry_run(capsys):
     assert "aformat" in out
 
 
+def test_concat_reencode_single_input_rejected(capsys):
+    # The reencode branch indexes args.inputs[0] directly; with only one input
+    # it used to silently "concat" a lone file instead of rejecting like the
+    # non-reencode path (commands.concat -> build_concat_args) already does.
+    rc = main(["concat", "in1.mp4", "-o", "out.mp4", "--reencode",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "at least two input files" in err
+
+
 def test_watermark_dry_run(capsys):
     rc = main(["watermark", "in.mp4", "out.mp4", "--text", "© 2024",
                "--position", "bottom-right", "--ffmpeg", "ffmpeg", "--dry-run"])

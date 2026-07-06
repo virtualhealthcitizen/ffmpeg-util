@@ -175,6 +175,8 @@ def concat(req: ConcatReq, _: None = Depends(require_token)) -> dict:
         commands.require_output_extension(req.output)
         commands.require_output_dir(req.output)
         if req.reencode:
+            if len(req.inputs) < 2:
+                raise ValueError("concat needs at least two input files.")
             dims = commands.probe_dimensions(runner, req.inputs[0])
             if dims is None:
                 raise ValueError("Could not probe dimensions of the first input.")
@@ -1588,6 +1590,8 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
     if op == "concat":
         inputs = req.inputs or []
         if req.reencode:
+            if len(inputs) < 2:
+                raise ValueError("concat needs at least two input files.")
             runner = FfmpegRunner()
             dims = commands.probe_dimensions(runner, inputs[0])
             if dims is None:
