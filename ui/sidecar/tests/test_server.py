@@ -724,6 +724,42 @@ def test_run_stream_xfade_concat_progress_total(client, media, auth):
     assert abs(progress[-1]["total"] - 5.0) < 0.2
 
 
+def test_expected_output_duration_concat(media):
+    # Regression: `_expected_output_duration` had no case for concat, so it
+    # fell through to `total` — the FIRST input's duration alone, since only
+    # the first input is probed for `total` in run_stream. The concat
+    # demuxer/filter joins every input sequentially, so the real output spans
+    # the sum of all their durations.
+    import server
+    d, src = media  # 3s clip
+    total = server.commands.probe_duration(server.FfmpegRunner(), str(src))
+    result = server._expected_output_duration("concat", total, inputs=[str(src), str(src), str(src)])
+    assert abs(result - 9.0) < 0.3  # 3 * 3s
+    # Fewer than two inputs, or no probed `total` — safe fallback.
+    assert server._expected_output_duration("concat", total, inputs=[str(src)]) == total
+    assert server._expected_output_duration("concat", None, inputs=[str(src), str(src)]) is None
+
+
+def test_run_stream_concat_progress_total(client, media, auth):
+    d, src = media  # 3s 320x240 clip
+    out = d / "concat_stream.mp4"
+    r = client.post(
+        "/run/stream",
+        json={
+            "op": "concat", "inputs": [str(src), str(src)], "output": str(out),
+            "overwrite": True,
+        },
+        headers=auth,
+    )
+    assert r.status_code == 200
+    events = _sse_events(r.text)
+    assert any(e.get("type") == "done" for e in events)
+    assert out.exists(), "/run/stream concat should produce output"
+    progress = [e for e in events if e.get("type") == "progress" and e.get("total")]
+    assert progress, "expected at least one progress event with a total"
+    assert abs(progress[-1]["total"] - 6.0) < 0.3  # 2 * 3s, not just 3s
+
+
 def test_boomerang_doubles_duration(client, media, auth):
     d, src = media
     out = d / "boomerang.mp4"
