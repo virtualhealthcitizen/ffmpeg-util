@@ -818,6 +818,8 @@ def build_blur_pad_args(
     zoomed copy of itself (instead of black bars). Keeps audio."""
     if width < 1 or height < 1:
         raise ValueError("blur-pad width and height must be >= 1")
+    if sigma <= 0:
+        raise ValueError("blur-pad sigma must be > 0")
     fc = (
         f"[0:v]split=2[bg][fg];"
         f"[bg]scale={width}:{height}:force_original_aspect_ratio=increase,"
