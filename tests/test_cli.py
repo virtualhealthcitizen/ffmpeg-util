@@ -131,6 +131,28 @@ def test_poster_frame_dry_run(capsys):
     assert "-ss" in out and "%" not in out and "out.png" in out
 
 
+def test_xfade_concat_offset_now_optional_dry_run(capsys):
+    # Regression: --offset used to be required=True, forcing every CLI user to
+    # compute it manually even though the UI sidecar (and this feature's own
+    # todo.md changelog) auto-probes clip 1's duration and derives the offset
+    # when it's omitted. There was no commands.py wrapper backing that
+    # behavior for the CLI to call, so build_xfade_args' required `offset`
+    # kwarg leaked straight through to a required CLI flag.
+    rc = main(["xfade-concat", "a.mp4", "b.mp4", "-o", "out.mp4",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "xfade=" in out and "out.mp4" in out
+
+
+def test_xfade_concat_explicit_offset_still_works(capsys):
+    rc = main(["xfade-concat", "a.mp4", "b.mp4", "-o", "out.mp4", "--offset", "3.0",
+               "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "offset=3.0" in out
+
+
 def test_concat_reencode_dry_run(capsys):
     # Same dry-run-never-probes gap as crop-aspect, but hit via the CLI's own
     # dims-is-None check rather than a commands.py helper.
