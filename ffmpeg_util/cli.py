@@ -632,16 +632,11 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "trim-pct":
-        dur = commands.probe_duration(runner, args.input)
-        if dur is None and not runner.dry_run:
-            print("Could not probe duration; cannot compute percentage timestamps.")
-            return 1
-        runner.run_ffmpeg(commands.build_trim_pct_args(
-            args.input, args.output,
+        commands.trim_pct(
+            runner, args.input, args.output,
             start_pct=args.start_pct, end_pct=args.end_pct,
-            duration_s=dur or 0.0,
             reencode=args.reencode,
-        ))
+        )
         return 0
 
     if args.command == "poster-frame":

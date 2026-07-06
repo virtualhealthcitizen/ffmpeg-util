@@ -1371,6 +1371,31 @@ def build_trim_pct_args(
     return args
 
 
+def trim_pct(
+    runner: FfmpegRunner,
+    input_path: str,
+    output_path: str,
+    *,
+    start_pct: float = 0.0,
+    end_pct: float = 100.0,
+    reencode: bool = False,
+) -> None:
+    """Trim ``input_path`` by percentage of its total duration, probing it first."""
+    duration_s = probe_duration(runner, input_path)
+    if not duration_s:
+        if not runner.dry_run:
+            raise ValueError("could not determine input duration for trim-pct")
+        # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+        # made), so a placeholder stands in just to let the command print, mirroring
+        # how crop-to-aspect/contact-sheet tolerate a probe-less dry-run.
+        duration_s = 60.0
+    runner.run_ffmpeg(build_trim_pct_args(
+        input_path, output_path,
+        start_pct=start_pct, end_pct=end_pct,
+        duration_s=duration_s, reencode=reencode,
+    ))
+
+
 def _parse_timestamp_s(ts: str) -> float:
     """Parse a timestamp string to seconds (float).
 

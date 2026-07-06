@@ -297,6 +297,16 @@ def test_poster_frame_dry_run_falls_back_instead_of_crashing(capsys):
     assert "-ss" in out and "%" not in out and "out.png" in out
 
 
+def test_trim_pct_dry_run_falls_back_instead_of_raising(capsys):
+    # Same dry-run-never-probes gap as crop_to_aspect/contact_sheet: trim_pct()
+    # used to feed a bare `dur or 0.0` straight into build_trim_pct_args, which
+    # raises "duration_s must be positive" on 0.0 instead of printing a command.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.trim_pct(runner, "in.mp4", "out.mp4", start_pct=10.0, end_pct=50.0)
+    out = capsys.readouterr().out
+    assert "-ss" in out and "-to" in out and "out.mp4" in out
+
+
 def test_compress_to_size_dry_run_falls_back_instead_of_raising(capsys):
     # target_mb=0.5 would be "too small" against the 60s dry-run placeholder
     # duration (negative bitrate budget), so use a target that clears it.
