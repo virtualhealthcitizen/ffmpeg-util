@@ -2459,7 +2459,7 @@ $("#run-frames").addEventListener("click", () => {
   });
 });
 
-$("#run-scene-thumbs").addEventListener("click", () => {
+$("#run-scene_thumbs").addEventListener("click", () => {
   if (!requireFields("scene_thumbs-input", "scene_thumbs-output")) return;
   runOrQueue("Extracting scene thumbnails", "scene_thumbs", {
     input: val("scene_thumbs-input"),
