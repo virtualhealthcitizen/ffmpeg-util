@@ -1489,6 +1489,12 @@ def write_chapters_meta(chapters: list[dict], duration_s: float, meta_file: str)
     ``chapters`` is a list of ``{'start_s': float, 'title': str}`` dicts.
     The last chapter ends at ``duration_s``.  Uses a 1/1000 (ms) timebase.
     """
+    for ch in chapters:
+        if ch["start_s"] >= duration_s:
+            raise ValueError(
+                f"Chapter {ch['title']!r} starts at {ch['start_s']}s, at or past the "
+                f"input duration ({duration_s}s)"
+            )
     tb = 1000
     with open(meta_file, "w", encoding="utf-8") as fh:
         fh.write(";FFMETADATA1\n\n")
