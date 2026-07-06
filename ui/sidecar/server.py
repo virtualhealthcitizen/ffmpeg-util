@@ -1622,7 +1622,16 @@ def _build_op_args(req: RunReq, total: float | None = None) -> tuple[list, str |
             raise ValueError("Could not probe input duration for chapters")
         fd, meta_file = tempfile.mkstemp(suffix=".txt", prefix="ffchapters_")
         os.close(fd)
-        commands.write_chapters_meta(chapters, dur, meta_file)
+        try:
+            commands.write_chapters_meta(chapters, dur, meta_file)
+        except Exception:
+            # write_chapters_meta raises for a chapter at/past duration; don't
+            # leak the manifest we already wrote to disk when that happens.
+            try:
+                os.remove(meta_file)
+            except OSError:
+                pass
+            raise
         return commands.build_chapters_args(req.input, meta_file, req.output), meta_file
     if op == "trim_segments":
         segments = commands.parse_segments_text(req.segments_text or "")

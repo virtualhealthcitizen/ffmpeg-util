@@ -1585,6 +1585,27 @@ def test_run_stream_concat_too_few_inputs_cleans_up_manifest(client, media, auth
     assert after - before == set()
 
 
+def test_run_stream_chapters_past_duration_cleans_up_meta_file(client, media, auth):
+    # /run/stream's chapters branch mkstemp's a ffchapters_*.txt manifest before
+    # write_chapters_meta validates chapter start times against the probed
+    # duration; before the fix, a rejected chapter (start at/past duration)
+    # raised past the mkstemp with no cleanup, leaking the temp file forever.
+    d, src = media  # a 3s clip
+    before = set(glob.glob(os.path.join(tempfile.gettempdir(), "ffchapters_*.txt")))
+    r = client.post(
+        "/run/stream",
+        json={"op": "chapters", "input": str(src), "output": str(d / "ch.mp4"),
+              "chapters_text": "0 Intro\n5 TooLate", "overwrite": True},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    last = _sse_events(r.text)[-1]
+    assert last["type"] == "error"
+    assert "duration" in last["detail"].lower()
+    after = set(glob.glob(os.path.join(tempfile.gettempdir(), "ffchapters_*.txt")))
+    assert after - before == set()
+
+
 def test_run_stream_concat_reencode_too_few_inputs_clean_error(client, media, auth):
     # Before the fix, /run/stream's concat+reencode branch indexed inputs[0]
     # with no length guard, raising an unhandled IndexError -- which isn't
