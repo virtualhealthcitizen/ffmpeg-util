@@ -521,7 +521,22 @@ Packaging / tests:
       updated `dimensionPresetTabs` assertion); 256 root pytest (untouched) +
       headless E2E smoke ok=true (53 nav tabs) + a custom headless E2E (Size chip
       now clickable on Blur region, fills width=320/height=240 from a probed
-      320×240 clip; Frame-size preset row now visible with 10 chips). ← next
+      320×240 clip; Frame-size preset row now visible with 10 chips).
+      **Bug fix (hunt):** `commands.build_blur_region_args`/`build_blur_pad_args`
+      both reject `sigma <= 0` with a clear `ValueError` ("blur-region/blur-pad
+      sigma must be > 0"), but `logic.js`'s `FIELD_VALIDATORS` (the map driving
+      real-time inline field highlighting + the pre-run `validateRunPaths` block —
+      every other backend-guarded numeric field like `compress-crf`/
+      `poster_frame-percent`/`preview_clip-seconds` has an entry here) had no entry
+      for `blur_region-sigma` or `blur_pad-sigma`. So typing `0` or a negative
+      sigma into either tab showed no inline error and didn't block the run — the
+      user only found out via a raw, unfriendly error surfaced after ffmpeg/the
+      sidecar rejected it, instead of the same-tab-as-siblings "Must be > 0"
+      highlight. Fixed by adding both entries to `FIELD_VALIDATORS` (picked up
+      automatically by the existing generic wiring — `tabFieldValidatorIds`/
+      `markFieldInvalid` — no renderer.js changes needed). 2 new regression tests
+      (281 node:test total); 256 root pytest (untouched, no Python touched) +
+      headless E2E smoke ok=true (53 nav tabs, real compress output produced). ← next
 - [x] Crossfade-concatenate two clips (`xfade`) — core `build_xfade_args` (transition/duration/offset,
       auto-probed from clip 1 if omitted), CLI `xfade-concat`, sidecar (`/xfade-concat` +
       `/run/stream` op `xfade_concat`), Crossfade tab (Combine). Verified E2E: 148 core +

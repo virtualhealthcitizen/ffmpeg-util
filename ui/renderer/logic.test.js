@@ -1928,6 +1928,16 @@ test("validateField validates poster_frame-percent and trim_pct percentages", ()
   assert.ok(L.validateField("trim_pct-end-pct", "0") !== null, "0 below min 1");
 });
 
+test("validateField validates blur_region-sigma and blur_pad-sigma (backend rejects sigma <= 0)", () => {
+  assert.equal(L.validateField("blur_region-sigma", "10"), null);
+  assert.equal(L.validateField("blur_region-sigma", "0.5"), null);
+  assert.ok(L.validateField("blur_region-sigma", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("blur_region-sigma", "-5") !== null, "negative is invalid");
+  assert.equal(L.validateField("blur_pad-sigma", "20"), null);
+  assert.ok(L.validateField("blur_pad-sigma", "0") !== null, "0 is invalid");
+  assert.ok(L.validateField("blur_pad-sigma", "-1") !== null, "negative is invalid");
+});
+
 test("tabFieldValidatorIds scopes ids to the given tab's own prefix", () => {
   assert.deepEqual(L.tabFieldValidatorIds("gif"), ["gif-fps", "gif-width", "gif-loop", "gif-start", "gif-duration"]);
   assert.deepEqual(L.tabFieldValidatorIds("compress"), ["compress-crf", "compress-target"]);
