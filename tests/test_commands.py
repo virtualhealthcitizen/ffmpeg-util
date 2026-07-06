@@ -1207,6 +1207,20 @@ def test_write_chapters_meta(tmp_path):
     assert "END=60000\n" in content
 
 
+def test_write_chapters_meta_start_past_duration_raises(tmp_path):
+    meta = tmp_path / "chaps.txt"
+    chapters = [{"start_s": 0.0, "title": "Intro"}, {"start_s": 45.0, "title": "Late"}]
+    with pytest.raises(ValueError, match="Late.*45.*30"):
+        c.write_chapters_meta(chapters, 30.0, str(meta))
+
+
+def test_write_chapters_meta_start_equal_duration_raises(tmp_path):
+    meta = tmp_path / "chaps.txt"
+    chapters = [{"start_s": 30.0, "title": "Right At The End"}]
+    with pytest.raises(ValueError, match="Right At The End"):
+        c.write_chapters_meta(chapters, 30.0, str(meta))
+
+
 def test_build_chapters_args_structure():
     args = c.build_chapters_args("in.mp4", "meta.txt", "out.mp4")
     assert args[0] == "-i" and args[1] == "in.mp4"

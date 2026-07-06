@@ -914,10 +914,15 @@ def _dispatch(args: argparse.Namespace) -> int:
         if dur is None and not runner.dry_run:
             print("Could not probe input duration; cannot compute chapter end times.")
             return 1
+        if dur is None:
+            # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+            # made); a placeholder past every chapter's start lets the command print,
+            # mirroring how trim-pct tolerates a probe-less dry-run.
+            dur = max((ch["start_s"] for ch in chapters), default=0.0) + 60.0
         fd, meta_file = tempfile.mkstemp(suffix=".txt", prefix="ffchapters_")
         os.close(fd)
         try:
-            commands.write_chapters_meta(chapters, dur or 0.0, meta_file)
+            commands.write_chapters_meta(chapters, dur, meta_file)
             runner.run_ffmpeg(commands.build_chapters_args(args.input, meta_file, args.output))
         finally:
             try:
