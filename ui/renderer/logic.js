@@ -1545,6 +1545,11 @@
       const n = Number(raw);
       return isFinite(n) && n > 0 ? null : "Must be > 0";
     };
+    v["scene_thumbs-threshold"] = (raw) => {
+      if (!raw.trim()) return null;
+      const n = Number(raw);
+      return isFinite(n) && n > 0 && n <= 1 ? null : "Must be > 0 and ≤ 1";
+    };
     return v;
   })();
 

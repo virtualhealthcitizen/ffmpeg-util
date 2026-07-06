@@ -268,7 +268,24 @@ Packaging / tests:
       like its width-only siblings gif/thumbnail/preview_clip. Fixed by adding
       `scene_thumbs: { w: "scene_thumbs-width" }` to `DIMENSION_FIELDS`. 1 new
       regression test (277 node:test); 256 root pytest (untouched) + headless E2E
-      smoke ok=true (53 nav tabs). ← next
+      smoke ok=true (53 nav tabs).
+      **Bug fix (hunt):** `commands.build_scene_thumbs_args` rejects a threshold
+      outside `(0, 1]` with a clear `ValueError`, and the Scene thumbs tab's
+      `scene_thumbs-threshold` input has HTML `min="0.01" max="1"` attrs — but
+      those are cosmetic only (no `<form>` submission to trigger native
+      validation) — unlike its siblings (`poster_frame-percent`, `trim_pct`
+      percentages), `logic.js`'s `FIELD_VALIDATORS` had no entry for
+      `scene_thumbs-threshold`, the same missing-inline-validator class of bug
+      already fixed for `blur_region-sigma`/`blur_pad-sigma`/
+      `xfade_concat-xfade_duration`/`fps-fps`. So a typed `0`, negative, or
+      `>1` threshold showed no inline error and didn't block the run — the
+      user only found out via a raw backend error after the sidecar/ffmpeg
+      rejected it. Fixed by adding a `scene_thumbs-threshold` entry to
+      `FIELD_VALIDATORS` (picked up automatically by the existing generic
+      wiring — no renderer.js changes needed). 2 new regression tests (286
+      node:test total); 262 root pytest (untouched, no Python touched) +
+      headless E2E smoke ok=true (53 nav tabs, real compress output
+      produced). ← next
 - [x] Trim multiple segments and join them in one go — core `parse_segments_text`/
       `build_trim_segments_args` (trim/atrim + concat filter_complex, re-encoded), CLI
       `trim-segments --segments/--segments-file`, sidecar (`/trim-segments` + `/run/stream`
