@@ -671,6 +671,13 @@ def test_blur_pad_args_reject_bad_size():
         c.build_blur_pad_args("in.mp4", "out.mp4", 0, 100)
 
 
+def test_blur_pad_args_reject_bad_sigma():
+    with pytest.raises(ValueError):
+        c.build_blur_pad_args("in.mp4", "out.mp4", 480, 480, sigma=0)
+    with pytest.raises(ValueError):
+        c.build_blur_pad_args("in.mp4", "out.mp4", 480, 480, sigma=-5)
+
+
 def test_image_to_video_args_build():
     args = c.build_image_to_video_args("photo.png", "out.mp4", 5.0, fps=24)
     assert args[:2] == ["-loop", "1"]
