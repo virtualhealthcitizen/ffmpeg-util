@@ -195,9 +195,10 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
                    help="xfade transition name (default: fade).")
     p.add_argument("--duration", type=float, default=1.0,
                    help="Transition duration in seconds (default: 1.0).")
-    p.add_argument("--offset", type=float, required=True,
+    p.add_argument("--offset", type=float, default=None,
                    help="Second at which the transition starts (typically "
-                        "clip1_duration - transition_duration).")
+                        "clip1_duration - transition_duration). Auto-probed "
+                        "from clip 1's duration when omitted.")
     _add_global_flags(p)
 
     # image-to-video
@@ -674,12 +675,12 @@ def _dispatch(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "xfade-concat":
-        runner.run_ffmpeg(commands.build_xfade_args(
-            args.inputs, args.output,
+        commands.xfade_concat(
+            runner, args.inputs, args.output,
             transition=args.transition,
             duration=args.duration,
             offset=args.offset,
-        ))
+        )
         return 0
 
     if args.command == "image-to-video":

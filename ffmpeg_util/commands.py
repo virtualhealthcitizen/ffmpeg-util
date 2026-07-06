@@ -672,6 +672,37 @@ def build_xfade_args(
     ]
 
 
+def xfade_concat(
+    runner: FfmpegRunner,
+    inputs: Sequence[str],
+    output_path: str,
+    *,
+    transition: str = "fade",
+    duration: float = 1.0,
+    offset: float | None = None,
+) -> None:
+    """Crossfade-concatenate ``inputs``, probing clip 1's duration for the
+    transition ``offset`` when not given explicitly (``offset = clip1_duration
+    - duration``), mirroring the UI sidecar's auto-probe behavior."""
+    if len(inputs) != 2:
+        raise ValueError("xfade-concat needs exactly two input files")
+    if offset is None:
+        dur = probe_duration(runner, inputs[0])
+        if not dur:
+            if not runner.dry_run:
+                raise ValueError(
+                    "could not determine clip 1 duration for xfade-concat — pass offset explicitly"
+                )
+            # ``run_ffprobe`` always returns None in dry-run mode (no ffprobe call is
+            # made), so a placeholder stands in just to let the command print, mirroring
+            # how crop-to-aspect/trim-pct/chapters tolerate a probe-less dry-run.
+            dur = 60.0
+        offset = max(0.0, dur - duration)
+    runner.run_ffmpeg(build_xfade_args(
+        inputs, output_path, transition=transition, duration=duration, offset=offset,
+    ))
+
+
 def build_boomerang_args(input_path: str, output_path: str) -> list[str]:
     """Build args to boomerang a clip: play it forward then reversed (video only),
     so the output runs about twice the input duration."""

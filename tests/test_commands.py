@@ -424,6 +424,46 @@ def test_xfade_args_rejects_negative_offset():
         c.build_xfade_args(["a.mp4", "b.mp4"], "out.mp4", duration=1.0, offset=-1.0)
 
 
+def test_xfade_concat_auto_probes_offset_from_clip1(monkeypatch, capsys):
+    # Regression: the CLI's xfade-concat subcommand required --offset
+    # unconditionally, unlike the UI sidecar (which auto-probes clip 1's
+    # duration and derives offset = clip1_duration - transition_duration when
+    # omitted) — there was no commands.py wrapper backing that behavior for
+    # the CLI to call.
+    monkeypatch.setattr(c, "probe_duration", lambda runner, path: 9.0)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.xfade_concat(runner, ["a.mp4", "b.mp4"], "out.mp4", duration=1.5)
+    out = capsys.readouterr().out
+    assert "offset=7.5" in out
+
+
+def test_xfade_concat_explicit_offset_skips_probe(monkeypatch, capsys):
+    def _boom(runner, path):
+        raise AssertionError("probe_duration should not be called when offset is given")
+    monkeypatch.setattr(c, "probe_duration", _boom)
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.xfade_concat(runner, ["a.mp4", "b.mp4"], "out.mp4", offset=3.0)
+    out = capsys.readouterr().out
+    assert "offset=3.0" in out
+
+
+def test_xfade_concat_requires_two_inputs():
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    with pytest.raises(ValueError, match="exactly two"):
+        c.xfade_concat(runner, ["only.mp4"], "out.mp4")
+
+
+def test_xfade_concat_dry_run_falls_back_instead_of_raising(capsys):
+    # Same dry-run-never-probes gap as crop_to_aspect/trim_pct/fade/poster_frame:
+    # run_ffprobe always returns None in dry-run mode, so xfade_concat() must
+    # fall back to a placeholder duration instead of raising when offset is
+    # omitted and no real probe is possible.
+    runner = FfmpegRunner(ffmpeg="ffmpeg-sentinel-not-on-path", dry_run=True)
+    c.xfade_concat(runner, ["a.mp4", "b.mp4"], "out.mp4")
+    out = capsys.readouterr().out
+    assert "xfade=" in out and "out.mp4" in out
+
+
 def test_boomerang_args_forward_then_reverse():
     args = c.build_boomerang_args("in.mp4", "out.mp4")
     fc = args[args.index("-filter_complex") + 1]

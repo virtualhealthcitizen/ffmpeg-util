@@ -604,6 +604,24 @@ Packaging / tests:
       (`tabFieldValidatorIds`/`markFieldInvalid`/`validateRunPaths`), no renderer.js
       changes needed. 1 new regression test (280 node:test total); 262 root pytest
       (untouched, no Python touched) + headless E2E smoke ok=true (53 nav tabs, real
+      compress output produced).
+      **Bug fix (hunt):** the CLI's `xfade-concat` subcommand required `--offset`
+      unconditionally (`required=True`), even though this feature's own docs above
+      say "auto-probed from clip 1 if omitted" and the UI sidecar (`/xfade-concat` +
+      `/run/stream` op `xfade_concat`) already implements exactly that — probing
+      clip 1's duration and computing `offset = dur - duration` when it's not given.
+      There was no `commands.py` wrapper backing that behavior for the CLI to call
+      (only the sidecar had it, duplicated across its two call sites), so
+      `build_xfade_args`'s required `offset` kwarg leaked straight through to a
+      required CLI flag, forcing every CLI user to compute the offset by hand.
+      Fixed by adding a `commands.xfade_concat()` wrapper (probes clip 1's duration,
+      falls back to a 60s placeholder in `--dry-run` mode, mirroring
+      `poster_frame`/`trim_pct`/`fade`) and switching the CLI to call it with
+      `--offset` now optional (`default=None`). 4 new core pytest (auto-probe math,
+      explicit-offset skips the probe, requires-two-inputs, dry-run fallback) + 2
+      new CLI dry-run pytest (offset omitted, offset explicit); 269 root pytest
+      (+6) + 146 sidecar pytest (untouched, no sidecar change) + 282 node:test
+      (untouched, no JS touched) + headless E2E smoke ok=true (53 nav tabs, real
       compress output produced). ← next
 - [x] Timestamp / timecode overlay (`drawtext`) — core `build_timecode_args` (fontfile auto-detect for Windows), CLI `timecode --font-size/--position/--color`, sidecar (`/timecode` + `/run/stream` op `timecode`), Timecode tab (font-size slider, position + color dropdowns). Verified E2E: timecode endpoint 200, output has video+audio (copied), tab/fields/dropdowns present (11/11); pytest 114 root + 73 sidecar; node:test 138.
 - [x] Blurred-fill pad — core `build_blur_pad_args`, CLI `blur-pad`, sidecar (`/blur-pad` + `/run/stream`), Blur pad tab. Verified E2E: 320x240 -> 480x480.
