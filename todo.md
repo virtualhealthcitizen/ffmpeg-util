@@ -94,6 +94,53 @@ Packaging / tests:
 - [x] Progress reporting via ffmpeg `-progress` (core `iter_ffmpeg_progress`; used by the UI sidecar)
 - [x] GitHub Actions CI running pytest on push — `.github/workflows/ci.yml`: python-tests (pytest root + sidecar, with ffmpeg) + node-tests (npm test); verified local pytest 97+65 passed, node:test 118 passed + E2E smoke (sidecar health, 33 tabs, compress output). ← next
 
+### Possible v3 — Visual timeline editor (NLE) [EPIC]
+
+> **Design tension (read `Design decisions` first):** this deliberately stretches the
+> "small, scriptable helpers — a tab per op" frame toward a Premiere/DaVinci-style
+> non-linear editor. Kept viable by treating the timeline as **data, not a new engine**:
+> an edit is a declarative **project document (JSON)** that a pure-Python *compiler*
+> turns into a single ffmpeg `filter_complex` invocation, reusing the existing
+> `build_*_args` helpers. Core stays stdlib-only; the timeline UI is contained to `ui/`.
+> Every phase is independently shippable and E2E-verifiable through the normal
+> core → CLI → sidecar → renderer pipeline. Ship phases in order; stop whenever the
+> value/scope trade stops paying off.
+
+- [ ] **P0 — Project document model + compiler (foundation).** Define an `EditDocument`
+      schema (tracks → clips: `{src, in, out, timeline_start, gain, transform}`) in a new
+      `ffmpeg_util.project` module. Pure `compile_project(doc) -> ffmpeg args` that lowers a
+      single-video-track doc to one `filter_complex` (trim/setpts/concat), reusing existing
+      arg builders. No UI yet. Verify: doc with 3 sub-clips of one source → one output whose
+      duration = sum of clip lengths (ffprobe). Unit-test the compiler as a pure function.
+- [ ] **P1 — `render-project` CLI + sidecar endpoint.** CLI `ffmpeg-util render-project doc.json`
+      and sidecar `/render-project` (+ `/run/stream` progress) over the P0 compiler. `--dry-run`
+      prints the exact `filter_complex`. Verify E2E: same doc renders identically via CLI and sidecar.
+- [ ] **P2 — Timeline UI: single video track.** New "Timeline" tab — a horizontal ruler with
+      draggable clip blocks (reuse `setupTimelineDrag`/`updateTimelineBar` from the trim scrubber
+      and the concat drag-reorder rows). Add clips from the source card; drag to reorder, drag edges
+      to trim (in/out), split at playhead. Renders via `/render-project`. Verify E2E: build a
+      2-clip sequence in the UI, render, output matches the P1 CLI result.
+- [ ] **P3 — Second video track + compositing.** Add a track above the base and composite via
+      `overlay`/PiP (reuse `build_pip_args`) with per-clip position/scale/opacity. Compiler extends
+      `filter_complex` to stack tracks top-over-bottom. Verify: base + overlay clip → PiP in output.
+- [ ] **P4 — Transitions between adjacent clips.** Per-boundary `xfade` (video) + `acrossfade`
+      (audio) with type/duration; compiler splices them at clip joins. Verify: crossfade region
+      shows blended frames (sample a mid-transition frame).
+- [ ] **P5 — Audio track(s) + per-clip gain/fade.** Dedicated audio lane(s) mixed via `amix`,
+      reusing `build_volume_args`/`loudnorm`; per-clip fade in/out (`afade`) and gain. Verify:
+      two overlapping audio clips → measured mixed loudness; fade edges attenuate.
+- [ ] **P6 — Per-clip effects stack.** Attach existing ops (transform, crop, watermark, speed,
+      pixfmt) to a clip as an ordered effect list the compiler folds into that clip's filter chain.
+      Verify: a clip with rotate + watermark renders both, others untouched.
+- [ ] **P7 — Save / load / autosave projects.** Persist the `EditDocument` as a `.ffproj` (JSON)
+      via the existing userData/IPC settings infra; recent-projects list; autosave + restore on
+      relaunch. Verify E2E: save a timeline, relaunch, reopen → identical clips/tracks/effects.
+
+Non-goals (v3): GPU/real-time playback preview beyond the existing scrub+seek, nested
+sequences/compound clips, third-party plugin effects, frame-accurate audio waveform editing.
+Preview stays "seek the source + render to check"; the render pipeline is ffmpeg batch, not a
+live compositor.
+
 ## Feature ideas (ideation backlog)
 
 ### Media operations
