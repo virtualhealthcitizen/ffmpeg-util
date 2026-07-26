@@ -562,6 +562,17 @@ def build_parser(config_defaults: dict | None = None) -> argparse.ArgumentParser
                         "instead of compressing; OUTPUT is not written.")
     _add_global_flags(p)
 
+    # preset
+    p = sub.add_parser("preset",
+                       help="Encode with a named output preset (web-mp4, discord-8mb, …).")
+    p.add_argument("name", nargs="?",
+                   help="Preset name; run with --list to see them all.")
+    p.add_argument("input", nargs="?")
+    p.add_argument("output", nargs="?")
+    p.add_argument("--list", action="store_true", dest="list_presets",
+                   help="List available presets and exit.")
+    _add_global_flags(p)
+
     return parser
 
 
@@ -929,6 +940,22 @@ def _dispatch(args: argparse.Namespace) -> int:
                 os.remove(meta_file)
             except OSError:
                 pass
+        return 0
+
+    if args.command == "preset":
+        if args.list_presets:
+            for name in commands.preset_names():
+                print(f"{name}\t{commands.get_preset(name)['description']}")
+            return 0
+        if not args.name or not args.input or not args.output:
+            raise ValueError("preset needs NAME, INPUT and OUTPUT (or run with --list).")
+        if commands.preset_is_target_size(args.name):
+            commands.compress_to_size(
+                runner, args.input, args.output,
+                commands.get_preset(args.name)["target_mb"],
+            )
+        else:
+            runner.run_ffmpeg(commands.build_preset_args(args.name, args.input, args.output))
         return 0
 
     if args.command == "trim-segments":

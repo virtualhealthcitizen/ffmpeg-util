@@ -1631,3 +1631,53 @@ def test_build_pixfmt_args_invalid_format_space():
 def test_build_pixfmt_args_invalid_format_injection():
     with pytest.raises(ValueError, match="Invalid pixel format"):
         c.build_pixfmt_args("input.mp4", "output.mp4", "format=yuv420p")
+
+
+# --- Named output presets ---------------------------------------------------
+
+def test_preset_web_mp4_builds_x264_crf23():
+    args = c.build_preset_args("web-mp4", "in.mkv", "out.mp4")
+    assert args[:2] == ["-i", "in.mkv"]
+    assert args[args.index("-c:v") + 1] == "libx264"
+    assert args[args.index("-crf") + 1] == "23"
+    assert args[-1] == "out.mp4"
+    # single-pass preset never touches the two-pass machinery
+    assert "-pass" not in args
+
+
+def test_preset_web_mp4_hd_caps_height_1080():
+    args = c.build_preset_args("web-mp4-hd", "in.mp4", "out.mp4")
+    assert args[args.index("-vf") + 1] == "scale=-1:1080"
+    assert args[args.index("-crf") + 1] == "21"
+
+
+def test_preset_mp4_720p_caps_height_720():
+    args = c.build_preset_args("mp4-720p", "in.mp4", "out.mp4")
+    assert args[args.index("-vf") + 1] == "scale=-1:720"
+
+
+def test_preset_hevc_uses_x265():
+    args = c.build_preset_args("hevc-mp4", "in.mp4", "out.mp4")
+    assert args[args.index("-c:v") + 1] == "libx265"
+    assert args[args.index("-crf") + 1] == "28"
+
+
+def test_preset_names_and_descriptions_are_populated():
+    names = c.preset_names()
+    assert "web-mp4" in names and "discord-8mb" in names
+    for name in names:
+        assert c.get_preset(name)["description"]
+
+
+def test_preset_unknown_name_raises():
+    with pytest.raises(ValueError, match="Unknown preset"):
+        c.build_preset_args("nope", "in.mp4", "out.mp4")
+    with pytest.raises(ValueError, match="Unknown preset"):
+        c.get_preset("nope")
+
+
+def test_size_targeted_preset_is_flagged_and_rejects_pure_argv():
+    assert c.preset_is_target_size("discord-8mb")
+    assert not c.preset_is_target_size("web-mp4")
+    with pytest.raises(ValueError, match="size-targeted"):
+        c.build_preset_args("discord-8mb", "in.mp4", "out.mp4")

@@ -176,7 +176,17 @@ Packaging / tests:
       2 files queued, fields restored after batch-add, Queue mode toggled on,
       both real compress outputs produced, both queue items marked done. ← next
 - [ ] Job queue + history (recent runs, re-run, clear)
-- [ ] Output presets ("web mp4", "Discord 8 MB", "GIF", …)
+- [x] Output presets ("web mp4", "Discord 8 MB", …) — core `OUTPUT_PRESETS`
+      registry + `build_preset_args`/`preset_names`/`get_preset`/`preset_is_target_size`
+      in `commands.py` (stdlib-only, no new deps): single-pass compress presets
+      (`web-mp4`, `web-mp4-hd`, `mp4-720p`, `hevc-mp4`) map to `build_compress_args`
+      kwargs so the whole argv is static/testable, and size-targeted presets
+      (`discord-8mb`, `discord-25mb`) carry a `target_mb` routed through the
+      existing two-pass `compress_to_size`. CLI `preset NAME INPUT OUTPUT` +
+      `preset --list`. Verified: 12 new pytest (7 pure argv/registry in
+      test_commands.py + 5 CLI dry-run/list/error in test_cli.py) + 283 root
+      pytest all green (core+CLI only; sidecar/UI untouched). (UI job-queue /
+      A/B-compare parts remain — see Job queue item above.)
 - [x] "Reveal in Explorer" / open output after completion
 - [x] Before/after size + duration summary on completion — see round 8 below.
 
