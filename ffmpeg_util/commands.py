@@ -1940,3 +1940,80 @@ def build_pixfmt_args(input_path: str, output_path: str, pix_fmt: str = "yuv420p
             f"(e.g. yuv420p, yuv422p, gray)."
         )
     return ["-i", input_path, "-vf", f"format={pix_fmt}", "-c:a", "copy", output_path]
+
+
+# Named output presets — friendly one-word shortcuts for the common "encode it
+# like X" chores, so a user doesn't have to remember the codec/crf/scale flags.
+# Each preset is one of two kinds:
+#   * "compress" — a bundle of :func:`build_compress_args` kwargs (single pass,
+#     so the whole ffmpeg argv is static and unit-testable without ffmpeg).
+#   * "target_mb" — a fixed output-size budget encoded two-pass via
+#     :func:`compress_to_size` (needs a runner + a duration probe, so it's
+#     driven through the CLI/UI rather than a pure argv builder).
+OUTPUT_PRESETS: dict[str, dict] = {
+    "web-mp4": {
+        "description": "Web-ready H.264 MP4 (CRF 23, AAC 128k).",
+        "compress": {"vcodec": "libx264", "crf": 23, "preset": "medium"},
+    },
+    "web-mp4-hd": {
+        "description": "1080p-capped H.264 MP4 at higher quality (CRF 21).",
+        "compress": {"vcodec": "libx264", "crf": 21, "preset": "slow", "height": 1080},
+    },
+    "mp4-720p": {
+        "description": "720p-capped H.264 MP4 for quick sharing (CRF 26).",
+        "compress": {"vcodec": "libx264", "crf": 26, "preset": "fast", "height": 720},
+    },
+    "hevc-mp4": {
+        "description": "Smaller H.265/HEVC MP4 at matched quality (CRF 28).",
+        "compress": {"vcodec": "libx265", "crf": 28, "preset": "medium"},
+    },
+    "discord-8mb": {
+        "description": "Two-pass encode targeting Discord's 8 MB upload limit.",
+        "target_mb": 8.0,
+    },
+    "discord-25mb": {
+        "description": "Two-pass encode targeting Discord's 25 MB (Nitro) limit.",
+        "target_mb": 25.0,
+    },
+}
+
+
+def preset_names() -> list[str]:
+    """Return the available output-preset names, in registration order."""
+    return list(OUTPUT_PRESETS)
+
+
+def get_preset(name: str) -> dict:
+    """Look up a preset spec by name, raising a clear error for an unknown name."""
+    try:
+        return OUTPUT_PRESETS[name]
+    except KeyError:
+        raise ValueError(
+            f"Unknown preset {name!r}; choose one of: {', '.join(OUTPUT_PRESETS)}."
+        )
+
+
+def preset_is_target_size(name: str) -> bool:
+    """Return True if ``name`` is a size-targeted (two-pass) preset.
+
+    Size-targeted presets can't be expressed as a single static ffmpeg argv
+    (the bitrate depends on the probed input duration), so callers route them
+    through :func:`compress_to_size` instead of :func:`build_preset_args`.
+    """
+    return "target_mb" in get_preset(name)
+
+
+def build_preset_args(preset: str, input_path: str, output_path: str) -> list[str]:
+    """Build the ffmpeg argv for a single-pass ``compress`` output preset.
+
+    Raises :class:`ValueError` for an unknown preset, or for a size-targeted
+    preset (use :func:`compress_to_size` with the preset's ``target_mb`` for
+    those — see :func:`preset_is_target_size`).
+    """
+    spec = get_preset(preset)
+    if "compress" not in spec:
+        raise ValueError(
+            f"Preset {preset!r} is size-targeted (two-pass); "
+            f"encode it with compress_to_size, not build_preset_args."
+        )
+    return build_compress_args(input_path, output_path, **spec["compress"])

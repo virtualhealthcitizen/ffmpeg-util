@@ -237,6 +237,42 @@ def test_compress_estimate_size_rejects_target_size(capsys):
     assert "error" in capsys.readouterr().err.lower()
 
 
+def test_preset_web_mp4_dry_run(capsys):
+    rc = main(["preset", "web-mp4", "in.mp4", "out.mp4", "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "libx264" in out and "-crf 23" in out and "out.mp4" in out
+
+
+def test_preset_discord_8mb_dry_run(capsys):
+    # Size-targeted preset routes through the two-pass compress_to_size path;
+    # dry-run never probes duration (placeholder stands in) but still prints both
+    # passes, mirroring test_compress_target_size_dry_run.
+    rc = main(["preset", "discord-8mb", "in.mp4", "out.mp4", "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "-pass 1" in out and "-pass 2" in out and "out.mp4" in out
+
+
+def test_preset_list(capsys):
+    rc = main(["preset", "--list"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "web-mp4" in out and "discord-8mb" in out and "H.264" in out
+
+
+def test_preset_unknown_name_errors(capsys):
+    rc = main(["preset", "bogus", "in.mp4", "out.mp4", "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    assert "unknown preset" in capsys.readouterr().err.lower()
+
+
+def test_preset_missing_output_errors(capsys):
+    rc = main(["preset", "web-mp4", "in.mp4", "--ffmpeg", "ffmpeg", "--dry-run"])
+    assert rc == 1
+    assert "error" in capsys.readouterr().err.lower()
+
+
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not on PATH")
 def test_compress_estimate_size_real(tmp_path, capsys):
     src = tmp_path / "in.mp4"
